@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
 
     if (!apiKey) {
       return res.status(500).json({
-        error: 'API key not configured. Add ANTHROPIC_API_KEY in Vercel environment variables.',
+        error: 'API key not configured. Add ANTHROPIC_API_KEY in Vercel environment variables.'
       });
     }
 
@@ -25,7 +25,7 @@ module.exports = async function handler(req, res) {
         ? JSON.parse(req.body || '{}')
         : (req.body || {});
 
-    const { messages, max_tokens } = body;
+    const { messages, max_tokens, system } = body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'Messages are required.' });
@@ -36,13 +36,16 @@ module.exports = async function handler(req, res) {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-haiku-4-5',
         max_tokens: Number(max_tokens) || 1000,
-        messages,
-      }),
+        system:
+          system ||
+          'You are an expert career assistant. Write polished, truthful, ATS-friendly resumes and cover letters. Do not invent facts that were not provided. Keep wording professional, clear, and specific.',
+        messages
+      })
     });
 
     const data = await response.json();
@@ -53,14 +56,14 @@ module.exports = async function handler(req, res) {
           data?.error?.message ||
           data?.error?.type ||
           'Anthropic API request failed.',
-        details: data,
+        details: data
       });
     }
 
     return res.status(200).json(data);
   } catch (err) {
     return res.status(500).json({
-      error: 'Server error: ' + err.message,
+      error: 'Server error: ' + err.message
     });
   }
 };
