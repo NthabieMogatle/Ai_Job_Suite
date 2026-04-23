@@ -26,7 +26,6 @@ module.exports = async function handler(req, res) {
         : (req.body || {});
 
     const {
-      type,
       name,
       jobTitle,
       company,
@@ -36,9 +35,8 @@ module.exports = async function handler(req, res) {
       tone
     } = body;
 
-    if (!type) {
-      return res.status(400).json({ error: 'Type is required.' });
-    }
+    // Default to cover letter if type is not sent by frontend
+    const type = body.type || 'coverLetter';
 
     if (!name || !jobTitle) {
       return res.status(400).json({ error: 'Missing required fields.' });
