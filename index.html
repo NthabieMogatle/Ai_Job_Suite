@@ -551,29 +551,9 @@
     if (outputEl) outputEl.classList.remove('visible');
 
     errorEl.innerHTML = `
-  <strong>🔒 You’re 1 step away from landing the job</strong><br><br>
-  
-  You’ve used your ${FREE_GENERATION_LIMIT} free generations.<br><br>
-  
-  Unlock unlimited access to:<br>
-  • ATS-optimized resumes<br>
-  • High-converting cover letters<br>
-  • Job-specific keyword optimization<br><br>
-  
-  Stop guessing. Start getting interviews.<br><br>
-
-  <a href="${PAYWALL_URL}" target="_blank" rel="noopener noreferrer" style="
-    display:inline-block;
-    padding:10px 16px;
-    border-radius:8px;
-    background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
-    color:#0e0e0f;
-    text-decoration:none;
-    font-weight:500;
-  ">
-    Unlock Full Access
-  </a>
-`;
+      <strong>🔒 Free limit reached.</strong><br>
+      You’ve used your ${FREE_GENERATION_LIMIT} free generations.
+      Unlock unlimited access to keep creating resumes and cover letters.
       <br><br>
       <a href="${PAYWALL_URL}" target="_blank" rel="noopener noreferrer" style="
         display:inline-block;
