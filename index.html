@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -536,6 +537,43 @@
 <script>
   const tones = { cl: 'professional', rv: 'clean and professional' };
 
+  // Soft paywall settings: 2 free generations, then send users to Gumroad.
+  const FREE_GENERATION_LIMIT = 2;
+  const PAYWALL_URL = 'https://eleveemporium.gumroad.com';
+  let usageCount = parseInt(localStorage.getItem('aiJobSuiteUsageCount') || '0', 10);
+
+  function checkLimit(prefix) {
+    if (usageCount < FREE_GENERATION_LIMIT) return true;
+
+    const errorEl = document.getElementById(prefix + '-error');
+    const outputEl = document.getElementById(prefix + '-output');
+
+    if (outputEl) outputEl.classList.remove('visible');
+
+    errorEl.innerHTML = `
+      <strong>🔒 Free limit reached.</strong><br>
+      You’ve used your ${FREE_GENERATION_LIMIT} free generations.
+      Unlock unlimited access to keep creating resumes and cover letters.
+      <br><br>
+      <a href="${PAYWALL_URL}" target="_blank" rel="noopener noreferrer" style="
+        display:inline-block;
+        padding:10px 16px;
+        border-radius:8px;
+        background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+        color:#0e0e0f;
+        text-decoration:none;
+        font-weight:500;
+      ">Unlock Access</a>
+    `;
+    errorEl.classList.add('visible');
+    return false;
+  }
+
+  function increaseUsage() {
+    usageCount += 1;
+    localStorage.setItem('aiJobSuiteUsageCount', String(usageCount));
+  }
+
 
   function switchTab(name) {
     document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0 && name==='cover')||(i===1 && name==='resume')));
@@ -554,6 +592,9 @@
   async function generate(prefix) {
     const errorEl = document.getElementById(prefix + '-error');
     errorEl.classList.remove('visible');
+    errorEl.innerHTML = '';
+
+    if (!checkLimit(prefix)) return;
 
     let prompt = '';
     if (prefix === 'cl') {
@@ -612,6 +653,7 @@ Requirements:
     }
 
     const btn = document.getElementById(prefix + '-btn');
+    const originalBtnText = btn.textContent;
     btn.disabled = true;
     document.getElementById(prefix + '-loading').classList.add('visible');
     document.getElementById(prefix + '-output').classList.remove('visible');
@@ -639,6 +681,7 @@ Requirements:
       if (!text) throw new Error('No output was returned.');
       document.getElementById(prefix + '-text').textContent = text;
       document.getElementById(prefix + '-output').classList.add('visible');
+      increaseUsage();
     } catch (err) {
       errorEl.textContent = 'Error: ' + (err.message || 'Something went wrong. Check your API key and try again.');
       errorEl.classList.add('visible');
