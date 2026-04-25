@@ -635,24 +635,39 @@ function checkLimit(prefix) {
         errorEl.classList.add('visible');
         return;
       }
-      prompt = `Write a ${tones.cl} cover letter for ${name} applying for the ${job} role at ${company}.
+      prompt = `Write a ${tones.cl}, ATS-optimized, recruiter-focused cover letter for ${name} applying for the ${job} role at ${company}.
 
-Use only the details provided below and do not invent experience, degrees, metrics, or certifications.
+IMPORTANT INSTRUCTIONS:
+- Keep the cover letter between 150–220 words (concise and impactful)
+- Make it sound confident and slightly senior-level (not beginner or desperate)
+- Focus on VALUE, not just responsibilities
+- Use strong action verbs (e.g., troubleshoot, resolve, support, optimize, deliver)
+- Avoid fluff, repetition, and generic phrases
+- Do NOT include placeholders or brackets
 
-Candidate details:
+ATS OPTIMIZATION:
+- Naturally include relevant keywords from this job description: ${desc}
+- Prioritize keywords like: technical support, troubleshooting, networking, system administration, customer support, IT operations (when relevant)
+
+CANDIDATE DETAILS:
 - Name: ${name}
-- Target role: ${job}
+- Role: ${job}
 - Company: ${company}
-- Skills and experience: ${skills}
-- Job description or requirements: ${desc || 'Not provided'}
+- Skills & experience: ${skills}
 
-Requirements:
-- Start with Dear Hiring Manager,
-- Write 3 short, compelling paragraphs
-- Sound natural, specific, and human
-- Highlight fit for the role using the provided information only
-- End with a professional closing
-- Output only the final cover letter`;
+STRUCTURE:
+1. Strong opening (clear interest + role + company)
+2. Technical value (skills + impact)
+3. Customer/service strength (communication, problem-solving)
+4. Growth + alignment with company
+5. Short, confident closing
+
+STYLE:
+- Professional, modern, and clean
+- No long paragraphs (max 3–4 lines each)
+- No over-explaining
+
+Output only the final cover letter text.`;
     } else {
       const name = getVal('rv-name'), job = getVal('rv-job'), email = getVal('rv-email'), phone = getVal('rv-phone'), edu = getVal('rv-edu'), skills = getVal('rv-skills'), desc = getVal('rv-desc'), exp = getVal('rv-exp');
       if (!name || !job || !skills) {
