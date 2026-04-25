@@ -635,39 +635,46 @@ function checkLimit(prefix) {
         errorEl.classList.add('visible');
         return;
       }
-      prompt = `Write a ${tones.cl}, ATS-optimized, recruiter-focused cover letter for ${name} applying for the ${job} role at ${company}.
+      prompt = `Create a professional, ATS-optimized, recruiter-focused resume for ${name} targeting the ${job} role.
 
 IMPORTANT INSTRUCTIONS:
-- Keep the cover letter between 150–220 words (concise and impactful)
-- Make it sound confident and slightly senior-level (not beginner or desperate)
-- Focus on VALUE, not just responsibilities
-- Use strong action verbs (e.g., troubleshoot, resolve, support, optimize, deliver)
-- Avoid fluff, repetition, and generic phrases
-- Do NOT include placeholders or brackets
+- Make the resume sound confident, polished, and job-ready
+- Use clear sections and bullet points
+- Keep it ATS-friendly with simple formatting
+- Do NOT invent employers, dates, degrees, certifications, or achievements
+- Only use the information provided by the user
+- Strengthen weak experience by focusing on transferable skills, projects, customer service, problem-solving, and technical knowledge
+- Use strong action verbs like supported, troubleshot, resolved, documented, assisted, configured, maintained, communicated, and improved
 
 ATS OPTIMIZATION:
-- Naturally include relevant keywords from this job description: ${desc}
-- Prioritize keywords like: technical support, troubleshooting, networking, system administration, customer support, IT operations (when relevant)
+- Naturally include relevant keywords from the job description: ${desc}
+- Prioritize keywords like technical support, troubleshooting, help desk, customer support, Windows, networking, TCP/IP, DNS, system administration, ticketing, IT operations, and cybersecurity fundamentals when relevant
 
 CANDIDATE DETAILS:
 - Name: ${name}
-- Role: ${job}
-- Company: ${company}
-- Skills & experience: ${skills}
+- Email: ${email || 'Not provided'}
+- Phone / Location: ${phone || 'Not provided'}
+- Education: ${edu || 'Not provided'}
+- Skills: ${skills}
+- Experience and projects: ${exp || 'Not provided'}
+- Job description or requirements: ${desc || 'Not provided'}
 
 STRUCTURE:
-1. Strong opening (clear interest + role + company)
-2. Technical value (skills + impact)
-3. Customer/service strength (communication, problem-solving)
-4. Growth + alignment with company
-5. Short, confident closing
+1. Name and contact information
+2. Professional Summary: 2–3 strong lines tailored to the target role
+3. Core Skills: ATS keyword-rich skills list
+4. Experience / Projects: bullet points focused on impact, troubleshooting, support, communication, and problem-solving
+5. Education
+6. Certifications if mentioned by the user
 
 STYLE:
-- Professional, modern, and clean
-- No long paragraphs (max 3–4 lines each)
-- No over-explaining
+- Modern, clean, and professional
+- Concise bullet points
+- Recruiter-friendly
+- No paragraphs longer than 3 lines
+- No fake information
 
-Output only the final cover letter text.`;
+Output only the final resume text.`;
     } else {
       const name = getVal('rv-name'), job = getVal('rv-job'), email = getVal('rv-email'), phone = getVal('rv-phone'), edu = getVal('rv-edu'), skills = getVal('rv-skills'), desc = getVal('rv-desc'), exp = getVal('rv-exp');
       if (!name || !job || !skills) {
