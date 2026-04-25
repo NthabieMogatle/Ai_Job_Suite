@@ -635,46 +635,24 @@ function checkLimit(prefix) {
         errorEl.classList.add('visible');
         return;
       }
-      prompt = `Create a professional, ATS-optimized, recruiter-focused resume for ${name} targeting the ${job} role.
+      prompt = `Write a ${tones.cl} cover letter for ${name} applying for the ${job} role at ${company}.
 
-IMPORTANT INSTRUCTIONS:
-- Make the resume sound confident, polished, and job-ready
-- Use clear sections and bullet points
-- Keep it ATS-friendly with simple formatting
-- Do NOT invent employers, dates, degrees, certifications, or achievements
-- Only use the information provided by the user
-- Strengthen weak experience by focusing on transferable skills, projects, customer service, problem-solving, and technical knowledge
-- Use strong action verbs like supported, troubleshot, resolved, documented, assisted, configured, maintained, communicated, and improved
+Use only the details provided below and do not invent experience, degrees, metrics, or certifications.
 
-ATS OPTIMIZATION:
-- Naturally include relevant keywords from the job description: ${desc}
-- Prioritize keywords like technical support, troubleshooting, help desk, customer support, Windows, networking, TCP/IP, DNS, system administration, ticketing, IT operations, and cybersecurity fundamentals when relevant
-
-CANDIDATE DETAILS:
+Candidate details:
 - Name: ${name}
-- Email: ${email || 'Not provided'}
-- Phone / Location: ${phone || 'Not provided'}
-- Education: ${edu || 'Not provided'}
-- Skills: ${skills}
-- Experience and projects: ${exp || 'Not provided'}
+- Target role: ${job}
+- Company: ${company}
+- Skills and experience: ${skills}
 - Job description or requirements: ${desc || 'Not provided'}
 
-STRUCTURE:
-1. Name and contact information
-2. Professional Summary: 2–3 strong lines tailored to the target role
-3. Core Skills: ATS keyword-rich skills list
-4. Experience / Projects: bullet points focused on impact, troubleshooting, support, communication, and problem-solving
-5. Education
-6. Certifications if mentioned by the user
-
-STYLE:
-- Modern, clean, and professional
-- Concise bullet points
-- Recruiter-friendly
-- No paragraphs longer than 3 lines
-- No fake information
-
-Output only the final resume text.`;
+Requirements:
+- Start with Dear Hiring Manager,
+- Write 3 short, compelling paragraphs
+- Sound natural, specific, and human
+- Highlight fit for the role using the provided information only
+- End with a professional closing
+- Output only the final cover letter`;
     } else {
       const name = getVal('rv-name'), job = getVal('rv-job'), email = getVal('rv-email'), phone = getVal('rv-phone'), edu = getVal('rv-edu'), skills = getVal('rv-skills'), desc = getVal('rv-desc'), exp = getVal('rv-exp');
       if (!name || !job || !skills) {
