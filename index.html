@@ -438,6 +438,10 @@
         <textarea id="cl-skills" placeholder="e.g. Java, JavaScript, web development, personal projects, software development lifecycle..."></textarea>
       </div>
       <div class="form-group">
+  <label>Email to start free generations</label>
+  <input id="cl-access-email" type="email" placeholder="Enter your email for 2 free generations">
+</div>
+      <div class="form-group">
         <label>Tone</label>
         <div class="tone-chips">
           <button class="chip active" onclick="selectTone(this,'cl','professional')">Professional</button>
@@ -504,6 +508,10 @@
         <textarea id="rv-exp" placeholder="e.g. Personal projects in web dev, academic coursework, any internships or part-time work..."></textarea>
       </div>
       <div class="form-group">
+  <label>Email to start free generations</label>
+  <input id="rv-access-email" type="email" placeholder="Enter your email for 2 free generations">
+</div>
+      <div class="form-group">
         <label>Style</label>
         <div class="tone-chips">
           <button class="chip active" onclick="selectTone(this,'rv','clean and professional')">Clean</button>
@@ -540,45 +548,64 @@
   // Soft paywall settings: 2 free generations, then send users to Gumroad.
   const FREE_GENERATION_LIMIT = 2;
   const PAYWALL_URL = 'https://eleveemporium.gumroad.com/l/pllrsk';
-  let usageCount = parseInt(localStorage.getItem('aiJobSuiteUsageCount') || '0', 10);
+  let userEmail = localStorage.getItem('aiJobSuiteUserEmail') || '';
+let usageData = JSON.parse(localStorage.getItem('aiJobSuiteUsageData') || '{}');
+function getAccessEmail(prefix) {
+  const emailInput = document.getElementById(prefix + '-access-email');
+  const email = (emailInput?.value || userEmail || '').trim().toLowerCase();
 
-  function checkLimit(prefix) {
-    if (usageCount < FREE_GENERATION_LIMIT) return true;
-
+  if (!email) {
     const errorEl = document.getElementById(prefix + '-error');
-    const outputEl = document.getElementById(prefix + '-output');
-
-    if (outputEl) outputEl.classList.remove('visible');
-
-    errorEl.innerHTML = `
-    <strong>🔒 You're 1 step away from landing the job.</strong><br><br>
-You've used your ${FREE_GENERATION_LIMIT} free generations.<br><br>
-Unlock unlimited access to:<br>
-• ATS-optimized resumes<br>
-• High-converting cover letters<br>
-• Job-specific keyword optimization<br><br>
-Stop guessing. Start getting interviews. 
-      <br><br>
-      <a href="${PAYWALL_URL}" target="_blank" rel="noopener noreferrer" style="
-        display:inline-block;
-        padding:10px 16px;
-        border-radius:8px;
-        background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
-        color:#0e0e0f;
-        text-decoration:none;
-        font-weight:500;
-    ">Unlock My Resume Tool</a>
-    `;
+    errorEl.textContent = 'Please enter your email to start your 2 free generations.';
     errorEl.classList.add('visible');
-    return false;
+    return '';
   }
+
+  userEmail = email;
+  localStorage.setItem('aiJobSuiteUserEmail', userEmail);
+  return userEmail;
+}
+function checkLimit(prefix) {
+  const email = getAccessEmail(prefix);
+  if (!email) return false;
+
+  if (!usageData[email]) usageData[email] = 0;
+  if (usageData[email] < FREE_GENERATION_LIMIT) return true;
+
+  const errorEl = document.getElementById(prefix + '-error');
+  const outputEl = document.getElementById(prefix + '-output');
+
+  if (outputEl) outputEl.classList.remove('visible');
+
+  errorEl.innerHTML = `
+    <strong>🔒 You're 1 step away from landing the job.</strong><br><br>
+    You've used your ${FREE_GENERATION_LIMIT} free generations for ${email}.<br><br>
+    Unlock unlimited access to:<br>
+    • ATS-optimized resumes<br>
+    • High-converting cover letters<br>
+    • Job-specific keyword optimization<br><br>
+    Stop guessing. Start getting interviews.
+    <br><br>
+    <a href="${PAYWALL_URL}" target="_blank" rel="noopener noreferrer" style="
+      display:inline-block;
+      padding:10px 16px;
+      border-radius:8px;
+      background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+      color:#0e0e0f;
+      text-decoration:none;
+      font-weight:500;
+    ">Unlock My Resume Tool</a>
+  `;
+  errorEl.classList.add('visible');
+  return false;
+}
 
   function increaseUsage() {
-    usageCount += 1;
-    localStorage.setItem('aiJobSuiteUsageCount', String(usageCount));
-  }
-
-
+  if (!userEmail) return;
+  if (!usageData[userEmail]) usageData[userEmail] = 0;
+  usageData[userEmail] += 1;
+  localStorage.setItem('aiJobSuiteUsageData', JSON.stringify(usageData));
+}
   function switchTab(name) {
     document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0 && name==='cover')||(i===1 && name==='resume')));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
