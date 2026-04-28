@@ -487,8 +487,15 @@
           <input type="text" id="rv-email" placeholder="email@example.com" />
         </div>
         <div class="form-group">
-          <label>Phone / Location</label>
-          <input type="text" id="rv-phone" placeholder="e.g. +1 555 0100 · New York" />
+          <div class="form-group">
+  <label>Phone</label>
+  <input type="text" id="rv-phone" placeholder="e.g. +1 555 0100" />
+</div>
+
+<div class="form-group">
+  <label>Location</label>
+  <input type="text" id="rv-location" placeholder="e.g. Hartford, CT" />
+</div>
         </div>
       </div>
       <div class="form-group">
@@ -677,7 +684,13 @@ STYLE:
 
 Output only the final cover letter text.`;
     } else {
-      const name = getVal('rv-name'), job = getVal('rv-job'), email = getVal('rv-email'), phone = getVal('rv-phone'), edu = getVal('rv-edu'), skills = getVal('rv-skills'), desc = getVal('rv-desc'), exp = getVal('rv-exp');
+      const name = getVal('rv-name'),
+  job = getVal('rv-job'),
+  email = getVal('rv-email'),
+  phone = getVal('rv-phone'),
+  location = getVal('rv-location'),
+  edu = getVal('rv-edu'),
+  skills = getVal('rv-skills');
       if (!name || !job || !skills) {
         errorEl.textContent = 'Please fill in at least your name, target job, and skills.';
         errorEl.classList.add('visible');
@@ -717,11 +730,10 @@ CANDIDATE DETAILS:
 - Skills & Experience: ${skills}
 
 STRUCTURE:
-STRUCTURE:
 1. Header:
    - Display name on first line
    - Display contact info on second line in this format:
-     ${phone} | ${email}${location ? " | " + location : ""}
+   - Show phone and email on second line, and include location if provided (format: Phone | Email | Location)
 2. Professional Summary (2–3 lines, strong and impact-focused)
 3. Skills Section (group into categories like Technical Skills, Tools, Systems)
 4. Experience / Technical Experience
