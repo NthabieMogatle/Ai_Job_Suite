@@ -683,27 +683,53 @@ Output only the final cover letter text.`;
         errorEl.classList.add('visible');
         return;
       }
-      prompt = `Create a ${tones.rv} resume for ${name} targeting a ${job} role.
+      prompt = `Create a ${tones.rv}, ATS-optimized, recruiter-focused resume for ${name} targeting a ${job} role.
+      
+IMPORTANT INSTRUCTIONS:
+- Make the resume concise, professional, and results-oriented
+- Make it sound like a strong early-career (1–3 years equivalent) candidate, not a beginner
+- Focus on IMPACT and outcomes, not just listing responsibilities
+- Use strong action verbs (e.g., resolved, supported, optimized, configured, improved)
+- Prefer concise, direct phrasing over soft or filler language
+- Avoid repetition, fluff, and generic statements
+- Do NOT include placeholders (e.g., [Your Name], [Date])
+- Do NOT invent employers, dates, degrees, or experience not provided
+- Include only fields that are provided (do not display missing or empty fields)
 
-Use only the information below. Do not invent employers, dates, degrees, responsibilities, or achievements.
+ATS OPTIMIZATION:
+- Naturally include relevant keywords from this job description: ${desc}
+- Prioritize keywords like: technical support, troubleshooting, networking, system administration, customer support, IT operations (when relevant)
 
-Candidate details:
+CANDIDATE DETAILS:
 - Name: ${name}
-- Target role: ${job}
-- Email: ${email || 'Not provided'}
-- Phone / Location: ${phone || 'Not provided'}
-- Education: ${edu || 'Not provided'}
-- Skills: ${skills}
-- Experience and projects: ${exp || 'Not provided'}
-- Job description or requirements: ${desc || 'Not provided'}
+- Target Role: ${job}
+- Email: ${email} 
+- Phone: ${phone} 
+- Education: ${edu}
+- Skills & Experience: ${skills}
 
-Requirements:
-- Output a clean plain-text resume
-- Include these sections if relevant: Professional Summary, Core Skills, Education, Experience, Projects
-- Keep it ATS-friendly
-- Use concise bullet points where appropriate
-- Tailor the summary and skills to the target role using only provided facts
-- Output only the final resume`;
+STRUCTURE:
+1. Professional Summary (2–3 lines, strong and impact-focused)
+2. Skills Section (group into clear categories such as Technical Skills, Tools, Systems; keep it clean and scannable)
+3. Experience Section (bullet points with action + impact)
+4. Education
+
+EXPERIENCE BULLETS:
+- Start each bullet with a strong action verb
+- Show impact or outcome where possible (efficiency, reliability, user support)
+- Keep bullets short and specific (1–2 lines max)
+- Avoid weak phrases like "responsible for" or "helped with"
+- Where exact metrics are unavailable, imply impact (e.g., improved efficiency, reduced downtime, enhanced user experience)
+- Avoid weak verbs like "helped", "worked on", "assisted with" — replace with strong, specific actions
+
+STYLE:
+- Clean, modern, and easy to scan
+- Use bullet points (not long paragraphs)
+- No over-explaining
+- Use consistent formatting (aligned sections, clear spacing, no clutter)
+
+Output only the final resume text.`;
+
     }
 
     const btn = document.getElementById(prefix + '-btn');
