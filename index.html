@@ -684,13 +684,13 @@ STYLE:
 
 Output only the final cover letter text.`;
     } else {
-      const name = getVal('rv-name'),
-  job = getVal('rv-job'),
-  email = getVal('rv-email'),
-  phone = getVal('rv-phone'),
-  location = getVal('rv-location'),
-  edu = getVal('rv-edu'),
-  skills = getVal('rv-skills');
+      const name = getVal('rv-name');
+const job = getVal('rv-job');
+const email = getVal('rv-email');
+const phone = getVal('rv-phone');
+const location = getVal('rv-location');
+const edu = getVal('rv-edu');
+const skills = getVal('rv-skills');
       if (!name || !job || !skills) {
         errorEl.textContent = 'Please fill in at least your name, target job, and skills.';
         errorEl.classList.add('visible');
