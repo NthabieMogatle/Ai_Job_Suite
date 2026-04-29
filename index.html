@@ -905,9 +905,6 @@ async function checkUsage(email) {
 /* 👇 ADD THIS RIGHT HERE 👇 */
 async function downloadPDF(elementId, filename) {
   const email = document.getElementById("rv-email").value.trim();
-
-const allowed = await checkUsage(email);
-if (!allowed) return;
   
   const source = document.getElementById(elementId);
 
@@ -915,7 +912,7 @@ if (!allowed) return;
     alert('Please generate your resume first.');
     return;
   }
-
+ 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF('p', 'pt', 'letter');
 
