@@ -7,6 +7,7 @@
 
   <!-- ✅ jsPDF (correct place INSIDE head) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -841,9 +842,73 @@ Output only the final resume text.`;
   a.download = filename;
   a.click();
 }
+const SUPABASE_URL = "https://roqhmdqrgovnqjiuoewe.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_cC8Fx8q75VUwEXU_x4sx9g__Iw7aS79";
 
+async function checkUsage(email) {
+  if (!email) {
+    alert("Please enter your email first.");
+    return false;
+  }
+
+  // Check existing usage
+  const res = await fetch(`${SUPABASE_URL}Email%20Usage?email=eq.${email}`, {
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+    },
+  });
+
+  const data = await res.json();
+
+  // If user exists
+  if (data.length > 0) {
+    const usage = data[0].usage_count;
+
+    if (usage >= 2) {
+      alert("Free limit reached. Please upgrade 🔒");
+      return false;
+    }
+
+    // Update usage
+    await fetch(`${SUPABASE_URL}Email%20Usage?email=eq.${email}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+      body: JSON.stringify({
+        usage_count: usage + 1,
+      }),
+    });
+
+  } else {
+    // New user → insert
+    await fetch(`${SUPABASE_URL}Email%20Usage`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        email: email,
+        usage_count: 1,
+      }),
+    });
+  }
+
+  return true;
+}
 /* 👇 ADD THIS RIGHT HERE 👇 */
-function downloadPDF(elementId, filename) {
+async function downloadPDF(elementId, filename) {
+  const email = document.getElementById("rv-email").value.trim();
+
+const allowed = await checkUsage(email);
+if (!allowed) return;
+  
   const source = document.getElementById(elementId);
 
   if (!source || !source.innerText.trim()) {
