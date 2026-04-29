@@ -699,32 +699,33 @@ const exp = getVal('rv-exp');
         return;
       }
       prompt = `Create a ${tones.rv}, ATS-optimized, recruiter-focused resume for ${name} targeting a ${job} role.
+      - Do NOT use placeholders or vague titles like "In Development"
+- Create realistic, professional job titles based on the candidate’s skills (e.g., IT Support Specialist, Help Desk Technician, Desktop Support Technician)
       
 IMPORTANT INSTRUCTIONS:
 - Make the resume concise, professional, and results-oriented
-- Make it sound like a strong early-career (1–3 years equivalent) candidate, not a beginner
-- Focus on IMPACT and outcomes, not just listing responsibilities
-- Use strong action verbs (e.g., resolved, supported, optimized, configured, improved)
+- Make it sound like a strong early-career candidate with 1–3 years equivalent experience, not a beginner
+- Focus on impact, outcomes, and capability — not lack of experience
+- Use strong action verbs such as Resolved, Supported, Optimized, Configured, Improved, Diagnosed, and Reduced
 - Prefer concise, direct phrasing over soft or filler language
-- Avoid repetition, fluff, and generic statements
-- Do NOT include placeholders (e.g., [Your Name], [Date])
-- Do NOT invent employers, dates, degrees, or experience not provided
-- Include only fields that are provided (do not display missing or empty fields)
+- Avoid repetition, fluff, generic statements, and phrases like "responsible for"
 - Do NOT describe the candidate as "entry-level"
-- Start the summary with a strong, confident title (e.g., "IT Support Specialist with..." instead of "Entry-level...")
-- Focus on skills, impact, and capability, not lack of experience
-- Avoid generic phrases like "responsible for" and replace with strong, specific action statements
-- Write project descriptions to highlight hands-on technical work and real-world application (not just coursework)
-- Do NOT create fake job titles, companies, or dates if not provided
-- If no formal work experience is provided, label the section as "Technical Experience" instead of "Work Experience"
 - Do NOT use phrases like "in development", "learning", or "beginner"
-- Replace weak or passive wording with strong, confident professional language
+- Do NOT include placeholders such as [Your Name] or [Date]
+- Do NOT invent employers, dates, degrees, certifications, or experience not provided
+- Do NOT create fake job titles, companies, or dates
+- Include only fields that are provided and do not display missing or empty fields
+- Start the summary with a strong professional title such as "IT Support Specialist with..."
+- Create realistic professional titles based on the candidate’s skills, such as IT Support Specialist, Help Desk Technician, or Desktop Support Technician
+- If no formal work experience is provided, label the section as "Technical Experience" instead of "Work Experience"
+- Merge projects, labs, coursework, and hands-on work into the Technical Experience section
+- Do NOT create a separate "Projects" section unless absolutely necessary
+- Present hands-on projects or labs as professional technical experience without overusing words like "project", "lab", or "academic"
 - Rewrite all bullet points to sound impactful and results-driven
-- Start each bullet with strong action verbs (e.g., Diagnosed, Resolved, Configured, Improved, Reduced)
-- Add measurable impact where possible (e.g., improved efficiency, reduced downtime, increased user satisfaction)
-- Make experience sound real-world and professional, even if based on projects or coursework
-- Write project descriptions to highlight hands-on technical work and real-world application (not just coursework)
-- If experience is based on projects or labs, present it as professional technical experience without mentioning "project" unless necessary
+- Each bullet must show impact, not just tasks
+- Include measurable or clear outcomes where possible, such as reduced downtime, improved efficiency, enhanced user experience, or increased user satisfaction
+- Output the resume in clean plain text format with no markdown symbols like ##, **, or ---
+- Use standard resume section headers such as PROFESSIONAL SUMMARY, TECHNICAL SKILLS, TECHNICAL EXPERIENCE, and EDUCATION
 
 ATS OPTIMIZATION:
 - Naturally include relevant keywords from this job description: ${desc}
