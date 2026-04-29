@@ -542,7 +542,7 @@
       <div class="output-text" id="rv-text"></div>
       <div class="output-actions">
         <button class="btn-action" onclick="copyOutput('rv-text', this)">Copy</button>
-        <button class="btn-action" onclick="downloadPDF('rv-output','resume.pdf')">Download PDF</button>
+        <button class="btn-action" onclick="downloadPDF('rv-text', 'resume.pdf')">Download PDF</button>
       </div>
     </div>
   </div>
@@ -838,24 +838,38 @@ Output only the final resume text.`;
 
 /* 👇 ADD THIS RIGHT HERE 👇 */
 function downloadPDF(elementId, filename) {
-  const element = document.getElementById(elementId);
+  const source = document.getElementById(elementId);
 
-  if (!element || !element.innerText.trim()) {
+  if (!source || !source.innerText.trim()) {
     alert('Please generate your resume first.');
     return;
   }
+
+  const printArea = document.createElement('div');
+  printArea.innerHTML = source.innerHTML;
+  printArea.style.background = '#ffffff';
+  printArea.style.color = '#000000';
+  printArea.style.padding = '40px';
+  printArea.style.fontFamily = 'Arial, sans-serif';
+  printArea.style.fontSize = '11pt';
+  printArea.style.lineHeight = '1.45';
+  printArea.style.whiteSpace = 'pre-wrap';
+  printArea.style.width = '7.5in';
+
+  document.body.appendChild(printArea);
 
   const opt = {
     margin: 0.5,
     filename: filename,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
+    html2canvas: { scale: 2, backgroundColor: '#ffffff' },
     jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
   };
 
-  html2pdf().set(opt).from(element).save();
+  html2pdf().set(opt).from(printArea).save().then(() => {
+    document.body.removeChild(printArea);
+  });
 }
-/* 👆 END HERE 👆 */
 
 </script>
 </body>
