@@ -388,6 +388,9 @@
     .wrapper { padding: 2rem 1rem 4rem; }
   }
 </style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>  
+  
 </head>
 <body>
 
@@ -539,7 +542,7 @@
       <div class="output-text" id="rv-text"></div>
       <div class="output-actions">
         <button class="btn-action" onclick="copyOutput('rv-text', this)">Copy</button>
-        <button class="btn-action" onclick="downloadOutput('rv-text','resume.txt')">Download</button>
+        <button class="btn-action" onclick="downloadPDF('rv-output','resume.pdf')">Download PDF</button>
       </div>
     </div>
   </div>
@@ -826,12 +829,34 @@ Output only the final resume text.`;
   }
 
   function downloadOutput(id, filename) {
-    const text = document.getElementById(id).textContent;
-    const a = document.createElement('a');
-    a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
-    a.download = filename;
-    a.click();
+  const text = document.getElementById(id).textContent;
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+  a.download = filename;
+  a.click();
+}
+
+/* 👇 ADD THIS RIGHT HERE 👇 */
+function downloadPDF(elementId, filename) {
+  const element = document.getElementById(elementId);
+
+  if (!element || !element.innerText.trim()) {
+    alert('Please generate your resume first.');
+    return;
   }
+
+  const opt = {
+    margin: 0.5,
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(element).save();
+}
+/* 👆 END HERE 👆 */
+
 </script>
 </body>
 </html>
