@@ -842,7 +842,7 @@ Output only the final resume text.`;
   a.download = filename;
   a.click();
 }
-const SUPABASE_URL = "https://roqhmdqrgovnqjiuoewe.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://roqhmdqrgovnqjiuoewe.supabase.co";
 const SUPABASE_KEY = "sb_publishable_cC8Fx8q75VUwEXU_x4sx9g__Iw7aS79";
 
 async function checkUsage(email) {
@@ -852,7 +852,7 @@ async function checkUsage(email) {
   }
 
   // Check existing usage
-  const res = await fetch(`${SUPABASE_URL}Email%20Usage?email=eq.${email}`, {
+  fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage?email=eq.${email}`, {
     headers: {
       apikey: SUPABASE_KEY,
       Authorization: `Bearer ${SUPABASE_KEY}`,
@@ -871,7 +871,7 @@ async function checkUsage(email) {
     }
 
     // Update usage
-    await fetch(`${SUPABASE_URL}Email%20Usage?email=eq.${email}`, {
+    fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage?email=eq.${email}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -885,7 +885,7 @@ async function checkUsage(email) {
 
   } else {
     // New user → insert
-    await fetch(`${SUPABASE_URL}Email%20Usage`, {
+    fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
