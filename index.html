@@ -4,10 +4,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AI Job Application Suite</title>
+  <title>AI Job Application Suite</title>
+
+  <!-- ✅ ADD IT HERE -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <link href="https://fonts.googleapis.com/..." rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
-  :root {
     --bg: #0e0e0f;
     --surface: #161618;
     --surface2: #1e1e21;
@@ -845,32 +849,33 @@ function downloadPDF(elementId, filename) {
     return;
   }
 
-  const printArea = document.createElement('div');
-  printArea.innerHTML = source.innerHTML;
-  printArea.style.background = '#ffffff';
-  printArea.style.color = '#000000';
-  printArea.style.padding = '40px';
-  printArea.style.fontFamily = 'Arial, sans-serif';
-  printArea.style.fontSize = '11pt';
-  printArea.style.lineHeight = '1.45';
-  printArea.style.whiteSpace = 'pre-wrap';
-  printArea.style.width = '7.5in';
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'pt', 'letter');
 
-  document.body.appendChild(printArea);
+const text = source.innerText || source.textContent;
 
-  const opt = {
-    margin: 0.5,
-    filename: filename,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, backgroundColor: '#ffffff' },
-    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-  };
-
-  html2pdf().set(opt).from(printArea).save().then(() => {
-    document.body.removeChild(printArea);
-  });
+if (!text || text.trim() === "") {
+  alert("Resume content is empty.");
+  return;
 }
 
-</script>
+const lines = doc.splitTextToSize(text, 500);
+
+  let y = 50;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+
+  lines.forEach(line => {
+    if (y > 750) {
+      doc.addPage();
+      y = 50;
+    }
+    doc.text(line, 50, y);
+    y += 16;
+  });
+
+  doc.save(filename);
+}
+ </script>
 </body>
 </html>
