@@ -642,8 +642,6 @@ function checkLimit(prefix) {
     errorEl.classList.remove('visible');
     errorEl.innerHTML = '';
 
-    if (!checkLimit(prefix)) return;
-
     let prompt = '';
     if (prefix === 'cl') {
       const name = getVal('cl-name'), job = getVal('cl-job'), company = getVal('cl-company'), desc = getVal('cl-desc'), skills = getVal('cl-skills');
@@ -652,6 +650,9 @@ function checkLimit(prefix) {
         errorEl.classList.add('visible');
         return;
       }
+
+      if (!checkLimit(prefix)) return;
+      
       prompt = `Write a ${tones.cl}, ATS-optimized, recruiter-focused cover letter for ${name} applying for the ${job} role at ${company}.
 
 IMPORTANT INSTRUCTIONS:
@@ -708,6 +709,9 @@ const exp = getVal('rv-exp');
         errorEl.classList.add('visible');
         return;
       }
+      
+      if (!checkLimit(prefix)) return;
+      
       prompt = `Create a ${tones.rv}, ATS-optimized, recruiter-focused resume for ${name} targeting a ${job} role.
       - Do NOT use placeholders or vague titles like "In Development"
 - Create realistic, professional job titles based on the candidate’s skills (e.g., IT Support Specialist, Help Desk Technician, Desktop Support Technician)
