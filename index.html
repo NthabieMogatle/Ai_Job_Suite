@@ -1147,24 +1147,9 @@ lines.slice(2).forEach(line => {
 });
 
   doc.save(filename);
+  
 }
-
-  let selectedTemplate = "modern";
-
-function setTemplate(template) {
-  selectedTemplate = template;
-
-  document.querySelectorAll('.template-card').forEach(card => {
-    card.classList.remove('active');
-  });
-
-  const activeCard = document.getElementById(`tpl-${template}`);
-  if (activeCard) activeCard.classList.add('active');
-}
-
-function handleLockedTemplate() {
-  window.location.href = "https://eleveemporium.gumroad.com/l/pllrsk";
-}
+  
  </script>
 </body>
 </html>
