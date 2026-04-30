@@ -531,10 +531,10 @@
       <div class="form-group">
         <label>Style</label>
         <div class="tone-chips">
-          <button class="chip active" onclick="selectTone(this,'rv','clean and professional')">Clean</button>
-          <button class="chip" onclick="selectTone(this,'rv','modern and bold')">Modern</button>
-          <button class="chip" onclick="selectTone(this,'rv','concise and minimal')">Minimal</button>
-          <button class="chip" onclick="selectTone(this,'rv','detailed and comprehensive')">Detailed</button>
+         <button class="chip active" onclick="selectTone(this,'rv','clean and professional'); setTemplate('clean')">Clean</button>
+         <button class="chip" onclick="selectTone(this,'rv','modern and bold'); setTemplate('modern')">Modern</button>
+         <button class="chip" onclick="selectTone(this,'rv','concise and minimal'); setTemplate('minimal')">Minimal</button>
+         <button class="chip" onclick="selectTone(this,'rv','detailed and comprehensive'); setTemplate('detailed')">Detailed</button>
         </div>
       </div>
     </div>
@@ -561,6 +561,12 @@
 <script src="https://gumroad.com/js/gumroad.js"></script>
 <script>
   const tones = { cl: 'professional', rv: 'clean and professional' };
+
+let selectedTemplate = "clean";
+
+function setTemplate(template) {
+  selectedTemplate = template;
+}
 
   // Soft paywall settings: 2 free generations, then send users to Gumroad.
   const FREE_GENERATION_LIMIT = 2;
