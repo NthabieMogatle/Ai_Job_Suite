@@ -712,8 +712,8 @@ const exp = getVal('rv-exp');
         return;
       }
       
-      const email = getAccessEmail(prefix);
-const allowed = await checkUsage(email);
+  const accessEmail = getAccessEmail(prefix);
+const allowed = await checkUsage(accessEmail);
 if (!allowed) return;
       
       prompt = `Create a ${tones.rv}, ATS-optimized, recruiter-focused resume for ${name} targeting a ${job} role.
