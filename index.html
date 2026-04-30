@@ -651,7 +651,9 @@ function checkLimit(prefix) {
         return;
       }
 
-      if (!checkLimit(prefix)) return;
+      const email = getAccessEmail(prefix);
+const allowed = await checkUsage(email);
+if (!allowed) return;
       
       prompt = `Write a ${tones.cl}, ATS-optimized, recruiter-focused cover letter for ${name} applying for the ${job} role at ${company}.
 
@@ -710,7 +712,9 @@ const exp = getVal('rv-exp');
         return;
       }
       
-      if (!checkLimit(prefix)) return;
+      const email = getAccessEmail(prefix);
+const allowed = await checkUsage(email);
+if (!allowed) return;
       
       prompt = `Create a ${tones.rv}, ATS-optimized, recruiter-focused resume for ${name} targeting a ${job} role.
       - Do NOT use placeholders or vague titles like "In Development"
