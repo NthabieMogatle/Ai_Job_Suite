@@ -624,8 +624,8 @@ function setTemplate(template) {
   setTemplate('modern');
 });
 
-  // Soft paywall settings: 100 free generations, then send users to Gumroad.
-  const FREE_GENERATION_LIMIT = 100;
+  // Soft paywall settings: 2 free generations, then send users to Gumroad.
+  const FREE_GENERATION_LIMIT = 2;
   const PAYWALL_URL = 'https://eleveemporium.gumroad.com/l/pllrsk';
   let userEmail = localStorage.getItem('aiJobSuiteUserEmail') || '';
 let usageData = JSON.parse(localStorage.getItem('aiJobSuiteUsageData') || '{}');
