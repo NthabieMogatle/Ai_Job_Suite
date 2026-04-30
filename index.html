@@ -592,15 +592,20 @@
       <p>Simple and compact</p>
     </div>
 
-    <div class="template-card locked" onclick="handleLockedTemplate()">
+    <div class="template-card locked" onclick="handleLockedTemplate('detailed')">
       <h3>Premium Pro</h3>
       <p>Advanced design (Unlock)</p>
     </div>
 
-    <div class="template-card locked" onclick="handleLockedTemplate()">
+   <div class="template-card locked" onclick="handleLockedTemplate('executive')">
       <h3>Executive</h3>
       <p>High-end corporate layout</p>
     </div>
+    <div style="margin-top:20px;">
+  <label>Have a premium code?</label>
+  <input id="unlock-code" type="text" placeholder="Enter your code" style="width:100%;padding:10px;margin-top:5px;">
+  <button class="btn-action" onclick="unlockPremium()" style="margin-top:10px;">Unlock Templates</button>
+</div>
 
   </div>
 </div>
@@ -1149,9 +1154,37 @@ lines.slice(2).forEach(line => {
   doc.save(filename);
   
 }
-  function handleLockedTemplate() {
-  window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank");
+  let premiumUnlocked = localStorage.getItem("premiumUnlocked") === "true";
+  if (premiumUnlocked) {
+  document.querySelectorAll(".template-card.locked").forEach(card => {
+    card.classList.remove("locked");
+  });
 }
+
+function unlockPremium() {
+  const code = document.getElementById("unlock-code").value.trim();
+
+  if (code === "AIJOBPRO") {
+    premiumUnlocked = true;
+    localStorage.setItem("premiumUnlocked", "true");
+
+    alert("✅ Premium templates unlocked!");
+
+    document.querySelectorAll(".template-card.locked").forEach(card => {
+      card.classList.remove("locked");
+    });
+  } else {
+    alert("❌ Invalid code. Check your Gumroad purchase.");
+  }
+}
+
+function handleLockedTemplate() {
+ function handleLockedTemplate(template = "detailed") {
+  if (premiumUnlocked) {
+    setTemplate(template);
+  } else {
+    window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank");
+  }
   
  </script>
 </body>
