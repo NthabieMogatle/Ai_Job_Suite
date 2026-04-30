@@ -874,7 +874,7 @@ async function checkUsage(email) {
     const usage = data[0].usage_count;
 
     if (usage >= 2) {
-      alert("Free limit reached. Please upgrade 🔒");
+      alert("You’ve used your 2 free generations. Please unlock unlimited access to continue.");
       return false;
     }
 
