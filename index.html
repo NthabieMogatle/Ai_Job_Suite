@@ -927,7 +927,6 @@ async function downloadPDF(elementId, filename) {
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p", "pt", "letter");
-  alert("Selected template: " + selectedTemplate);
 
   const text = source.innerText || source.textContent;
   const lines = text.split("\n").filter(line => line.trim() !== "");
