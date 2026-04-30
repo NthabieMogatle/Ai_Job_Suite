@@ -931,110 +931,138 @@ async function downloadPDF(elementId, filename) {
   const text = source.innerText || source.textContent;
   const lines = text.split("\n").filter(line => line.trim() !== "");
 
-  let y = 60;
-  const left = 54;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const usableWidth = pageWidth - 108;
+ let y = 60;
+let left = selectedTemplate === "modern" ? 70 : 54;
+let pageWidth = doc.internal.pageSize.getWidth();
+let usableWidth = pageWidth - left * 2;
+
+const addPageIfNeeded = () => {
+  if (y > 735) {
+    doc.addPage();
+    y = 60;
+  }
+};
+
+if (selectedTemplate === "modern") {
+  doc.setFillColor(30, 30, 30);
+  doc.rect(0, 0, pageWidth, 100, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.text(lines[0].toUpperCase(), left, 45);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(lines[1] || "", left, 68);
+  y = 130;
+} else if (selectedTemplate === "minimal") {
+  doc.setTextColor(20, 20, 20);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text(lines[0].toUpperCase(), left, y);
+  y += 18;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text(lines[1] || "", left, y);
+  y += 34;
+} else if (selectedTemplate === "detailed") {
+  doc.setDrawColor(201, 168, 76);
+  doc.setLineWidth(4);
+  doc.line(left, 42, left, 105);
 
   doc.setTextColor(20, 20, 20);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.text(lines[0].toUpperCase(), left + 18, 60);
+
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(lines[1] || "", left + 18, 84);
+  y = 130;
+} else {
+  doc.setTextColor(20, 20, 20);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.text(lines[0].toUpperCase(), left, y);
+  y += 22;
 
-  lines.forEach((line, index) => {
-    const cleanLine = line.trim();
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(lines[1] || "", left, y);
+  y += 38;
+}
 
-    if (y > 735) {
-      doc.addPage();
-      y = 60;
-    }
+const headings = [
+  "PROFESSIONAL SUMMARY",
+  "TECHNICAL SKILLS",
+  "TECHNICAL EXPERIENCE",
+  "WORK EXPERIENCE",
+  "PROJECTS",
+  "EDUCATION",
+  "CERTIFICATIONS",
+  "CERTIFICATIONS & TRAINING"
+];
 
-    // Name at top
-    if (index === 0) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text(cleanLine.toUpperCase(), left, y);
-      y += 18;
-      return;
-    }
+lines.slice(2).forEach(line => {
+  const cleanLine = line.trim();
+  if (!cleanLine) return;
 
-    // Contact line
-    if (index === 1) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text(cleanLine, left, y);
-      y += 22;
+  addPageIfNeeded();
 
-      doc.setDrawColor(190, 190, 190);
-      doc.line(left, y, pageWidth - left, y);
-      y += 24;
-      return;
-    }
+  if (headings.includes(cleanLine.toUpperCase())) {
+    y += selectedTemplate === "minimal" ? 6 : 12;
 
-    // Section headings
-    const headings = [
-      "PROFESSIONAL SUMMARY",
-      "TECHNICAL SKILLS",
-      "TECHNICAL EXPERIENCE",
-      "WORK EXPERIENCE",
-      "PROJECTS",
-      "EDUCATION",
-      "CERTIFICATIONS"
-    ];
-
-    if (headings.includes(cleanLine.toUpperCase())) {
-      y += 8;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
+    if (selectedTemplate === "modern") {
+      doc.setFillColor(201, 168, 76);
+      doc.rect(left, y - 14, usableWidth, 24, "F");
+      doc.setTextColor(255, 255, 255);
+    } else if (selectedTemplate === "detailed") {
+      doc.setTextColor(201, 168, 76);
+      doc.setDrawColor(201, 168, 76);
+      doc.setLineWidth(1.2);
+      doc.line(left, y + 7, pageWidth - left, y + 7);
+    } else {
       doc.setTextColor(30, 30, 30);
-      doc.text(cleanLine.toUpperCase(), left, y);
-      y += 10;
-
-      doc.setDrawColor(210, 210, 210);
-      doc.line(left, y, pageWidth - left, y);
-      y += 16;
-      return;
+      doc.setDrawColor(220, 220, 220);
+      doc.setLineWidth(0.7);
+      doc.line(left, y + 7, pageWidth - left, y + 7);
     }
 
-    // Bullet lines
-    if (cleanLine.startsWith("-") || cleanLine.startsWith("•")) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(40, 40, 40);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(selectedTemplate === "minimal" ? 11 : 13);
+    doc.text(cleanLine.toUpperCase(), left, y);
+    y += selectedTemplate === "modern" ? 32 : selectedTemplate === "minimal" ? 22 : 28;
+    return;
+  }
 
-      const bulletText = cleanLine.replace(/^[-•]\s*/, "");
-      const wrapped = doc.splitTextToSize("• " + bulletText, usableWidth);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(selectedTemplate === "minimal" ? 9 : 10);
+  doc.setTextColor(45, 45, 45);
 
-      wrapped.forEach(wrappedLine => {
-        if (y > 735) {
-          doc.addPage();
-          y = 60;
-        }
-        doc.text(wrappedLine, left + 12, y);
-        y += 14;
-      });
+  if (cleanLine.startsWith("-") || cleanLine.startsWith("•")) {
+    const bulletText = cleanLine.replace(/^[-•]\s*/, "");
+    const wrapped = doc.splitTextToSize(bulletText, usableWidth - 14);
 
-      return;
-    }
-
-    // Normal text
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(40, 40, 40);
-
-    const wrapped = doc.splitTextToSize(cleanLine, usableWidth);
-
-    wrapped.forEach(wrappedLine => {
-      if (y > 735) {
-        doc.addPage();
-        y = 60;
-      }
-      doc.text(wrappedLine, left, y);
-      y += 14;
+    wrapped.forEach((wrappedLine, i) => {
+      addPageIfNeeded();
+      doc.text(i === 0 ? "• " + wrappedLine : "   " + wrappedLine, left, y);
+      y += selectedTemplate === "minimal" ? 12 : 14;
     });
 
-    y += 4;
+    y += selectedTemplate === "detailed" ? 4 : 2;
+    return;
+  }
+
+  const wrapped = doc.splitTextToSize(cleanLine, usableWidth);
+  wrapped.forEach(wrappedLine => {
+    addPageIfNeeded();
+    doc.text(wrappedLine, left, y);
+    y += selectedTemplate === "detailed" ? 17 : selectedTemplate === "minimal" ? 12 : 14;
   });
 
-  doc.save(filename);
+  y += selectedTemplate === "detailed" ? 6 : selectedTemplate === "minimal" ? 2 : 4;
+});
 }
   
  </script>
