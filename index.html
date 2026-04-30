@@ -912,42 +912,125 @@ async function checkUsage(email) {
 }
 /* 👇 ADD THIS RIGHT HERE 👇 */
 async function downloadPDF(elementId, filename) {
-  const email = document.getElementById("rv-email").value.trim();
-  
   const source = document.getElementById(elementId);
 
   if (!source || !source.innerText.trim()) {
-    alert('Please generate your resume first.');
+    alert("Please generate your resume first.");
     return;
   }
- 
+
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF('p', 'pt', 'letter');
+  const doc = new jsPDF("p", "pt", "letter");
 
-const text = source.innerText || source.textContent;
+  const text = source.innerText || source.textContent;
+  const lines = text.split("\n").filter(line => line.trim() !== "");
 
-if (!text || text.trim() === "") {
-  alert("Resume content is empty.");
-  return;
-}
+  let y = 60;
+  const left = 54;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const usableWidth = pageWidth - 108;
 
-const lines = doc.splitTextToSize(text, 500);
+  doc.setTextColor(20, 20, 20);
+  doc.setFont("helvetica", "normal");
 
-  let y = 50;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
+  lines.forEach((line, index) => {
+    const cleanLine = line.trim();
 
-  lines.forEach(line => {
-    if (y > 750) {
+    if (y > 735) {
       doc.addPage();
-      y = 50;
+      y = 60;
     }
-    doc.text(line, 50, y);
-    y += 16;
+
+    // Name at top
+    if (index === 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text(cleanLine.toUpperCase(), left, y);
+      y += 18;
+      return;
+    }
+
+    // Contact line
+    if (index === 1) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(cleanLine, left, y);
+      y += 22;
+
+      doc.setDrawColor(190, 190, 190);
+      doc.line(left, y, pageWidth - left, y);
+      y += 24;
+      return;
+    }
+
+    // Section headings
+    const headings = [
+      "PROFESSIONAL SUMMARY",
+      "TECHNICAL SKILLS",
+      "TECHNICAL EXPERIENCE",
+      "WORK EXPERIENCE",
+      "PROJECTS",
+      "EDUCATION",
+      "CERTIFICATIONS"
+    ];
+
+    if (headings.includes(cleanLine.toUpperCase())) {
+      y += 8;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(30, 30, 30);
+      doc.text(cleanLine.toUpperCase(), left, y);
+      y += 10;
+
+      doc.setDrawColor(210, 210, 210);
+      doc.line(left, y, pageWidth - left, y);
+      y += 16;
+      return;
+    }
+
+    // Bullet lines
+    if (cleanLine.startsWith("-") || cleanLine.startsWith("•")) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(40, 40, 40);
+
+      const bulletText = cleanLine.replace(/^[-•]\s*/, "");
+      const wrapped = doc.splitTextToSize("• " + bulletText, usableWidth);
+
+      wrapped.forEach(wrappedLine => {
+        if (y > 735) {
+          doc.addPage();
+          y = 60;
+        }
+        doc.text(wrappedLine, left + 12, y);
+        y += 14;
+      });
+
+      return;
+    }
+
+    // Normal text
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(40, 40, 40);
+
+    const wrapped = doc.splitTextToSize(cleanLine, usableWidth);
+
+    wrapped.forEach(wrappedLine => {
+      if (y > 735) {
+        doc.addPage();
+        y = 60;
+      }
+      doc.text(wrappedLine, left, y);
+      y += 14;
+    });
+
+    y += 4;
   });
 
   doc.save(filename);
 }
+  
  </script>
 </body>
 </html>
