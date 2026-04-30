@@ -573,11 +573,37 @@
       <div class="form-group">
         <label>Style</label>
         <div class="tone-chips">
-         <button class="chip active" onclick="selectTone(this,'rv','clean and professional'); setTemplate('clean')">Clean</button>
-         <button class="chip" onclick="selectTone(this,'rv','modern and bold'); setTemplate('modern')">Modern</button>
-         <button class="chip" onclick="selectTone(this,'rv','concise and minimal'); setTemplate('minimal')">Minimal</button>
-         <button class="chip" onclick="selectTone(this,'rv','detailed and comprehensive'); setTemplate('detailed')">Detailed</button>
+         <button class="chip active" onclick="selectTone(this,'rv','clean and professional')">Clean</button>
+         <button class="chip" onclick="selectTone(this,'rv','modern and bold')">Modern</button>
+         <button class="chip" onclick="selectTone(this,'rv','concise and minimal')">Minimal</button>
+         <button class="chip" onclick="selectTone(this,'rv','detailed and comprehensive')">Detailed</button>
         </div>
+        <div style="margin-top:15px;">
+  <label>Choose Resume Template</label>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+
+    <div class="template-card active" onclick="setTemplate('modern')" id="tpl-modern">
+      <h3>Modern</h3>
+      <p>Clean with bold sections</p>
+    </div>
+
+    <div class="template-card" onclick="setTemplate('minimal')" id="tpl-minimal">
+      <h3>Minimal</h3>
+      <p>Simple and compact</p>
+    </div>
+
+    <div class="template-card locked" onclick="handleLockedTemplate()">
+      <h3>Premium Pro</h3>
+      <p>Advanced design (Unlock)</p>
+    </div>
+
+    <div class="template-card locked" onclick="handleLockedTemplate()">
+      <h3>Executive</h3>
+      <p>High-end corporate layout</p>
+    </div>
+
+  </div>
+</div>
       </div>
     </div>
     <button class="btn-generate" id="rv-btn" onclick="generate('rv')">Generate Resume</button>
