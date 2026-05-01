@@ -592,12 +592,12 @@
       <p>Simple and compact</p>
     </div>
 
-    <div class="template-card" onclick="setTemplate('premium')" id="tpl-premium">
+    <div class="template-card locked" onclick="handleLockedTemplate('detailed')">
       <h3>Premium Pro</h3>
       <p>Advanced design (Unlock)</p>
     </div>
 
-  <div class="template-card" onclick="setTemplate('executive')" id="tpl-executive">
+  <div class="template-card locked" onclick="handleLockedTemplate('executive')">
       <h3>Executive</h3>
       <p>High-end corporate layout</p>
     </div>
@@ -1021,7 +1021,6 @@ async function downloadPDF(elementId, filename) {
  let y = 60;
 let left = selectedTemplate === "modern" ? 70 : 54;
 let pageWidth = doc.internal.pageSize.getWidth();
-  let pageHeight = doc.internal.pageSize.getHeight();
 let usableWidth = pageWidth - left * 2;
 
 const addPageIfNeeded = () => {
@@ -1030,73 +1029,8 @@ const addPageIfNeeded = () => {
     y = 60;
   }
 };
-    
-     if (selectedTemplate === "premium") {
-  // Left sidebar background
-  doc.setFillColor(25, 25, 35); // smoother dark
-doc.rect(0, 0, 70, pageHeight, "F"); // thinner sidebar
 
-// Accent line
-doc.setFillColor(0, 120, 255);
-doc.rect(70, 0, 5, pageHeight, "F");
-
-  // Name (right side)
-  doc.setTextColor(0, 0, 0);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text(lines[0].toUpperCase(), 130, 40);
-
-  // Contact
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(lines[1] || "", 130, 60);
-
-  // Sidebar text
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
-
-  let sideY = 100;
-  lines.slice(2, 8).forEach(line => {
-    doc.text(line, 10, sideY);
-    sideY += 14;
-  });
-
-  y = 120;
-
-} else if (selectedTemplate === "executive") {
-
-  // Top header line
-  doc.setDrawColor(180, 180, 180);
-  doc.setLineWidth(1);
-  doc.line(20, 40, 190, 40);
-
-  // Name
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(26);
-  doc.text(lines[0], 20, 30);
-
-  // Contact
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "normal");
-  doc.text(lines[1] || "", 20, 38);
-
-  let y = 60;
-  else if (selectedTemplate === "modern") {
-
-  // Section title helper
-  function sectionTitle(text, yPos) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.text(text, 20, yPos);
-
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.5);
-    doc.line(20, yPos + 2, 190, yPos + 2);
-  }
-
-}
-
-  if (selectedTemplate === "modern") {
+if (selectedTemplate === "modern") {
   doc.setFillColor(30, 30, 30);
   doc.rect(0, 0, pageWidth, 100, "F");
   doc.setTextColor(255, 255, 255);
@@ -1250,18 +1184,8 @@ function handleLockedTemplate(template = "detailed") {
   } else {
     window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank");
   }
-function switchTab(tab) {
-  const coverSection = document.getElementById("coverLetterSection");
-  const resumeSection = document.getElementById("resumeSection");
-
-  if (tab === "resume") {
-    coverSection.style.display = "none";
-    resumeSection.style.display = "block";
-  } else {
-    resumeSection.style.display = "none";
-    coverSection.style.display = "block";
-  }
-  
+}
+ 
  </script>
 </body>
 </html>
