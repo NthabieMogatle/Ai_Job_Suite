@@ -1250,8 +1250,18 @@ function handleLockedTemplate(template = "detailed") {
   } else {
     window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank");
   }
-}
- 
+function switchTab(tab) {
+  const coverSection = document.getElementById("coverLetterSection");
+  const resumeSection = document.getElementById("resumeSection");
+
+  if (tab === "resume") {
+    coverSection.style.display = "none";
+    resumeSection.style.display = "block";
+  } else {
+    resumeSection.style.display = "none";
+    coverSection.style.display = "block";
+  }
+  
  </script>
 </body>
 </html>
