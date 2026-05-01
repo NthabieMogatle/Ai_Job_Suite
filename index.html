@@ -592,12 +592,12 @@
       <p>Simple and compact</p>
     </div>
 
-    <div class="template-card locked" onclick="handleLockedTemplate('premium')">
+    <div class="template-card locked" onclick="setTemplate('premium')"
       <h3>Premium Pro</h3>
       <p>Advanced design (Unlock)</p>
     </div>
 
-  <div class="template-card locked" onclick="handleLockedTemplate('executive')">
+  <div class="template-card locked"onclick="setTemplate('executive')" 
       <h3>Executive</h3>
       <p>High-end corporate layout</p>
     </div>
@@ -1021,6 +1021,7 @@ async function downloadPDF(elementId, filename) {
  let y = 60;
 let left = selectedTemplate === "modern" ? 70 : 54;
 let pageWidth = doc.internal.pageSize.getWidth();
+  let pageHeight = doc.internal.pageSize.getHeight();
 let usableWidth = pageWidth - left * 2;
 
 const addPageIfNeeded = () => {
@@ -1058,7 +1059,9 @@ const addPageIfNeeded = () => {
 
   y = 120;
        
-  else if (selectedTemplate === "executive") {
+  y = 120;
+
+} else if (selectedTemplate === "executive") {
        
   doc.setTextColor(20, 20, 20);
   doc.setFont("helvetica", "bold");
