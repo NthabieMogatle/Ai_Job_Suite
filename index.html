@@ -592,7 +592,7 @@
       <p>Simple and compact</p>
     </div>
 
-    <div class="template-card locked" onclick="handleLockedTemplate('detailed')">
+    <div class="template-card locked" onclick="handleLockedTemplate('premium')">
       <h3>Premium Pro</h3>
       <p>Advanced design (Unlock)</p>
     </div>
@@ -1057,8 +1057,21 @@ const addPageIfNeeded = () => {
   });
 
   y = 120;
+       
+  else if (selectedTemplate === "executive") {
+       
+  doc.setTextColor(20, 20, 20);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(24);
+  doc.text(lines[0].toUpperCase(), left, 50);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.text(lines[1] || "", left, 70);
+
+  y = 110;
+}     
  
-}
 else if (selectedTemplate === "modern") {
   doc.setFillColor(30, 30, 30);
   doc.rect(0, 0, pageWidth, 100, "F");
