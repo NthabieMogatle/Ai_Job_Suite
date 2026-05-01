@@ -1029,8 +1029,37 @@ const addPageIfNeeded = () => {
     y = 60;
   }
 };
+    
+     if (selectedTemplate === "premium") {
+  // Left sidebar background
+  doc.setFillColor(30, 30, 30);
+  doc.rect(0, 0, 120, pageHeight, "F");
 
-if (selectedTemplate === "modern") {
+  // Name (right side)
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.text(lines[0].toUpperCase(), 130, 40);
+
+  // Contact
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(lines[1] || "", 130, 60);
+
+  // Sidebar text
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(10);
+
+  let sideY = 100;
+  lines.slice(2, 8).forEach(line => {
+    doc.text(line, 10, sideY);
+    sideY += 14;
+  });
+
+  y = 120;
+ 
+}
+else if (selectedTemplate === "modern") {
   doc.setFillColor(30, 30, 30);
   doc.rect(0, 0, pageWidth, 100, "F");
   doc.setTextColor(255, 255, 255);
