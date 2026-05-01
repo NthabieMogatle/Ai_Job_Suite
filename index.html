@@ -1064,8 +1064,6 @@ doc.rect(70, 0, 5, pageHeight, "F");
   y = 120;
 
 } else if (selectedTemplate === "executive") {
-       
-  else if (selectedTemplate === "executive") {
 
   // Top header line
   doc.setDrawColor(180, 180, 180);
@@ -1083,6 +1081,7 @@ doc.rect(70, 0, 5, pageHeight, "F");
   doc.text(lines[1] || "", 20, 38);
 
   let y = 60;
+ } else if (selectedTemplate === "modern") {
 
   // Section title helper
   function sectionTitle(text, yPos) {
