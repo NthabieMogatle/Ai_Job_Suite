@@ -1131,37 +1131,54 @@ lines.slice(2).forEach(line => {
     return;
   }
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(selectedTemplate === "minimal" ? 9 : 10);
-  doc.setTextColor(45, 45, 45);
+  else if (selectedTemplate === "premium") {
+  // Premium Pro: creative sidebar resume
+doc.setFillColor(28, 28, 32);
+doc.rect(0, 0, 62, pageHeight, "F");
 
-  if (cleanLine.startsWith("-") || cleanLine.startsWith("•")) {
-    const bulletText = cleanLine.replace(/^[-•]\s*/, "");
-    const wrapped = doc.splitTextToSize(bulletText, usableWidth - 14);
+doc.setFillColor(201, 168, 76);
+doc.rect(0, 0, pageWidth, 18, "F");
 
-    wrapped.forEach((wrappedLine, i) => {
-      addPageIfNeeded();
-      doc.text(i === 0 ? "• " + wrappedLine : "   " + wrappedLine, left, y);
-      y += selectedTemplate === "minimal" ? 12 : 14;
-    });
+// Name
+doc.setTextColor(20, 20, 20);
+doc.setFont("helvetica", "bold");
+doc.setFontSize(24);
+doc.text(lines[0].toUpperCase(), 72, 35);
 
-    y += selectedTemplate === "detailed" ? 4 : 2;
-    return;
-  }
+// Contact
+doc.setFont("helvetica", "normal");
+doc.setFontSize(10);
+doc.setTextColor(80, 80, 80);
+doc.text(lines[1] || "", 72, 43);
 
-  const wrapped = doc.splitTextToSize(cleanLine, usableWidth);
-  wrapped.forEach(wrappedLine => {
-    addPageIfNeeded();
-    doc.text(wrappedLine, left, y);
-    y += selectedTemplate === "detailed" ? 17 : selectedTemplate === "minimal" ? 12 : 14;
+// Sidebar title
+doc.setTextColor(255, 255, 255);
+doc.setFont("helvetica", "bold");
+doc.setFontSize(13);
+doc.text("PROFILE", 12, 38);
+
+// Sidebar content
+doc.setFont("helvetica", "normal");
+doc.setFontSize(8);
+doc.setTextColor(220, 220, 220);
+
+let sideY = 50;
+lines.slice(2, 8).forEach(line => {
+  const wrapped = doc.splitTextToSize(line, 42);
+  wrapped.forEach(w => {
+    doc.text(w, 10, sideY);
+    sideY += 5;
   });
-
-  y += selectedTemplate === "detailed" ? 6 : selectedTemplate === "minimal" ? 2 : 4;
 });
 
-  doc.save(filename);
-  
+// Accent line
+doc.setDrawColor(201, 168, 76);
+doc.setLineWidth(1.5);
+doc.line(72, 50, 190, 50);
+
+y = 65; 
 }
+  
   let premiumUnlocked = localStorage.getItem("premiumUnlocked") === "true";
   if (premiumUnlocked) {
   document.querySelectorAll(".template-card.locked").forEach(card => {
