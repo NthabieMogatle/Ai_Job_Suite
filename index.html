@@ -1038,6 +1038,25 @@ const addPageIfNeeded = () => {
   }
 };
 
+  if (selectedTemplate === "premium") {
+  doc.setFillColor(28, 28, 32);
+  doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+  doc.setFillColor(201, 168, 76);
+  doc.rect(0, 0, 60, pageHeight, "F");
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.text(lines[0].toUpperCase(), 80, 50);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(lines[1] || "", 80, 70);
+
+  y = 110;
+
+} else
 if (selectedTemplate === "modern") {
   doc.setFillColor(30, 30, 30);
   doc.rect(0, 0, pageWidth, 100, "F");
