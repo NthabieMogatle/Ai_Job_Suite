@@ -600,7 +600,7 @@ Create ATS-optimized resumes & cover letters in seconds — and finally start ge
       <p>Simple and compact</p>
     </div>
 
-    <div class="template-card locked" onclick="handleLockedTemplate('detailed')">
+    <div class="template-card locked" onclick="handleLockedTemplate('executive')" id="tpl-executive">
       <h3>Premium Pro</h3>
       <p>Advanced design (Unlock)</p>
     </div>
@@ -1204,7 +1204,7 @@ function unlockPremium() {
   }
 }
 
-function handleLockedTemplate(template = "detailed") {
+function handleLockedTemplate(template) {
   if (premiumUnlocked) {
     setTemplate(template);
   } else {
