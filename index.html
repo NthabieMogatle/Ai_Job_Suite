@@ -1029,17 +1029,44 @@ Output only the final cover letter text.`;
     if (!allowed) return;
 
     prompt = `Create a ${tones.rv}, ATS-optimized, recruiter-focused resume for ${name} targeting a ${job} role.
-IMPORTANT INSTRUCTIONS:
-- Make the resume concise, professional, and results-oriented
-- Use strong action verbs: Resolved, Supported, Optimized, Configured, Improved, Diagnosed, Reduced
+
+CRITICAL RULES — MUST FOLLOW:
+- NEVER output the words "ATS KEYWORDS" anywhere in the resume — not as a section, label, or heading
+- NEVER repeat sections — each section (Summary, Skills, Experience, Education) appears ONCE only
+- NEVER repeat the candidate's name more than once (header only)
+- NEVER output raw keyword lists labeled as "ATS KEYWORDS" or similar
+- Do NOT include a separate keywords section of any kind
+- Output in clean plain text with NO markdown symbols (no **, ##, --, etc.)
 - Do NOT include placeholders or fake companies, dates, or degrees
-- Output in clean plain text format with no markdown symbols
-- Use section headers: PROFESSIONAL SUMMARY, TECHNICAL SKILLS, TECHNICAL EXPERIENCE, EDUCATION
-ATS OPTIMIZATION: Naturally include relevant keywords from: ${desc}
+- Keep the entire resume under 600 words
+
+STRUCTURE (use exactly these section headers, each appearing ONCE):
+1. [Candidate name on first line]
+2. [Job title on second line]  
+3. [Phone | Email | Location on third line]
+4. PROFESSIONAL SUMMARY
+5. TECHNICAL SKILLS
+6. TECHNICAL EXPERIENCE
+7. EDUCATION
+
+CONTENT RULES:
+- Use strong action verbs: Resolved, Supported, Optimized, Configured, Improved, Diagnosed, Reduced
+- Make it sound like a strong candidate with relevant experience
+- Each bullet point starts with a strong action verb
+- Show impact and outcomes in bullet points
+- Naturally weave keywords from this job description into the content (do NOT list them separately): ${desc || 'not provided'}
+
 CANDIDATE DETAILS:
-- Name: ${name}, Target Role: ${job}, Email: ${email}, Phone: ${phone}, Location: ${location}
-- Education: ${edu}, Skills: ${skills}, Experience: ${exp}
-Output only the final resume text.`;
+- Name: ${name}
+- Target Role: ${job}
+- Email: ${email || 'not provided'}
+- Phone: ${phone || 'not provided'}
+- Location: ${location || 'not provided'}
+- Education: ${edu || 'not provided'}
+- Skills: ${skills}
+- Experience/Projects: ${exp || 'not provided'}
+
+Output ONLY the final resume text. No labels, no explanations, no keyword sections.`;
   }
 
   const btn = document.getElementById(prefix + '-btn');
@@ -1054,8 +1081,18 @@ Output only the final resume text.`;
   }
 
   try {
-    const text = await callAPI(prompt);
+    let text = await callAPI(prompt);
     if (!text) throw new Error('No output was returned.');
+
+    // Clean up any ATS keyword sections or repeated content
+    if (prefix === 'rv') {
+      text = text
+        .replace(/ATS KEYWORDS?[:\s]*[\s\S]*?(?=\n[A-Z ]{4,}\n|$)/gi, '')
+        .replace(/KEYWORDS?[:\s]*[\s\S]*?(?=\n[A-Z ]{4,}\n|$)/gi, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    }
+
     document.getElementById(prefix + '-text').textContent = text;
     document.getElementById(prefix + '-output').classList.add('visible');
     increaseUsage();
@@ -1241,532 +1278,486 @@ async function downloadPDF(elementId, filename) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p", "pt", "letter");
   const rawText = source.innerText || source.textContent;
-  const allLines = rawText.split("\n").map(l => l.trim()).filter(l => l !== "");
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  const headings = ["PROFESSIONAL SUMMARY","TECHNICAL SKILLS","TECHNICAL EXPERIENCE","WORK EXPERIENCE","PROJECTS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING","SKILLS","EXPERIENCE","SUMMARY"];
+  // Parse resume into structured sections
+  const rawLines = rawText.split("\n").map(l => l.trim()).filter(l => l !== "");
+  const SECTION_HEADERS = ["PROFESSIONAL SUMMARY","TECHNICAL SKILLS","SKILLS","TECHNICAL EXPERIENCE","WORK EXPERIENCE","EXPERIENCE","PROJECTS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING","SUMMARY"];
+  const isHeading = l => SECTION_HEADERS.includes(l.toUpperCase().replace(/[^A-Z &]/g,'').trim());
+  const isBullet = l => /^[-•▸◆]/.test(l);
 
-  const isHeading = (line) => headings.includes(line.toUpperCase());
-  const isBullet = (line) => line.startsWith("-") || line.startsWith("•");
+  // Extract name (line 0), subtitle (line 1 if not heading/contact), contact
+  const name = rawLines[0] || "Your Name";
+  let subtitleIdx = -1;
+  let contactIdx = -1;
+  for (let i = 1; i < Math.min(5, rawLines.length); i++) {
+    const l = rawLines[i];
+    if (!isHeading(l) && !l.includes("|") && !l.includes("@") && !l.match(/^\+?\d/) && subtitleIdx === -1) subtitleIdx = i;
+    else if (!isHeading(l) && (l.includes("|") || l.includes("@") || l.match(/^\+?\d/)) && contactIdx === -1) contactIdx = i;
+  }
+  const subtitle = subtitleIdx > -1 ? rawLines[subtitleIdx] : "";
+  const contact = contactIdx > -1 ? rawLines[contactIdx] : (subtitleIdx > -1 ? rawLines[2] || "" : rawLines[1] || "");
+  const bodyStartIdx = Math.max(subtitleIdx, contactIdx) + 1 || 2;
+  const bodyLines = rawLines.slice(bodyStartIdx);
 
-  // ─────────────────────────────────────────
+  // Parse body into sections object
+  const sections = {};
+  let currentSection = null;
+  bodyLines.forEach(line => {
+    if (isHeading(line)) { currentSection = line.toUpperCase(); sections[currentSection] = []; }
+    else if (currentSection) sections[currentSection].push(line);
+  });
+
+  const SIDEBAR_SECTIONS = ["TECHNICAL SKILLS","SKILLS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING"];
+  const MAIN_SECTIONS = ["PROFESSIONAL SUMMARY","SUMMARY","TECHNICAL EXPERIENCE","WORK EXPERIENCE","EXPERIENCE","PROJECTS"];
+
+  // ══════════════════════════════════════════
   // TEMPLATE 1: MODERN
-  // Dark full-width header, gold section bars, white body
-  // ─────────────────────────────────────────
+  // Dark header · Gold filled section bars · Clean body
+  // ══════════════════════════════════════════
   if (selectedTemplate === "modern") {
-    const left = 54; const right = pageWidth - 54; const usable = right - left;
-    let y = 0;
+    const L = 50, R = pageWidth - 50, W = R - L;
 
-    // Header background
+    // Dark header
     doc.setFillColor(22, 22, 26);
-    doc.rect(0, 0, pageWidth, 110, "F");
-    // Gold accent bar at bottom of header
+    doc.rect(0, 0, pageWidth, 108, "F");
     doc.setFillColor(201, 168, 76);
-    doc.rect(0, 108, pageWidth, 4, "F");
+    doc.rect(0, 104, pageWidth, 4, "F");
 
-    // Name
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(26);
-    doc.text(allLines[0].toUpperCase(), left, 52);
+    // Name — auto size
+    doc.setTextColor(255,255,255);
+    doc.setFont("helvetica","bold");
+    const nSize = name.length > 24 ? 18 : name.length > 18 ? 21 : 24;
+    doc.setFontSize(nSize);
+    doc.text(name.toUpperCase(), L, 44);
 
-    // Job title line (line 1 = contact info)
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
-    doc.setTextColor(200, 190, 170);
-    doc.text(allLines[1] || "", left, 72);
-
-    // Contact line (line 2)
-    if (allLines[2] && !isHeading(allLines[2])) {
-      doc.text(allLines[2], left, 88);
+    // Subtitle
+    if (subtitle) {
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(9);
+      doc.setTextColor(201,168,76);
+      doc.text(subtitle, L, 62);
     }
-
-    y = 140;
-    const startIdx = (allLines[2] && !isHeading(allLines[2])) ? 3 : 2;
-
-    allLines.slice(startIdx).forEach(line => {
-      if (y > 740) { doc.addPage(); y = 50; }
-      if (isHeading(line)) {
-        y += 8;
-        doc.setFillColor(201, 168, 76);
-        doc.rect(left, y - 13, usable, 22, "F");
-        doc.setTextColor(22, 22, 26);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
-        doc.text(line.toUpperCase(), left + 8, y + 2);
-        y += 30;
-      } else if (isBullet(line)) {
-        const bt = line.replace(/^[-•]\s*/, "");
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9.5);
-        doc.setTextColor(40, 40, 40);
-        const wrapped = doc.splitTextToSize(bt, usable - 16);
-        wrapped.forEach((wl, i) => {
-          if (y > 740) { doc.addPage(); y = 50; }
-          doc.text(i === 0 ? "▸  " + wl : "    " + wl, left + 4, y);
-          y += 13;
-        });
-        y += 2;
-      } else {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9.5);
-        doc.setTextColor(50, 50, 50);
-        const wrapped = doc.splitTextToSize(line, usable);
-        wrapped.forEach(wl => {
-          if (y > 740) { doc.addPage(); y = 50; }
-          doc.text(wl, left, y);
-          y += 13;
-        });
-        y += 3;
-      }
-    });
-
-  // ─────────────────────────────────────────
-  // TEMPLATE 2: MINIMAL
-  // Ultra clean white, serif-style bold name, thin gold rule under name, simple underline headings
-  // ─────────────────────────────────────────
-  } else if (selectedTemplate === "minimal") {
-    const left = 60; const right = pageWidth - 60; const usable = right - left;
-    let y = 70;
-
-    // White background
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, "F");
-
-    // Name — large, spaced
-    doc.setTextColor(20, 20, 20);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(28);
-    doc.text(allLines[0].toUpperCase(), left, y);
-    y += 6;
-
-    // Thin gold line under name
-    doc.setDrawColor(201, 168, 76);
-    doc.setLineWidth(1.5);
-    doc.line(left, y + 4, right, y + 4);
-    y += 18;
 
     // Contact
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
-    doc.text(allLines[1] || "", left, y);
-    y += 10;
-    if (allLines[2] && !isHeading(allLines[2])) {
-      doc.text(allLines[2], left, y);
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(160,155,145);
+    doc.text(contact, L, subtitle ? 78 : 64);
+
+    let y = 128;
+
+    const allSections = [...MAIN_SECTIONS, ...SIDEBAR_SECTIONS];
+    allSections.forEach(sKey => {
+      const content = sections[sKey];
+      if (!content || content.length === 0) return;
+      if (y > 720) { doc.addPage(); y = 40; }
+
+      // Gold filled section bar
       y += 10;
-    }
-    y += 16;
+      doc.setFillColor(201,168,76);
+      doc.rect(L, y-13, W, 20, "F");
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(9);
+      doc.setTextColor(22,22,26);
+      doc.text(sKey, L+8, y+1);
+      y += 18;
 
-    const startIdx = (allLines[2] && !isHeading(allLines[2])) ? 3 : 2;
-
-    allLines.slice(startIdx).forEach(line => {
-      if (y > 745) { doc.addPage(); y = 50; }
-      if (isHeading(line)) {
-        y += 10;
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(20, 20, 20);
-        doc.text(line.toUpperCase(), left, y);
-        // Thin underline
-        doc.setDrawColor(201, 168, 76);
-        doc.setLineWidth(0.8);
-        doc.line(left, y + 4, right, y + 4);
-        y += 20;
-      } else if (isBullet(line)) {
-        const bt = line.replace(/^[-•]\s*/, "");
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.setTextColor(55, 55, 55);
-        const wrapped = doc.splitTextToSize(bt, usable - 14);
-        wrapped.forEach((wl, i) => {
-          if (y > 745) { doc.addPage(); y = 50; }
-          doc.text(i === 0 ? "• " + wl : "  " + wl, left + 4, y);
-          y += 12;
-        });
-        y += 2;
-      } else {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.setTextColor(55, 55, 55);
-        const wrapped = doc.splitTextToSize(line, usable);
-        wrapped.forEach(wl => {
-          if (y > 745) { doc.addPage(); y = 50; }
-          doc.text(wl, left, y);
-          y += 12;
-        });
-        y += 2;
-      }
+      content.forEach(line => {
+        if (y > 730) { doc.addPage(); y = 40; }
+        if (isBullet(line)) {
+          const bt = line.replace(/^[-•▸◆]\s*/,"");
+          doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(45,45,45);
+          const wrapped = doc.splitTextToSize(bt, W-16);
+          wrapped.forEach((wl,i) => {
+            if (y > 730) { doc.addPage(); y = 40; }
+            if (i===0) { doc.setFillColor(201,168,76); doc.rect(L+2, y-5.5, 5, 5, "F"); doc.text(wl, L+12, y); }
+            else doc.text(wl, L+12, y);
+            y += 13;
+          });
+          y += 2;
+        } else {
+          const bold = line.includes("—") || line.includes("|") || (line.length < 60 && !line.includes(",") && content.indexOf(line) === 0);
+          doc.setFont("helvetica", bold ? "bold" : "normal");
+          doc.setFontSize(9); doc.setTextColor(bold ? 20 : 50, bold ? 20 : 50, bold ? 20 : 50);
+          const wrapped = doc.splitTextToSize(line, W);
+          wrapped.forEach(wl => {
+            if (y > 730) { doc.addPage(); y = 40; }
+            doc.text(wl, L, y); y += 13;
+          });
+          y += bold ? 1 : 2;
+        }
+      });
+      y += 4;
     });
 
-  // ─────────────────────────────────────────
-  // TEMPLATE 3: EXECUTIVE
-  // Deep navy sidebar · Gold initials circle · Bold name · Premium section styling
-  // ─────────────────────────────────────────
-  } else if (selectedTemplate === "executive" || selectedTemplate === "premium") {
-    const variant = colorVariants.executive[selectedExecVariant] || colorVariants.executive.navy;
-    const [sr, sg, sb] = variant.sidebar;
-    const [tr, tg, tb] = variant.sidebarText;
-    const [ar, ag, ab] = variant.accent;
+  // ══════════════════════════════════════════
+  // TEMPLATE 2: MINIMAL
+  // Pure white · Large spaced name · Thin gold rule · Clean typography
+  // ══════════════════════════════════════════
+  } else if (selectedTemplate === "minimal") {
+    const L = 56, R = pageWidth-56, W = R-L;
+    let y = 68;
 
-    const sideW = 210;
-    const bodyLeft = sideW + 32;
-    const bodyRight = pageWidth - 30;
-    const bodyUsable = bodyRight - bodyLeft;
-    const sideUsable = sideW - 36;
+    doc.setFillColor(255,255,255);
+    doc.rect(0,0,pageWidth,pageHeight,"F");
+
+    // Large name
+    doc.setTextColor(15,15,15);
+    doc.setFont("helvetica","bold");
+    const nSize = name.length > 24 ? 20 : name.length > 18 ? 23 : 26;
+    doc.setFontSize(nSize);
+    doc.text(name.toUpperCase(), L, y);
+    y += 5;
+
+    // Gold rule
+    doc.setFillColor(201,168,76); doc.rect(L, y+2, W, 1.2, "F"); y += 14;
+
+    // Subtitle
+    if (subtitle) {
+      doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(100,100,100);
+      doc.text(subtitle, L, y); y += 14;
+    }
+
+    // Contact
+    doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(130,125,115);
+    doc.text(contact, L, y); y += 20;
+
+    const allSections = [...MAIN_SECTIONS, ...SIDEBAR_SECTIONS];
+    allSections.forEach(sKey => {
+      const content = sections[sKey];
+      if (!content || content.length === 0) return;
+      if (y > 720) { doc.addPage(); y = 50; }
+
+      y += 8;
+      doc.setFont("helvetica","bold"); doc.setFontSize(9.5); doc.setTextColor(15,15,15);
+      doc.text(sKey, L, y);
+      doc.setFillColor(201,168,76); doc.rect(L, y+4, W, 0.8, "F");
+      y += 18;
+
+      content.forEach(line => {
+        if (y > 730) { doc.addPage(); y = 50; }
+        if (isBullet(line)) {
+          const bt = line.replace(/^[-•▸◆]\s*/,"");
+          doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(60,60,60);
+          const wrapped = doc.splitTextToSize(bt, W-12);
+          wrapped.forEach((wl,i) => {
+            if (y > 730) { doc.addPage(); y = 50; }
+            doc.text(i===0 ? "• "+wl : "  "+wl, L+4, y); y += 12;
+          });
+          y += 2;
+        } else {
+          const bold = line.includes("—") || line.includes("|");
+          doc.setFont("helvetica", bold?"bold":"normal"); doc.setFontSize(9); doc.setTextColor(bold?15:60,bold?15:60,bold?15:60);
+          const wrapped = doc.splitTextToSize(line, W);
+          wrapped.forEach(wl => { if(y>730){doc.addPage();y=50;} doc.text(wl,L,y); y+=12; });
+          y += bold ? 2 : 1;
+        }
+      });
+      y += 4;
+    });
+
+  // ══════════════════════════════════════════
+  // TEMPLATE 3: EXECUTIVE (Premium)
+  // Deep navy sidebar · Gold initials circle · Skill pills · Premium two-column
+  // ══════════════════════════════════════════
+  } else if (selectedTemplate === "executive") {
+    const variant = colorVariants.executive[selectedExecVariant] || colorVariants.executive.navy;
+    const [sr,sg,sb] = variant.sidebar;
+    const [tr,tg,tb] = variant.sidebarText;
+    const [ar,ag,ab] = variant.accent;
+
+    const SIDE_W = 200;
+    const BODY_L = SIDE_W + 28;
+    const BODY_R = pageWidth - 28;
+    const BODY_W = BODY_R - BODY_L;
+    const SIDE_PAD = 16;
+    const SIDE_INNER = SIDE_W - SIDE_PAD*2;
 
     const drawSidebar = () => {
-      doc.setFillColor(sr, sg, sb);
-      doc.rect(0, 0, sideW, pageHeight, "F");
-      doc.setFillColor(ar, ag, ab);
-      doc.rect(sideW - 3, 0, 3, pageHeight, "F");
+      doc.setFillColor(sr,sg,sb);
+      doc.rect(0,0,SIDE_W,pageHeight,"F");
+      doc.setFillColor(ar,ag,ab);
+      doc.rect(SIDE_W-3,0,3,pageHeight,"F");
     };
     drawSidebar();
 
-    const name = allLines[0] || "";
-    const initials = name.split(" ").map(w => w[0]).filter(Boolean).slice(0,2).join("").toUpperCase();
-    doc.setFillColor(ar, ag, ab);
-    doc.circle(sideW / 2, 52, 28, "F");
-    doc.setTextColor(sr, sg, sb);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    const initW = doc.getTextWidth(initials);
-    doc.text(initials, sideW / 2 - initW / 2, 58);
+    // Initials circle
+    const initials = name.split(" ").map(w=>w[0]).filter(Boolean).slice(0,2).join("").toUpperCase();
+    doc.setFillColor(ar,ag,ab);
+    doc.circle(SIDE_W/2, 46, 26, "F");
+    doc.setTextColor(sr,sg,sb);
+    doc.setFont("helvetica","bold"); doc.setFontSize(16);
+    const iW = doc.getTextWidth(initials);
+    doc.text(initials, SIDE_W/2 - iW/2, 52);
 
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    const nameLines = doc.splitTextToSize(name.toUpperCase(), sideUsable);
-    let sy = 100;
-    nameLines.forEach(nl => {
-      const nw = doc.getTextWidth(nl);
-      doc.text(nl, sideW / 2 - nw / 2, sy);
-      sy += 16;
-    });
+    // Name in sidebar
+    doc.setTextColor(255,255,255);
+    doc.setFont("helvetica","bold");
+    const sNameSize = name.length > 20 ? 9 : name.length > 15 ? 10 : 11;
+    doc.setFontSize(sNameSize);
+    const sNameLines = doc.splitTextToSize(name.toUpperCase(), SIDE_INNER);
+    let sy = 86;
+    sNameLines.forEach(l => { const lw=doc.getTextWidth(l); doc.text(l, SIDE_W/2-lw/2, sy); sy+=14; });
 
-    doc.setFillColor(ar, ag, ab);
-    doc.rect(18, sy + 2, sideUsable, 1.5, "F");
-    sy += 18;
+    // Gold divider
+    doc.setFillColor(ar,ag,ab); doc.rect(SIDE_PAD, sy+2, SIDE_INNER, 1.5, "F"); sy += 16;
 
-    const contactLines = [allLines[1] || "", allLines[2] || ""].filter(l => l && !isHeading(l));
-    const allContact = contactLines.join(" | ").split("|").map(p => p.trim()).filter(Boolean);
-
-    const sideHeading = (label, yPos) => {
-      doc.setFillColor(ar, ag, ab);
-      doc.rect(18, yPos - 10, sideUsable, 16, "F");
-      doc.setTextColor(sr, sg, sb);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.text(label.toUpperCase(), 22, yPos + 1);
-      return yPos + 22;
+    // Sidebar section helper
+    const sbHead = (label, yp) => {
+      doc.setFillColor(ar,ag,ab);
+      doc.rect(SIDE_PAD, yp-9, SIDE_INNER, 15, "F");
+      doc.setFont("helvetica","bold"); doc.setFontSize(7.5);
+      doc.setTextColor(sr,sg,sb);
+      doc.text(label.toUpperCase(), SIDE_PAD+4, yp+1);
+      return yp + 18;
     };
 
-    sy = sideHeading("Contact", sy);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(tr, tg, tb);
-    allContact.forEach(c => {
-      if (sy > pageHeight - 20) return;
-      const wrapped = doc.splitTextToSize(c, sideUsable);
-      wrapped.forEach(wl => { doc.text(wl, 18, sy); sy += 12; });
-      sy += 3;
+    // Contact
+    sy = sbHead("Contact", sy);
+    doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(tr,tg,tb);
+    contact.split("|").map(p=>p.trim()).filter(Boolean).forEach(p => {
+      if (sy > pageHeight-20) return;
+      const pw = doc.splitTextToSize(p, SIDE_INNER);
+      pw.forEach(pl => { doc.text(pl, SIDE_PAD, sy); sy+=12; });
+      sy += 2;
     });
     sy += 6;
 
-    const skillsStart = allLines.findIndex(l => l.toUpperCase().includes("SKILL"));
-    const eduStart = allLines.findIndex(l => l.toUpperCase() === "EDUCATION");
-
-    if (skillsStart > -1) {
-      sy = sideHeading("Skills", sy);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(tr, tg, tb);
-      let si = skillsStart + 1;
-      while (si < allLines.length && !isHeading(allLines[si]) && sy < pageHeight - 60) {
-        const skillLine = allLines[si].replace(/^[-•]\s*/, "").trim();
-        if (skillLine) {
-          doc.setFillColor(sr + 10, sg + 16, sb + 22);
-          const sw = doc.getTextWidth(skillLine) + 12;
-          if (sy + 14 < pageHeight - 60) {
-            doc.roundedRect(18, sy - 8, Math.min(sw, sideUsable), 13, 3, 3, "F");
-            doc.text(skillLine.length > 22 ? skillLine.substring(0, 22) + "..." : skillLine, 24, sy);
-            sy += 17;
-          }
-        }
-        si++;
-      }
+    // Skills in sidebar as pills
+    const skillsKey = Object.keys(sections).find(k => k.includes("SKILL"));
+    if (skillsKey && sy < pageHeight-80) {
+      sy = sbHead("Skills", sy);
+      doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(tr,tg,tb);
+      sections[skillsKey].forEach(skill => {
+        const s = skill.replace(/^[-•]\s*/,"").trim();
+        if (!s || sy+14 > pageHeight-60) return;
+        doc.setFillColor(sr+12,sg+18,sb+26);
+        const sw = Math.min(doc.getTextWidth(s)+14, SIDE_INNER);
+        doc.roundedRect(SIDE_PAD, sy-8, sw, 13, 3, 3, "F");
+        doc.setFillColor(ar,ag,ab); doc.circle(SIDE_PAD+7, sy-1.5, 2.5, "F");
+        doc.setTextColor(tr,tg,tb);
+        const sl = s.length > 24 ? s.substring(0,24)+"..." : s;
+        doc.text(sl, SIDE_PAD+14, sy); sy += 17;
+      });
       sy += 4;
     }
 
-    if (eduStart > -1 && sy < pageHeight - 80) {
-      sy = sideHeading("Education", sy);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(tr, tg, tb);
-      let ei = eduStart + 1;
-      while (ei < allLines.length && !isHeading(allLines[ei]) && sy < pageHeight - 30) {
-        const eduLine = allLines[ei].replace(/^[-•]\s*/, "").trim();
-        if (eduLine) {
-          const ew = doc.splitTextToSize(eduLine, sideUsable);
-          ew.forEach(el => { if (sy < pageHeight - 20) { doc.text(el, 18, sy); sy += 12; } });
-          sy += 3;
-        }
-        ei++;
-      }
+    // Education in sidebar
+    const eduKey = Object.keys(sections).find(k => k === "EDUCATION");
+    if (eduKey && sy < pageHeight-60) {
+      sy = sbHead("Education", sy);
+      doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(tr,tg,tb);
+      sections[eduKey].forEach(line => {
+        if (!line.trim() || sy > pageHeight-20) return;
+        const lw = doc.splitTextToSize(line, SIDE_INNER);
+        lw.forEach(ll => { if(sy<pageHeight-15){doc.text(ll,SIDE_PAD,sy);sy+=12;} });
+        sy += 2;
+      });
     }
 
-    let y = 30;
-    doc.setFillColor(ar, ag, ab);
-    doc.rect(bodyLeft, 0, bodyUsable, 5, "F");
+    // Body right side
+    let y = 28;
+    // Top gold accent bar
+    doc.setFillColor(ar,ag,ab); doc.rect(BODY_L,0,BODY_W,5,"F");
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.setTextColor(sr, sg, sb);
-    doc.text(name.toUpperCase(), bodyLeft, 40);
+    // Name in body — large
+    doc.setFont("helvetica","bold");
+    const bNameSize = name.length > 24 ? 16 : name.length > 18 ? 19 : 22;
+    doc.setFontSize(bNameSize);
+    doc.setTextColor(sr,sg,sb);
+    doc.text(name.toUpperCase(), BODY_L, 38);
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(ar, ag, ab);
-    const jobLine = allLines.find((l, i) => i > 0 && i < 4 && !isHeading(l) && !l.includes("@") && !l.includes("|") && !l.match(/\d{3}/));
-    if (jobLine) { doc.text(jobLine, bodyLeft, 56); y = 76; }
-    else { y = 62; }
+    // Subtitle
+    if (subtitle) {
+      doc.setFont("helvetica","normal"); doc.setFontSize(10);
+      doc.setTextColor(ar,ag,ab);
+      doc.text(subtitle, BODY_L, 54); y = 72;
+    } else y = 54;
 
-    doc.setFillColor(ar, ag, ab);
-    doc.rect(bodyLeft, y, bodyUsable, 2, "F");
-    y += 16;
+    // Gold rule
+    doc.setFillColor(ar,ag,ab); doc.rect(BODY_L, y, BODY_W, 2, "F"); y += 16;
 
-    const skipSections = ["TECHNICAL SKILLS","SKILLS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING"];
-    const startIdx = (allLines[2] && !isHeading(allLines[2])) ? 3 : 2;
+    // Body section heading
+    const bodyHead = (label, yp) => {
+      doc.setFillColor(240,243,250);
+      doc.rect(BODY_L, yp-12, BODY_W, 19, "F");
+      doc.setFillColor(ar,ag,ab); doc.rect(BODY_L, yp-12, 4, 19, "F");
+      doc.setFont("helvetica","bold"); doc.setFontSize(9);
+      doc.setTextColor(sr,sg,sb);
+      doc.text(label.toUpperCase(), BODY_L+10, yp);
+      return yp + 20;
+    };
 
-    allLines.slice(startIdx).forEach(line => {
-      if (skipSections.includes(line.toUpperCase())) return;
-      if (y > 745) { doc.addPage(); drawSidebar(); y = 30; }
+    const skipInBody = new Set(["TECHNICAL SKILLS","SKILLS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING"]);
+    MAIN_SECTIONS.forEach(sKey => {
+      const content = sections[sKey];
+      if (!content || content.length === 0) return;
+      if (y > 740) { doc.addPage(); drawSidebar(); y = 30; }
+      y += 8; y = bodyHead(sKey, y);
 
-      if (isHeading(line)) {
-        y += 12;
-        doc.setFillColor(240, 243, 250);
-        doc.rect(bodyLeft, y - 13, bodyUsable, 20, "F");
-        doc.setFillColor(ar, ag, ab);
-        doc.rect(bodyLeft, y - 13, 4, 20, "F");
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(sr, sg, sb);
-        doc.text(line.toUpperCase(), bodyLeft + 10, y);
-        y += 18;
-      } else if (isBullet(line)) {
-        const bt = line.replace(/^[-•]\s*/, "");
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9.5);
-        doc.setTextColor(40, 40, 40);
-        const wrapped = doc.splitTextToSize(bt, bodyUsable - 16);
-        wrapped.forEach((wl, i) => {
-          if (y > 745) { doc.addPage(); drawSidebar(); y = 30; }
-          if (i === 0) {
-            doc.setFillColor(ar, ag, ab);
-            doc.rect(bodyLeft + 2, y - 6, 5, 5, "F");
-            doc.text(wl, bodyLeft + 14, y);
-          } else {
-            doc.text(wl, bodyLeft + 14, y);
-          }
-          y += 13;
-        });
-        y += 3;
-      } else {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9.5);
-        doc.setTextColor(50, 50, 50);
-        const wrapped = doc.splitTextToSize(line, bodyUsable);
-        wrapped.forEach(wl => {
-          if (y > 745) { doc.addPage(); drawSidebar(); y = 30; }
-          doc.text(wl, bodyLeft, y);
-          y += 13;
-        });
-        y += 3;
-      }
+      content.forEach(line => {
+        if (y > 740) { doc.addPage(); drawSidebar(); y = 30; }
+        if (isBullet(line)) {
+          const bt = line.replace(/^[-•▸◆]\s*/,"");
+          doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(40,40,40);
+          const wrapped = doc.splitTextToSize(bt, BODY_W-16);
+          wrapped.forEach((wl,i) => {
+            if (y>740){doc.addPage();drawSidebar();y=30;}
+            if(i===0){doc.setFillColor(ar,ag,ab);doc.rect(BODY_L+3,y-5,4,4,"F");doc.text(wl,BODY_L+13,y);}
+            else doc.text(wl,BODY_L+13,y);
+            y+=13;
+          });
+          y+=3;
+        } else {
+          const bold = line.includes("—")||line.includes("|");
+          doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(9);
+          doc.setTextColor(bold?sr:45, bold?sg:45, bold?sb:45);
+          const wrapped = doc.splitTextToSize(line, BODY_W);
+          wrapped.forEach(wl=>{if(y>740){doc.addPage();drawSidebar();y=30;}doc.text(wl,BODY_L,y);y+=13;});
+          y+=bold?2:3;
+        }
+      });
+      y+=5;
     });
 
-  // ─────────────────────────────────────────
+  // ══════════════════════════════════════════
   // TEMPLATE 4: ELEGANT (Premium)
-  // Rich burgundy/dark top header · Centered bold name · Two-column body
-  // Left: skills/education sidebar · Right: experience content
-  // ─────────────────────────────────────────
+  // Rich dark header · Centered name · Two-column body · Skill pills
+  // ══════════════════════════════════════════
   } else {
     const variant = colorVariants.elegant[selectedElegantVariant] || colorVariants.elegant.brown;
-    const [hr, hg, hb] = variant.header;
-    const [ar, ag, ab] = variant.accent;
-    const [pr, pg, pb] = variant.pillBg;
+    const [hr,hg,hb] = variant.header;
+    const [ar,ag,ab] = variant.accent;
+    const [pr,pg,pb] = variant.pillBg;
 
-    const pageW = pageWidth;
-    const left = 40;
-    const right = pageW - 40;
+    const COL1_L = 40, COL1_W = 180, COL1_R = COL1_L+COL1_W;
+    const COL2_L = COL1_R+18, COL2_R = pageWidth-30, COL2_W = COL2_R-COL2_L;
+    const HEADER_H = 122;
 
-    // Rich dark header using variant color
-    doc.setFillColor(hr, hg, hb);
-    doc.rect(0, 0, pageW, 125, "F");
-    // Accent top strip
-    doc.setFillColor(ar, ag, ab);
-    doc.rect(0, 0, pageW, 6, "F");
-    // Accent bottom strip
-    doc.setFillColor(ar, ag, ab);
-    doc.rect(0, 121, pageW, 4, "F");
+    // Rich header
+    doc.setFillColor(hr,hg,hb);
+    doc.rect(0,0,pageWidth,HEADER_H,"F");
+    doc.setFillColor(ar,ag,ab); doc.rect(0,0,pageWidth,5,"F");
+    doc.setFillColor(ar,ag,ab); doc.rect(0,HEADER_H-4,pageWidth,4,"F");
 
-    // Decorative lines left and right of name
-    doc.setDrawColor(ar, ag, ab);
-    doc.setLineWidth(0.8);
-    doc.line(left, 58, left + 60, 58);
-    doc.line(right - 60, 58, right, 58);
-
-    // Centered name
-    doc.setTextColor(255, 248, 230);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(30);
-    const nameText = allLines[0].toUpperCase();
+    // Decorative dots flanking name
+    const nameText = name.toUpperCase();
+    doc.setFont("helvetica","bold");
+    const nSize = name.length > 24 ? 20 : name.length > 18 ? 24 : 28;
+    doc.setFontSize(nSize);
     const nameW = doc.getTextWidth(nameText);
-    doc.text(nameText, (pageW - nameW) / 2, 58);
+    const nameX = (pageWidth-nameW)/2;
+    doc.setTextColor(255,248,230);
+    doc.text(nameText, nameX, 52);
+    doc.setFillColor(ar,ag,ab);
+    doc.circle(nameX-12, 49, 3, "F");
+    doc.circle(nameX+nameW+12, 49, 3, "F");
 
-    // Decorative dots
-    doc.setFillColor(ar, ag, ab);
-    doc.circle((pageW / 2) - (nameW / 2) - 14, 55, 3, "F");
-    doc.circle((pageW / 2) + (nameW / 2) + 14, 55, 3, "F");
-
-    // Job title centered
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.setTextColor(ar, ag, ab);
-    const titleLine = allLines.find((l, i) => i > 0 && i < 4 && !isHeading(l) && !l.includes("|") && !l.includes("@") && !l.match(/^\+?\d/));
-    if (titleLine) {
-      const tw = doc.getTextWidth(titleLine);
-      doc.text(titleLine, (pageW - tw) / 2, 76);
+    // Subtitle
+    if (subtitle) {
+      doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(ar,ag,ab);
+      const stW = doc.getTextWidth(subtitle);
+      doc.text(subtitle, (pageWidth-stW)/2, 68);
     }
 
-    // Contact centered
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(185, 175, 150);
-    const contactStr = [allLines[1] || "", allLines[2] || ""].filter(l => l && !isHeading(l)).join("  |  ");
-    if (contactStr.trim()) {
-      const cw = doc.getTextWidth(contactStr);
-      doc.text(contactStr, (pageW - cw) / 2, 100);
+    // Contact
+    doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(185,175,150);
+    const ctW = doc.getTextWidth(contact);
+    if (ctW < pageWidth-60) doc.text(contact, (pageWidth-ctW)/2, subtitle ? 86 : 70);
+    else {
+      const parts = contact.split("|").map(p=>p.trim());
+      const joined = parts.slice(0,3).join("  |  ");
+      const jW = doc.getTextWidth(joined);
+      doc.text(joined, (pageWidth-jW)/2, subtitle ? 86 : 70);
     }
 
-    // Two-column body
-    const col1Left = left;
-    const col1Right = left + 185;
-    const col1Usable = col1Right - col1Left;
-    const col2Left = col1Right + 20;
-    const col2Right = right;
-    const col2Usable = col2Right - col2Left;
+    // Vertical divider in body
+    doc.setDrawColor(ar,ag,ab); doc.setLineWidth(0.5);
+    doc.line(COL1_R+9, HEADER_H+10, COL1_R+9, pageHeight-20);
 
-    // Vertical divider
-    doc.setDrawColor(ar, ag, ab);
-    doc.setLineWidth(0.5);
-    doc.line(col1Right + 10, 138, col1Right + 10, 750);
+    let y1 = HEADER_H+16;
+    let y2 = HEADER_H+16;
 
-    let y1 = 148;
-    let y2 = 148;
-
-    const drawLeftHeading = (label, yPos) => {
-      doc.setFillColor(ar, ag, ab);
-      doc.rect(col1Left, yPos - 11, col1Usable, 17, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      doc.setTextColor(hr, hg, hb);
-      doc.text(label.toUpperCase(), col1Left + 5, yPos);
-      return yPos + 20;
+    // Left column heading
+    const lHead = (label, yp) => {
+      doc.setFillColor(ar,ag,ab);
+      doc.rect(COL1_L, yp-10, COL1_W, 16, "F");
+      doc.setFont("helvetica","bold"); doc.setFontSize(8);
+      doc.setTextColor(hr,hg,hb);
+      doc.text(label.toUpperCase(), COL1_L+5, yp+1);
+      return yp+20;
     };
 
-    const drawRightHeading = (label, yPos) => {
-      doc.setFillColor(hr, hg, hb);
-      doc.rect(col2Left, yPos - 12, col2Usable, 18, "F");
-      doc.setFillColor(ar, ag, ab);
-      doc.rect(col2Left, yPos - 12, 3, 18, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9.5);
-      doc.setTextColor(255, 255, 255);
-      doc.text(label.toUpperCase(), col2Left + 8, yPos);
-      return yPos + 22;
+    // Right column heading
+    const rHead = (label, yp) => {
+      doc.setFillColor(hr,hg,hb);
+      doc.rect(COL2_L, yp-11, COL2_W, 18, "F");
+      doc.setFillColor(ar,ag,ab); doc.rect(COL2_L, yp-11, 3, 18, "F");
+      doc.setFont("helvetica","bold"); doc.setFontSize(9);
+      doc.setTextColor(255,255,255);
+      doc.text(label.toUpperCase(), COL2_L+9, yp);
+      return yp+22;
     };
 
-    const leftSections = ["TECHNICAL SKILLS","SKILLS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING"];
-
-    leftSections.forEach(section => {
-      const sIdx = allLines.findIndex(l => l.toUpperCase() === section);
-      if (sIdx === -1 || y1 > 720) return;
-
-      y1 = drawLeftHeading(section, y1);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.setTextColor(50, 45, 35);
-
-      let i = sIdx + 1;
-      while (i < allLines.length && !isHeading(allLines[i]) && y1 < 730) {
-        const sl = allLines[i].replace(/^[-•]\s*/, "").trim();
-        if (sl) {
-          if (section.includes("SKILL")) {
-            doc.setFillColor(pr, pg, pb);
-            doc.roundedRect(col1Left, y1 - 8, col1Usable, 13, 2, 2, "F");
-            doc.setDrawColor(ar, ag, ab);
-            doc.setLineWidth(0.5);
-            doc.roundedRect(col1Left, y1 - 8, col1Usable, 13, 2, 2, "S");
-            doc.setFillColor(ar, ag, ab);
-            doc.circle(col1Left + 8, y1 - 1.5, 2.5, "F");
-            doc.setTextColor(35, 28, 20);
-            const sw = doc.splitTextToSize(sl, col1Usable - 20);
-            doc.text(sw[0], col1Left + 15, y1);
-            y1 += 17;
-          } else {
-            const sw = doc.splitTextToSize(sl, col1Usable - 4);
-            sw.forEach(swl => { doc.text(swl, col1Left + 2, y1); y1 += 12; });
-            y1 += 3;
-          }
+    // Left column content
+    const leftOrder = ["TECHNICAL SKILLS","SKILLS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING"];
+    leftOrder.forEach(sKey => {
+      const content = sections[sKey];
+      if (!content || content.length === 0 || y1 > 720) return;
+      y1 = lHead(sKey, y1);
+      doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(50,45,35);
+      content.forEach(line => {
+        const s = line.replace(/^[-•]\s*/,"").trim();
+        if (!s || y1 > 730) return;
+        if (sKey.includes("SKILL")) {
+          doc.setFillColor(pr,pg,pb);
+          doc.roundedRect(COL1_L, y1-8, COL1_W, 13, 2, 2, "F");
+          doc.setDrawColor(ar,ag,ab); doc.setLineWidth(0.5);
+          doc.roundedRect(COL1_L, y1-8, COL1_W, 13, 2, 2, "S");
+          doc.setFillColor(ar,ag,ab); doc.circle(COL1_L+8, y1-1.5, 2.5, "F");
+          doc.setTextColor(hr+10,hg+10,hb+10);
+          const sl = s.length > 22 ? s.substring(0,22)+"..." : s;
+          doc.text(sl, COL1_L+15, y1); y1+=17;
+        } else {
+          const lw = doc.splitTextToSize(s, COL1_W-4);
+          lw.forEach(ll=>{if(y1<730){doc.text(ll,COL1_L+2,y1);y1+=12;}});
+          y1+=3;
         }
-        i++;
-      }
-      y1 += 6;
+      });
+      y1+=6;
     });
 
-    // Populate right column: Summary, Experience, Projects
-    const rightSkip = new Set(["TECHNICAL SKILLS","SKILLS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING"]);
-    const startIdx = (allLines[2] && !isHeading(allLines[2])) ? 3 : 2;
-
-    allLines.slice(startIdx).forEach(line => {
-      if (rightSkip.has(line.toUpperCase())) return;
-      if (y2 > 745) { return; } // handle multipage if needed
-
-      if (isHeading(line)) {
-        y2 += 8;
-        y2 = drawRightHeading(line, y2);
-      } else if (isBullet(line)) {
-        const bt = line.replace(/^[-•]\s*/, "");
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.setTextColor(40, 38, 30);
-        const wrapped = doc.splitTextToSize(bt, col2Usable - 16);
-        wrapped.forEach((wl, i) => {
-          if (y2 > 745) return;
-          if (i === 0) {
-            doc.setFillColor(ar, ag, ab);
-            doc.rect(col2Left + 2, y2 - 5.5, 4, 4, "F");
-            doc.text(wl, col2Left + 12, y2);
-          } else {
-            doc.text(wl, col2Left + 12, y2);
-          }
-          y2 += 13;
-        });
-        y2 += 3;
-      } else {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.setTextColor(50, 45, 35);
-        const wrapped = doc.splitTextToSize(line, col2Usable);
-        wrapped.forEach(wl => {
-          if (y2 > 745) return;
-          doc.text(wl, col2Left, y2);
-          y2 += 13;
-        });
-        y2 += 3;
-      }
+    // Right column content
+    const rightOrder = ["PROFESSIONAL SUMMARY","SUMMARY","TECHNICAL EXPERIENCE","WORK EXPERIENCE","EXPERIENCE","PROJECTS"];
+    rightOrder.forEach(sKey => {
+      const content = sections[sKey];
+      if (!content || content.length === 0 || y2 > 730) return;
+      y2+=6; y2 = rHead(sKey, y2);
+      content.forEach(line => {
+        if (y2 > 730) return;
+        if (isBullet(line)) {
+          const bt = line.replace(/^[-•▸◆]\s*/,"");
+          doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(40,38,30);
+          const wrapped = doc.splitTextToSize(bt, COL2_W-14);
+          wrapped.forEach((wl,i)=>{
+            if(y2>730)return;
+            if(i===0){doc.setFillColor(ar,ag,ab);doc.rect(COL2_L+2,y2-5,4,4,"F");doc.text(wl,COL2_L+11,y2);}
+            else doc.text(wl,COL2_L+11,y2);
+            y2+=13;
+          });
+          y2+=3;
+        } else {
+          const bold = line.includes("—")||line.includes("|");
+          doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(9);
+          doc.setTextColor(bold?20:50, bold?20:50, bold?15:35);
+          const wrapped = doc.splitTextToSize(line, COL2_W);
+          wrapped.forEach(wl=>{if(y2>730)return;doc.text(wl,COL2_L,y2);y2+=13;});
+          y2+=bold?3:2;
+        }
+      });
+      y2+=5;
     });
   }
 
