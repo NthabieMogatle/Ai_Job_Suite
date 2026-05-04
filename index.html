@@ -593,6 +593,7 @@ body::before {
   <div class="tabs">
     <button class="tab active" onclick="switchTab('cover')">✉ Cover Letter</button>
     <button class="tab" onclick="switchTab('resume')">📄 Resume</button>
+    <button class="tab" onclick="switchTab('linkedin')">💼 LinkedIn</button>
   </div>
 
   <!-- Cover Letter Panel -->
@@ -647,7 +648,8 @@ body::before {
       <div class="output-text" id="cl-text"></div>
       <div class="output-actions">
         <button class="btn-action" onclick="copyOutput('cl-text', this)">Copy</button>
-        <button class="btn-action" onclick="downloadOutput('cl-text','cover-letter.txt')">Download</button>
+        <button class="btn-action" onclick="downloadCoverPDF()">Download PDF</button>
+        <button class="btn-action" onclick="generate('cl')">↺ Regenerate</button>
       </div>
     </div>
 
@@ -782,6 +784,7 @@ body::before {
   <div class="output-actions">
     <button class="btn-action" onclick="copyOutput('rv-text', this)">Copy</button>
     <button class="btn-action" onclick="downloadPDF('rv-text', 'resume.pdf')">Download PDF</button>
+    <button class="btn-action" onclick="generate('rv')">↺ Regenerate</button>
   </div>
 </div>
 
@@ -815,6 +818,7 @@ body::before {
     </div>
     <div class="output-actions">
       <button class="btn-action" onclick="copyATS()">Copy ATS Report</button>
+      <button class="btn-action" onclick="improveResume()" id="rv-improve-btn" style="border-color:rgba(201,168,76,0.4);color:var(--gold);">✦ Improve My Resume</button>
     </div>
   </div>
 </div>
@@ -835,13 +839,78 @@ body::before {
 
   </div>
 
+  <!-- LinkedIn Panel -->
+
+  <div class="panel" id="panel-linkedin">
+    <div class="form-card">
+      <h2>LinkedIn summary details</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full name</label>
+          <input type="text" id="li-name" placeholder="e.g. Eleve Emporium" />
+        </div>
+        <div class="form-group">
+          <label>Current / target job title</label>
+          <input type="text" id="li-job" placeholder="e.g. Software Engineer" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Key skills & experience</label>
+        <textarea id="li-skills" placeholder="e.g. JavaScript, React, Node.js, 3 years experience, built e-commerce apps..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Career goal or what you're looking for</label>
+        <textarea id="li-goal" placeholder="e.g. Looking for a senior frontend role at a product company, open to remote..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Enter your email (2 free uses)</label>
+        <input id="li-access-email" type="email" placeholder="Enter your email for 2 free generations">
+      </div>
+      <div class="form-group">
+        <label>Tone</label>
+        <div class="tone-chips">
+          <button class="chip active" onclick="selectTone(this,'li','professional and approachable')">Professional</button>
+          <button class="chip" onclick="selectTone(this,'li','confident and bold')">Confident</button>
+          <button class="chip" onclick="selectTone(this,'li','warm and personable')">Warm</button>
+          <button class="chip" onclick="selectTone(this,'li','creative and unique')">Creative</button>
+        </div>
+      </div>
+    </div>
+    <button class="btn-generate" id="li-btn" onclick="generate('li')">Generate LinkedIn Summary</button>
+    <div class="error-msg" id="li-error"></div>
+    <div class="loading" id="li-loading"><div class="spinner"></div>Crafting your LinkedIn summary...</div>
+    <div class="output-card" id="li-output">
+      <div class="output-header">
+        <span>Your LinkedIn summary</span>
+        <span class="output-badge">Ready</span>
+      </div>
+      <div class="output-text" id="li-text"></div>
+      <div class="output-actions">
+        <button class="btn-action" onclick="copyOutput('li-text', this)">Copy</button>
+        <button class="btn-action" onclick="generate('li')">↺ Regenerate</button>
+      </div>
+    </div>
+    <!-- Interview Prep for LinkedIn -->
+    <div class="interview-card" id="li-interview-card">
+      <div class="interview-header">
+        <span class="interview-title">🎯 Interview Prep Questions</span>
+        <span class="output-badge">AI Generated</span>
+      </div>
+      <div class="interview-loading" id="li-interview-loading"><div class="spinner"></div>Generating interview questions...</div>
+      <ul class="question-list" id="li-questions"></ul>
+      <div class="output-actions">
+        <button class="btn-action" onclick="copyInterviewQuestions('li')">Copy All Questions</button>
+      </div>
+    </div>
+  </div>
+
   <div class="footer">AI Job Application Suite &nbsp;·&nbsp; Powered by Claude AI</div>
 </div>
 
 <script src="https://gumroad.com/js/gumroad.js"></script>
 
 <script>
-const tones = { cl: 'professional', rv: 'clean and professional' };
+const tones = { cl: 'professional', rv: 'clean and professional', li: 'professional and approachable' };
 let selectedTemplate = "modern";
 
 // Color variants for premium templates
@@ -901,7 +970,13 @@ function setColorVariant(template, variant, el) {
 }
 
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0 && name==='cover')||(i===1 && name==='resume')));
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active',
+      (i===0 && name==='cover') ||
+      (i===1 && name==='resume') ||
+      (i===2 && name==='linkedin')
+    );
+  });
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
 }
@@ -988,7 +1063,40 @@ async function generate(prefix) {
   errorEl.innerHTML = '';
 
   let prompt = '';
-  if (prefix === 'cl') {
+  if (prefix === 'li') {
+    const name = getVal('li-name'), job = getVal('li-job'), skills = getVal('li-skills'), goal = getVal('li-goal');
+    if (!name || !job || !skills) {
+      errorEl.textContent = 'Please fill in your name, job title and skills.';
+      errorEl.classList.add('visible');
+      return;
+    }
+    const email = getAccessEmail(prefix);
+    const allowed = await checkUsage(email);
+    if (!allowed) return;
+
+    prompt = `Write a ${tones.li} LinkedIn "About" section for ${name}, a ${job}.
+
+RULES:
+- 3-4 short paragraphs, max 300 words total
+- First line must be a strong hook — not "I am a..." — make it memorable
+- Write in first person
+- Paragraph 1: Who they are and what they do (hook + value)
+- Paragraph 2: Key skills and what makes them stand out
+- Paragraph 3: Career goal / what they're looking for
+- Paragraph 4 (optional): A human touch — passion, values, or personality
+- End with a call to action (e.g. "Let's connect" or "Open to opportunities in...")
+- Do NOT use hashtags, emojis, or bullet points
+- Sound human, not like a CV
+
+CANDIDATE DETAILS:
+- Name: ${name}
+- Role: ${job}
+- Skills & experience: ${skills}
+- Career goal: ${goal || 'open to new opportunities'}
+
+Output ONLY the final LinkedIn summary text.`;
+
+  } else if (prefix === 'cl') {
     const name = getVal('cl-name'), job = getVal('cl-job'), company = getVal('cl-company'), desc = getVal('cl-desc'), skills = getVal('cl-skills');
     if (!name || !job || !company || !skills) {
       errorEl.textContent = 'Please fill in all required cover letter fields.';
@@ -1120,11 +1228,14 @@ Output ONLY the final resume text. No labels, no explanations, no keyword sectio
       const desc = getVal('rv-desc');
       generateATSScore(text, job, desc);
       generateInterviewQuestions('rv', job, desc, text);
-    } else {
+    } else if (prefix === 'cl') {
       const job = getVal('cl-job');
       const company = getVal('cl-company');
       const desc = getVal('cl-desc');
       generateInterviewQuestions('cl', job, desc, text);
+    } else if (prefix === 'li') {
+      const job = getVal('li-job');
+      generateInterviewQuestions('li', job, '', text);
     }
 
   } catch (err) {
@@ -1555,7 +1666,7 @@ async function downloadPDF(elementId, filename) {
         doc.roundedRect(SIDE_PAD, sy-8, sw, 13, 3, 3, "F");
         doc.setFillColor(ar,ag,ab); doc.circle(SIDE_PAD+7, sy-1.5, 2.5, "F");
         doc.setTextColor(tr,tg,tb);
-        const sl = s.length > 24 ? s.substring(0,24)+"..." : s;
+        const sl = s.length > 28 ? s.substring(0,28)+"..." : s;
         doc.text(sl, SIDE_PAD+14, sy); sy += 17;
       });
       sy += 4;
@@ -1782,6 +1893,99 @@ async function downloadPDF(elementId, filename) {
 }
 
 
+
+/* ===== IMPROVE RESUME FROM ATS TIPS ===== */
+async function improveResume() {
+  const currentResume = document.getElementById('rv-text').textContent;
+  const tips = document.getElementById('rv-ats-tips').textContent;
+  if (!currentResume || !tips) return;
+
+  const btn = document.getElementById('rv-improve-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Improving...';
+
+  const prompt = `You are an expert resume writer. Improve this resume based on the ATS improvement tips provided.
+
+CURRENT RESUME:
+${currentResume}
+
+IMPROVEMENT TIPS TO APPLY:
+${tips}
+
+RULES:
+- Apply all the improvement tips to the resume
+- Keep the same structure and sections
+- Keep it in clean plain text, no markdown
+- Do NOT add fake companies, dates or credentials not in the original
+- Each experience section must use bullet points starting with -
+- Keep under 600 words
+- Output ONLY the improved resume text`;
+
+  try {
+    const improved = await callAPI(prompt);
+    if (improved) {
+      document.getElementById('rv-text').textContent = improved;
+      document.getElementById('rv-output').classList.add('visible');
+      // Re-run ATS score on improved version
+      const job = getVal('rv-job');
+      const desc = getVal('rv-desc');
+      generateATSScore(improved, job, desc);
+      btn.textContent = '✅ Improved!';
+      setTimeout(() => { btn.disabled = false; btn.textContent = '✦ Improve My Resume'; }, 2500);
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '✦ Improve My Resume';
+  }
+}
+
+/* ===== COVER LETTER PDF DOWNLOAD ===== */
+function downloadCoverPDF() {
+  const source = document.getElementById('cl-text');
+  if (!source || !source.textContent.trim()) { alert("Please generate your cover letter first."); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("p", "pt", "letter");
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const L = 72, R = pageWidth - 72, W = R - L;
+
+  // Header bar
+  doc.setFillColor(22, 22, 26);
+  doc.rect(0, 0, pageWidth, 80, "F");
+  doc.setFillColor(201, 168, 76);
+  doc.rect(0, 78, pageWidth, 3, "F");
+
+  // Name and title in header
+  const name = getVal('cl-name') || "Cover Letter";
+  const job = getVal('cl-job') || "";
+  const company = getVal('cl-company') || "";
+  doc.setFont("helvetica","bold"); doc.setFontSize(18);
+  doc.setTextColor(255,255,255);
+  doc.text(name.toUpperCase(), L, 38);
+  doc.setFont("helvetica","normal"); doc.setFontSize(10);
+  doc.setTextColor(201,168,76);
+  if (job && company) doc.text(`${job} · ${company}`, L, 58);
+
+  // Body text
+  let y = 110;
+  const lines = source.textContent.split('\n').filter(l => l.trim());
+  lines.forEach(line => {
+    if (y > 730) { doc.addPage(); y = 60; }
+    doc.setFont("helvetica","normal"); doc.setFontSize(10.5);
+    doc.setTextColor(40, 40, 40);
+    const wrapped = doc.splitTextToSize(line, W);
+    wrapped.forEach(wl => {
+      if (y > 730) { doc.addPage(); y = 60; }
+      doc.text(wl, L, y); y += 16;
+    });
+    y += 6; // paragraph spacing
+  });
+
+  // Footer
+  doc.setFillColor(201,168,76);
+  doc.rect(0, doc.internal.pageSize.getHeight() - 20, pageWidth, 3, "F");
+
+  doc.save('cover-letter.pdf');
+}
 
 function handleLockedTemplate(template) {
   if (premiumUnlocked) { setTemplate(template); }
