@@ -1,18 +1,16 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AI Job Application Suite</title>
-
-  <!-- ✅ jsPDF (correct place INSIDE head) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
- <style>
+<style>
 :root {
   --bg: #0e0e0f;
   --surface: #161618;
@@ -30,371 +28,453 @@
   --radius-sm: 8px;
 }
 
-/* next styles continue normally */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    line-height: 1.6;
-  }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
 
-  /* Subtle grid background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
 
-  .wrapper {
-    position: relative;
-    z-index: 1;
-    max-width: 780px;
-    margin: 0 auto;
-    padding: 3rem 1.5rem 5rem;
-  }
+.wrapper {
+  position: relative;
+  z-index: 1;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+}
 
-  /* Header */
-  .header {
-    text-align: center;
-    margin-bottom: 3rem;
-    animation: fadeUp 0.6s ease both;
-  }
+.header { text-align: center; margin-bottom: 3rem; animation: fadeUp 0.6s ease both; }
 
-  .badge {
-    display: inline-block;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--gold);
-    border: 1px solid rgba(201,168,76,0.3);
-    padding: 4px 14px;
-    border-radius: 20px;
-    margin-bottom: 1rem;
-    background: var(--gold-dim);
-  }
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid rgba(201,168,76,0.3);
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 1rem;
+  background: var(--gold-dim);
+}
 
-  .header h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(2rem, 5vw, 3rem);
-    font-weight: 600;
-    color: var(--text);
-    line-height: 1.2;
-    margin-bottom: 0.5rem;
-  }
+.header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
 
-  .header h1 span { color: var(--gold); }
+.header h1 span { color: var(--gold); }
+.header p { font-size: 15px; color: var(--muted); font-weight: 300; }
 
-  .header p {
-    font-size: 15px;
-    color: var(--muted);
-    font-weight: 300;
-  }
+.gumroad-cta { margin-top: 1.5rem; }
+.gumroad-cta button {
+  background-color: #FF6B6B;
+  color: white;
+  padding: 14px 32px;
+  border: none;
+  border-radius: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.02em;
+  transition: background 0.2s, transform 0.15s;
+  box-shadow: 0 4px 20px rgba(255,107,107,0.35);
+}
+.gumroad-cta button:hover { background-color: #ff5252; transform: translateY(-1px); }
+.gumroad-cta button:active { transform: translateY(0); }
 
-  .gumroad-cta {
-    margin-top: 1.5rem;
-  }
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+  margin-bottom: 2rem;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
 
-  .gumroad-cta button {
-    background-color: #FF6B6B;
-    color: white;
-    padding: 14px 32px;
-    border: none;
-    border-radius: 8px;
-    font-size: 17px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    letter-spacing: 0.02em;
-    transition: background 0.2s, transform 0.15s;
-    box-shadow: 0 4px 20px rgba(255,107,107,0.35);
-  }
+.tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+  color: var(--muted);
+  border: none;
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+}
 
-  .gumroad-cta button:hover {
-    background-color: #ff5252;
-    transform: translateY(-1px);
-  }
+.tab.active {
+  background: var(--gold-dim);
+  color: var(--gold);
+  border: 1px solid rgba(201,168,76,0.25);
+}
 
-  .gumroad-cta button:active {
-    transform: translateY(0);
-  }
+.panel { display: none; animation: fadeUp 0.4s ease both; }
+.panel.active { display: block; }
 
-  /* Tabs */
-  .tabs {
-    display: flex;
-    gap: 4px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 4px;
-    margin-bottom: 2rem;
-    animation: fadeUp 0.6s 0.2s ease both;
-  }
+.form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+}
 
-  .tab {
-    flex: 1;
-    padding: 10px;
-    text-align: center;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    border-radius: var(--radius-sm);
-    transition: all 0.2s;
-    color: var(--muted);
-    border: none;
-    background: transparent;
-    font-family: 'DM Sans', sans-serif;
-  }
+.form-card h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
 
-  .tab.active {
-    background: var(--gold-dim);
-    color: var(--gold);
-    border: 1px solid rgba(201,168,76,0.25);
-  }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-group { margin-bottom: 1.25rem; }
+.form-group:last-child { margin-bottom: 0; }
 
-  /* Panel */
-  .panel { display: none; animation: fadeUp 0.4s ease both; }
-  .panel.active { display: block; }
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
 
-  /* Form */
-  .form-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.75rem;
-    margin-bottom: 1.5rem;
-  }
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: vertical;
+}
 
-  .form-card h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 18px;
-    font-weight: 400;
-    color: var(--text);
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border);
-  }
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus { border-color: var(--gold); }
 
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-group textarea { min-height: 90px; }
+.form-group select option { background: var(--surface2); }
 
-  .form-group { margin-bottom: 1.25rem; }
-  .form-group:last-child { margin-bottom: 0; }
+.tone-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 
-  .form-group label {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
+.chip {
+  padding: 6px 14px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
 
-  .form-group input,
-  .form-group textarea,
-  .form-group select {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px 14px;
-    font-size: 14px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
-    transition: border-color 0.2s;
-    resize: vertical;
-  }
+.chip:hover { border-color: var(--gold); color: var(--gold-light); }
+.chip.active { background: var(--gold-dim); border-color: rgba(201,168,76,0.4); color: var(--gold-light); }
 
-  .form-group input:focus,
-  .form-group textarea:focus,
-  .form-group select:focus { border-color: var(--gold); }
+.btn-generate {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+  border: none;
+  border-radius: var(--radius);
+  color: #0e0e0f;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  letter-spacing: 0.02em;
+}
 
-  .form-group textarea { min-height: 90px; }
+.btn-generate:hover { opacity: 0.92; }
+.btn-generate:active { transform: scale(0.99); }
+.btn-generate:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  .form-group select option { background: var(--surface2); }
+.output-card {
+  display: none;
+  background: var(--surface);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  animation: fadeUp 0.4s ease both;
+}
 
-  /* Tone chips */
-  .tone-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.output-card.visible { display: block; }
 
-  .chip {
-    padding: 6px 14px;
-    font-size: 13px;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    cursor: pointer;
-    background: transparent;
-    color: var(--muted);
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s;
-  }
+.output-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
 
-  .chip:hover { border-color: var(--gold); color: var(--gold-light); }
+.output-header span {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
 
-  .chip.active {
-    background: var(--gold-dim);
-    border-color: rgba(201,168,76,0.4);
-    color: var(--gold-light);
-  }
+.output-badge {
+  background: rgba(76,175,125,0.15);
+  color: var(--success);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(76,175,125,0.2);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
 
-  /* Generate Button */
-  .btn-generate {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
-    border: none;
-    border-radius: var(--radius);
-    color: #0e0e0f;
-    font-size: 15px;
-    font-weight: 500;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
-    letter-spacing: 0.02em;
-  }
+.output-text {
+  font-size: 14px;
+  line-height: 1.85;
+  color: var(--text);
+  white-space: pre-wrap;
+  font-weight: 300;
+}
 
-  .btn-generate:hover { opacity: 0.92; }
-  .btn-generate:active { transform: scale(0.99); }
-  .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; }
+.output-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
 
-  /* Output */
-  .output-card {
-    display: none;
-    background: var(--surface);
-    border: 1px solid rgba(201,168,76,0.2);
-    border-radius: var(--radius);
-    padding: 1.75rem;
-    animation: fadeUp 0.4s ease both;
-  }
+.btn-action {
+  padding: 8px 18px;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
 
-  .output-card.visible { display: block; }
+.btn-action:hover { border-color: var(--gold); color: var(--gold); }
 
-  .output-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.25rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border);
-  }
+.loading {
+  display: none;
+  text-align: center;
+  padding: 2.5rem;
+  color: var(--muted);
+  font-size: 14px;
+}
 
-  .output-header span {
-    font-size: 12px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-  }
+.loading.visible { display: block; }
 
-  .output-badge {
-    background: rgba(76,175,125,0.15);
-    color: var(--success);
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    border: 1px solid rgba(76,175,125,0.2);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
 
-  .output-text {
-    font-size: 14px;
-    line-height: 1.85;
-    color: var(--text);
-    white-space: pre-wrap;
-    font-weight: 300;
-  }
+.error-msg {
+  display: none;
+  font-size: 13px;
+  color: #e07070;
+  background: rgba(224,112,112,0.08);
+  border: 1px solid rgba(224,112,112,0.2);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-top: 10px;
+}
 
-  .output-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 1.25rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border);
-  }
+.error-msg.visible { display: block; }
 
-  .btn-action {
-    padding: 8px 18px;
-    font-size: 13px;
-    cursor: pointer;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s;
-  }
+/* ===== ATS SCORE CARD ===== */
+.ats-card {
+  display: none;
+  background: var(--surface);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  margin-top: 1.5rem;
+  animation: fadeUp 0.4s ease both;
+}
 
-  .btn-action:hover { border-color: var(--gold); color: var(--gold); }
+.ats-card.visible { display: block; }
 
-  /* Loading */
-  .loading {
-    display: none;
-    text-align: center;
-    padding: 2.5rem;
-    color: var(--muted);
-    font-size: 14px;
-  }
+.ats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
 
-  .loading.visible { display: block; }
+.ats-title {
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
 
-  .spinner {
-    width: 28px;
-    height: 28px;
-    border: 2px solid var(--border);
-    border-top-color: var(--gold);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 1rem;
-  }
+.ats-score-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 auto 1rem;
+  border: 3px solid var(--gold);
+  color: var(--gold);
+}
 
-  /* Error */
-  .error-msg {
-    display: none;
-    font-size: 13px;
-    color: #e07070;
-    background: rgba(224,112,112,0.08);
-    border: 1px solid rgba(224,112,112,0.2);
-    border-radius: var(--radius-sm);
-    padding: 10px 14px;
-    margin-top: 10px;
-  }
+.ats-score-wrap { text-align: center; margin-bottom: 1.25rem; }
+.ats-score-label { font-size: 13px; color: var(--muted); }
 
-  .error-msg.visible { display: block; }
+.ats-bar-wrap { margin-bottom: 1rem; }
+.ats-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
 
-  /* Footer */
-  .footer {
-    text-align: center;
-    margin-top: 3rem;
-    font-size: 12px;
-    color: var(--muted2);
-    letter-spacing: 0.05em;
-  }
+.ats-bar {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 4px;
+  overflow: hidden;
+}
 
-  /* Animations */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+.ats-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  border-radius: 4px;
+  transition: width 0.8s ease;
+}
 
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
+.ats-tips { font-size: 13px; line-height: 1.8; color: var(--text); white-space: pre-wrap; }
 
-  /* Responsive */
-  @media (max-width: 540px) {
-    .form-row { grid-template-columns: 1fr; }
-    .wrapper { padding: 2rem 1rem 4rem; }
-  }
-   .template-card {
+/* ===== INTERVIEW PREP CARD ===== */
+.interview-card {
+  display: none;
+  background: var(--surface);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  margin-top: 1.5rem;
+  animation: fadeUp 0.4s ease both;
+}
+
+.interview-card.visible { display: block; }
+
+.interview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.interview-title {
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.question-list { list-style: none; }
+
+.question-item {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.question-item:last-child { border-bottom: none; }
+
+.q-num {
+  min-width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--gold-dim);
+  border: 1px solid rgba(201,168,76,0.3);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.interview-loading {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--muted);
+  font-size: 14px;
+  display: none;
+}
+.interview-loading.visible { display: block; }
+
+/* Template cards */
+.template-card {
   border: 1px solid rgba(201, 168, 76, 0.35);
   padding: 18px;
   border-radius: 16px;
@@ -405,16 +485,8 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
-.template-card h3 {
-  margin: 0 0 8px;
-  font-size: 18px;
-}
-
-.template-card p {
-  margin: 0;
-  font-size: 13px;
-  color: #aaa;
-}
+.template-card h3 { margin: 0 0 8px; font-size: 18px; }
+.template-card p { margin: 0; font-size: 13px; color: #aaa; }
 
 .template-card:hover {
   transform: translateY(-4px);
@@ -427,51 +499,104 @@
   background: linear-gradient(145deg, #1f1a10, #111);
 }
 
-.template-card.locked {
-  opacity: 0.55;
-  cursor: not-allowed;
+.template-card.locked { opacity: 0.55; cursor: not-allowed; }
+.template-card.locked:hover { transform: none; box-shadow: none; }
+
+/* Color variant swatches */
+.color-variants {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
 }
 
-.template-card.locked:hover {
-  transform: none;
-  box-shadow: none;
+.color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.15s, border-color 0.15s;
+  position: relative;
+}
+
+.color-swatch:hover { transform: scale(1.2); }
+.color-swatch.active { border-color: var(--gold); transform: scale(1.15); }
+
+.color-swatch-label {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 5px;
+  letter-spacing: 0.04em;
+}
+
+.variant-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.variant-name {
+  font-size: 10px;
+  color: var(--muted);
+  background: var(--surface2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.footer {
+  text-align: center;
+  margin-top: 3rem;
+  font-size: 12px;
+  color: var(--muted2);
+  letter-spacing: 0.05em;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 540px) {
+  .form-row { grid-template-columns: 1fr; }
+  .wrapper { padding: 2rem 1rem 4rem; }
 }
 </style>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>  
-  
 </head>
 <body>
 
 <div class="wrapper">
 
   <!-- Header -->
+
   <div class="header">
     <div style="text-align:center; margin-bottom:30px;">
-  <img src="https://raw.githubusercontent.com/NthabieMogatle/Ai_Job_Suite/main/elevee.jpeg" style="width:100%; max-width:900px; border-radius:16px;">
-</div>
-  <h1>
-Stop Getting Rejected —
-<span style="color:#c9a84c;">Start Getting Interview Calls with AI</span>
-</h1>
-
-<p style="margin-top:10px; font-size:16px; color:#aaa;">
-Create ATS-optimized resumes & cover letters in seconds — and finally start getting interview calls.
-</p>
+      <img src="https://raw.githubusercontent.com/NthabieMogatle/Ai_Job_Suite/main/elevee.jpeg" style="width:100%; max-width:900px; border-radius:16px;">
+    </div>
+    <h1>Stop Getting Rejected —<span style="color:#c9a84c;"> Start Getting Interview Calls with AI</span></h1>
+    <p style="margin-top:10px; font-size:16px; color:#aaa;">Create ATS-optimized resumes & cover letters in seconds — and finally start getting interview calls.</p>
     <div class="gumroad-cta">
       <a href="https://eleveemporium.gumroad.com/l/pllrsk" data-gumroad-single-product="true" style="text-decoration:none;">
         <button>Get Instant Access</button>
       </a>
     </div>
-    </div>
+  </div>
 
   <!-- Tabs -->
+
   <div class="tabs">
     <button class="tab active" onclick="switchTab('cover')">✉ Cover Letter</button>
     <button class="tab" onclick="switchTab('resume')">📄 Resume</button>
   </div>
 
   <!-- Cover Letter Panel -->
+
   <div class="panel active" id="panel-cover">
     <div class="form-card">
       <h2>Cover letter details</h2>
@@ -495,12 +620,12 @@ Create ATS-optimized resumes & cover letters in seconds — and finally start ge
       </div>
       <div class="form-group">
         <label>Key skills & experience</label>
-        <textarea id="cl-skills" placeholder="e.g. Java, JavaScript, web development, personal projects, software development lifecycle..."></textarea>
+        <textarea id="cl-skills" placeholder="e.g. Java, JavaScript, web development, personal projects..."></textarea>
       </div>
       <div class="form-group">
-  <label>Enter your email to generate your cover letter (2 free uses)</label>
-  <input id="cl-access-email" type="email" placeholder="Enter your email for 2 free generations">
-</div>
+        <label>Enter your email to generate your cover letter (2 free uses)</label>
+        <input id="cl-access-email" type="email" placeholder="Enter your email for 2 free generations">
+      </div>
       <div class="form-group">
         <label>Tone</label>
         <div class="tone-chips">
@@ -525,9 +650,26 @@ Create ATS-optimized resumes & cover letters in seconds — and finally start ge
         <button class="btn-action" onclick="downloadOutput('cl-text','cover-letter.txt')">Download</button>
       </div>
     </div>
+
+```
+<!-- Interview Prep for Cover Letter -->
+<div class="interview-card" id="cl-interview-card">
+  <div class="interview-header">
+    <span class="interview-title">🎯 Interview Prep Questions</span>
+    <span class="output-badge">AI Generated</span>
+  </div>
+  <div class="interview-loading" id="cl-interview-loading"><div class="spinner"></div>Generating interview questions...</div>
+  <ul class="question-list" id="cl-questions"></ul>
+  <div class="output-actions">
+    <button class="btn-action" onclick="copyInterviewQuestions('cl')">Copy All Questions</button>
+  </div>
+</div>
+```
+
   </div>
 
   <!-- Resume Panel -->
+
   <div class="panel" id="panel-resume">
     <div class="form-card">
       <h2>Resume details</h2>
@@ -547,16 +689,13 @@ Create ATS-optimized resumes & cover letters in seconds — and finally start ge
           <input type="text" id="rv-email" placeholder="email@example.com" />
         </div>
         <div class="form-group">
-          <div class="form-group">
-  <label>Phone</label>
-  <input type="text" id="rv-phone" placeholder="e.g. +1 555 0100" />
-</div>
-
-<div class="form-group">
-  <label>Location</label>
-  <input type="text" id="rv-location" placeholder="e.g. Rochester, NY" />
-</div>
+          <label>Phone</label>
+          <input type="text" id="rv-phone" placeholder="e.g. +1 555 0100" />
         </div>
+      </div>
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" id="rv-location" placeholder="e.g. Rochester, NY" />
       </div>
       <div class="form-group">
         <label>Education</label>
@@ -564,200 +703,303 @@ Create ATS-optimized resumes & cover letters in seconds — and finally start ge
       </div>
       <div class="form-group">
         <label>Skills & technologies</label>
-        <textarea id="rv-skills" placeholder="e.g. Java, JavaScript, C++, data structures, algorithms, SQL, web development..."></textarea>
+        <textarea id="rv-skills" placeholder="e.g. Java, JavaScript, C++, data structures, SQL..."></textarea>
       </div>
       <div class="form-group">
         <label>Job description or posting (optional)</label>
-        <textarea id="rv-desc" placeholder="Paste the target job description to tailor the resume to the role."></textarea>
+        <textarea id="rv-desc" placeholder="Paste the target job description to tailor the resume."></textarea>
       </div>
       <div class="form-group">
         <label>Experience & projects</label>
-        <textarea id="rv-exp" placeholder="e.g. Personal projects in web dev, academic coursework, any internships or part-time work..."></textarea>
+        <textarea id="rv-exp" placeholder="e.g. Personal projects, internships, coursework..."></textarea>
       </div>
       <div class="form-group">
-  <label>Enter your email to generate your resume (2 free uses)</label>
-  <input id="rv-access-email" type="email" placeholder="Enter your email for 2 free generations">
-</div>
+        <label>Enter your email to generate your resume (2 free uses)</label>
+        <input id="rv-access-email" type="email" placeholder="Enter your email for 2 free generations">
+      </div>
       <div class="form-group">
         <label>Style</label>
         <div class="tone-chips">
-         <button class="chip active" onclick="selectTone(this,'rv','clean and professional')">Clean</button>
-         <button class="chip" onclick="selectTone(this,'rv','modern and bold')">Modern</button>
-         <button class="chip" onclick="selectTone(this,'rv','concise and minimal')">Minimal</button>
-         <button class="chip" onclick="selectTone(this,'rv','detailed and comprehensive')">Detailed</button>
+          <button class="chip active" onclick="selectTone(this,'rv','clean and professional')">Clean</button>
+          <button class="chip" onclick="selectTone(this,'rv','modern and bold')">Modern</button>
+          <button class="chip" onclick="selectTone(this,'rv','concise and minimal')">Minimal</button>
+          <button class="chip" onclick="selectTone(this,'rv','detailed and comprehensive')">Detailed</button>
         </div>
         <div style="margin-top:15px;">
-  <label>Choose Resume Template</label>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
-
-    <div class="template-card active" onclick="setTemplate('modern')" id="tpl-modern">
-      <h3>Modern</h3>
-      <p>Clean with bold sections</p>
+          <label>Choose Resume Template</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+            <div class="template-card active" onclick="setTemplate('modern')" id="tpl-modern">
+              <h3>🖤 Modern</h3>
+              <p>Dark header · Gold section bars · Sharp & clean</p>
+            </div>
+            <div class="template-card" onclick="setTemplate('minimal')" id="tpl-minimal">
+              <h3>🤍 Minimal</h3>
+              <p>Ultra clean · Thin gold rule · Elegant spacing</p>
+            </div>
+            <div class="template-card locked" onclick="handleLockedTemplate('executive')" id="tpl-executive">
+              <h3>🏆 Executive</h3>
+              <p>Navy sidebar · Gold initials · Skill pills · Premium</p>
+              <div class="variant-row" onclick="event.stopPropagation()">
+                <span style="font-size:10px;color:var(--muted);">Color:</span>
+                <div class="color-swatch active" style="background:#121a2e;" title="Navy" onclick="setColorVariant('executive','navy',this)"></div>
+                <div class="color-swatch" style="background:#1a2e1a;" title="Forest" onclick="setColorVariant('executive','forest',this)"></div>
+                <div class="color-swatch" style="background:#1e1e1e;" title="Charcoal" onclick="setColorVariant('executive','charcoal',this)"></div>
+                <span class="variant-name" id="exec-variant-name">Navy</span>
+              </div>
+            </div>
+            <div class="template-card locked" onclick="handleLockedTemplate('detailed')" id="tpl-detailed">
+              <h3>✨ Elegant</h3>
+              <p>Two-column · Gold header · Skill pills · Premium</p>
+              <div class="variant-row" onclick="event.stopPropagation()">
+                <span style="font-size:10px;color:var(--muted);">Color:</span>
+                <div class="color-swatch active" style="background:#231c14;" title="Brown" onclick="setColorVariant('elegant','brown',this)"></div>
+                <div class="color-swatch" style="background:#2a0d1a;" title="Burgundy" onclick="setColorVariant('elegant','burgundy',this)"></div>
+                <div class="color-swatch" style="background:#0d1a2a;" title="Midnight" onclick="setColorVariant('elegant','midnight',this)"></div>
+                <span class="variant-name" id="elegant-variant-name">Brown</span>
+              </div>
+            </div>
+            <div style="margin-top:20px; grid-column: span 2;">
+              <label>Have a premium code?</label>
+              <input id="unlock-code" type="text" placeholder="Enter your code" style="width:100%;padding:10px;margin-top:5px;">
+              <button class="btn-action" onclick="unlockPremium()" style="margin-top:10px;">Unlock Templates</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="template-card" onclick="setTemplate('minimal')" id="tpl-minimal">
-      <h3>Minimal</h3>
-      <p>Simple and compact</p>
-    </div>
+```
+<button class="btn-generate" id="rv-btn" onclick="generate('rv')">Generate Resume</button>
+<div class="error-msg" id="rv-error"></div>
+<div class="loading" id="rv-loading"><div class="spinner"></div>Building your resume...</div>
 
-    <div class="template-card locked" onclick="handleLockedTemplate('executive')" id="tpl-executive">
-      <h3>Premium Pro</h3>
-      <p>Advanced design (Unlock)</p>
-    </div>
-
-  <div class="template-card locked" onclick="handleLockedTemplate('executive')">
-      <h3>Executive</h3>
-      <p>High-end corporate layout</p>
-    </div>
-    <div style="margin-top:20px;">
-  <label>Have a premium code?</label>
-  <input id="unlock-code" type="text" placeholder="Enter your code" style="width:100%;padding:10px;margin-top:5px;">
-  <button class="btn-action" onclick="unlockPremium()" style="margin-top:10px;">Unlock Templates</button>
-</div>
-
+<div class="output-card" id="rv-output">
+  <div class="output-header">
+    <span>Your resume</span>
+    <span class="output-badge">Ready</span>
+  </div>
+  <div class="output-text" id="rv-text"></div>
+  <div class="output-actions">
+    <button class="btn-action" onclick="copyOutput('rv-text', this)">Copy</button>
+    <button class="btn-action" onclick="downloadPDF('rv-text', 'resume.pdf')">Download PDF</button>
   </div>
 </div>
-      </div>
+
+<!-- ATS Score Card -->
+<div class="ats-card" id="rv-ats-card">
+  <div class="ats-header">
+    <span class="ats-title">📊 ATS Score Analysis</span>
+    <span class="output-badge">AI Scored</span>
+  </div>
+  <div class="loading" id="rv-ats-loading" style="padding:1.5rem;"><div class="spinner"></div>Analysing ATS compatibility...</div>
+  <div id="rv-ats-content" style="display:none;">
+    <div class="ats-score-wrap">
+      <div class="ats-score-circle" id="rv-ats-score">--</div>
+      <div class="ats-score-label" id="rv-ats-label">Calculating...</div>
     </div>
-    <button class="btn-generate" id="rv-btn" onclick="generate('rv')">Generate Resume</button>
-    <div class="error-msg" id="rv-error"></div>
-    <div class="loading" id="rv-loading"><div class="spinner"></div>Building your resume...</div>
-    <div class="output-card" id="rv-output">
-      <div class="output-header">
-        <span>Your resume</span>
-        <span class="output-badge">Ready</span>
-      </div>
-      <div class="output-text" id="rv-text"></div>
-      <div class="output-actions">
-        <button class="btn-action" onclick="copyOutput('rv-text', this)">Copy</button>
-        <button class="btn-action" onclick="downloadPDF('rv-text', 'resume.pdf')">Download PDF</button>
-      </div>
+    <div class="ats-bar-wrap">
+      <div class="ats-bar-label"><span>Keyword Match</span><span id="rv-bar-kw-val">0%</span></div>
+      <div class="ats-bar"><div class="ats-bar-fill" id="rv-bar-kw" style="width:0%"></div></div>
     </div>
+    <div class="ats-bar-wrap">
+      <div class="ats-bar-label"><span>Format & Structure</span><span id="rv-bar-fmt-val">0%</span></div>
+      <div class="ats-bar"><div class="ats-bar-fill" id="rv-bar-fmt" style="width:0%"></div></div>
+    </div>
+    <div class="ats-bar-wrap">
+      <div class="ats-bar-label"><span>Impact & Action Verbs</span><span id="rv-bar-imp-val">0%</span></div>
+      <div class="ats-bar"><div class="ats-bar-fill" id="rv-bar-imp" style="width:0%"></div></div>
+    </div>
+    <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
+      <div style="font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:10px;">Improvement Tips</div>
+      <div class="ats-tips" id="rv-ats-tips"></div>
+    </div>
+    <div class="output-actions">
+      <button class="btn-action" onclick="copyATS()">Copy ATS Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- Interview Prep Card for Resume -->
+<div class="interview-card" id="rv-interview-card">
+  <div class="interview-header">
+    <span class="interview-title">🎯 Interview Prep Questions</span>
+    <span class="output-badge">AI Generated</span>
+  </div>
+  <div class="interview-loading" id="rv-interview-loading"><div class="spinner"></div>Generating interview questions...</div>
+  <ul class="question-list" id="rv-questions"></ul>
+  <div class="output-actions">
+    <button class="btn-action" onclick="copyInterviewQuestions('rv')">Copy All Questions</button>
+  </div>
+</div>
+```
+
   </div>
 
   <div class="footer">AI Job Application Suite &nbsp;·&nbsp; Powered by Claude AI</div>
 </div>
 
-<!-- Gumroad -->
 <script src="https://gumroad.com/js/gumroad.js"></script>
-<script>
-  const tones = { cl: 'professional', rv: 'clean and professional' };
 
+<script>
+const tones = { cl: 'professional', rv: 'clean and professional' };
 let selectedTemplate = "modern";
+
+// Color variants for premium templates
+const colorVariants = {
+  executive: {
+    navy:     { sidebar: [18, 26, 46],   sidebarText: [176, 188, 212], accent: [201, 168, 76] },
+    forest:   { sidebar: [18, 46, 26],   sidebarText: [176, 212, 188], accent: [100, 180, 100] },
+    charcoal: { sidebar: [28, 28, 32],   sidebarText: [185, 185, 195], accent: [201, 168, 76] }
+  },
+  elegant: {
+    brown:    { header: [35, 28, 20],  accent: [201, 168, 76], pillBg: [250, 246, 236] },
+    burgundy: { header: [42, 13, 26],  accent: [200, 100, 130], pillBg: [250, 236, 242] },
+    midnight: { header: [13, 26, 42],  accent: [100, 160, 220], pillBg: [236, 242, 250] }
+  }
+};
+
+let selectedExecVariant = 'navy';
+let selectedElegantVariant = 'brown';
+
+const SUPABASE_URL = "https://roqhmdqrgovnqjiuoewe.supabase.co";
+const SUPABASE_KEY = "sb_publishable_cC8Fx8q75VUwEXU_x4sx9g__Iw7aS79";
+const FREE_GENERATION_LIMIT = 2;
+const PAYWALL_URL = 'https://eleveemporium.gumroad.com/l/pllrsk';
+let userEmail = localStorage.getItem('aiJobSuiteUserEmail') || '';
+let usageData = JSON.parse(localStorage.getItem('aiJobSuiteUsageData') || '{}');
+let premiumUnlocked = localStorage.getItem("premiumUnlocked") === "true";
+
+window.addEventListener('DOMContentLoaded', () => {
+  setTemplate('modern');
+  if (premiumUnlocked) {
+    document.querySelectorAll(".template-card.locked").forEach(card => card.classList.remove("locked"));
+  }
+});
 
 function setTemplate(template) {
   selectedTemplate = template;
-
-  // Remove active from all cards
-  document.querySelectorAll('.template-card').forEach(card => {
-    card.classList.remove('active');
-  });
-
-  // Add active to selected card
+  document.querySelectorAll('.template-card').forEach(card => card.classList.remove('active'));
   const activeCard = document.getElementById(`tpl-${template}`);
-  if (activeCard) {
-    activeCard.classList.add('active');
-  }
+  if (activeCard) activeCard.classList.add('active');
 }
-  window.addEventListener('DOMContentLoaded', () => {
-  setTemplate('modern');
-});
 
-  // Soft paywall settings: 2 free generations, then send users to Gumroad.
-  const FREE_GENERATION_LIMIT = 2;
-  const PAYWALL_URL = 'https://eleveemporium.gumroad.com/l/pllrsk';
-  let userEmail = localStorage.getItem('aiJobSuiteUserEmail') || '';
-let usageData = JSON.parse(localStorage.getItem('aiJobSuiteUsageData') || '{}');
+function setColorVariant(template, variant, el) {
+  // Update active swatch
+  el.closest('.variant-row').querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+
+  // Update variant name label
+  const label = document.getElementById(`${template}-variant-name`);
+  if (label) label.textContent = variant.charAt(0).toUpperCase() + variant.slice(1);
+
+  // Store selection
+  if (template === 'executive') selectedExecVariant = variant;
+  if (template === 'elegant') selectedElegantVariant = variant;
+
+  // Auto-select the template
+  setTemplate(template === 'elegant' ? 'detailed' : template);
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0 && name==='cover')||(i===1 && name==='resume')));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function selectTone(el, prefix, tone) {
+  el.closest('.tone-chips').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  tones[prefix] = tone;
+}
+
+function getVal(id) { return document.getElementById(id).value.trim(); }
+
 function getAccessEmail(prefix) {
   const emailInput = document.getElementById(prefix + '-access-email');
   const email = (emailInput?.value || userEmail || '').trim().toLowerCase();
-
   if (!email) {
     const errorEl = document.getElementById(prefix + '-error');
     errorEl.textContent = 'Please enter your email to start your 2 free generations.';
     errorEl.classList.add('visible');
     return '';
   }
-
   userEmail = email;
   localStorage.setItem('aiJobSuiteUserEmail', userEmail);
   return userEmail;
 }
-function checkLimit(prefix) {
-  const email = getAccessEmail(prefix);
-  if (!email) return false;
 
-  if (!usageData[email]) usageData[email] = 0;
-  if (usageData[email] < FREE_GENERATION_LIMIT) return true;
-
-  const errorEl = document.getElementById(prefix + '-error');
-  const outputEl = document.getElementById(prefix + '-output');
-
-  if (outputEl) outputEl.classList.remove('visible');
-
-  errorEl.innerHTML = `
-    <strong>🔒 You're 1 step away from landing the job.</strong><br><br>
-    You've used your ${FREE_GENERATION_LIMIT} free generations for ${email}.<br><br>
-    Unlock unlimited access to:<br>
-    • ATS-optimized resumes<br>
-    • High-converting cover letters<br>
-    • Job-specific keyword optimization<br><br>
-    Stop guessing. Start getting interviews.
-    <br><br>
-    <a href="${PAYWALL_URL}" target="_blank" rel="noopener noreferrer" style="
-      display:inline-block;
-      padding:10px 16px;
-      border-radius:8px;
-      background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
-      color:#0e0e0f;
-      text-decoration:none;
-      font-weight:500;
-    ">Unlock My Resume Tool</a>
-  `;
-  errorEl.classList.add('visible');
-  return false;
+async function checkUsage(email) {
+  if (!email) { alert("Please enter your email first."); return false; }
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage?email=eq.${email}`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+  });
+  const data = await res.json();
+  if (data.length > 0) {
+    const usage = data[0].usage_count;
+    if (usage >= 2) {
+      const errorEl = document.getElementById(document.querySelector('.panel.active').id.replace('panel-','') + '-error');
+      errorEl.innerHTML = `<strong>🔒 You're 1 step away from landing the job.</strong><br><br>You've used your ${FREE_GENERATION_LIMIT} free generations for ${email}.<br><br>Unlock unlimited access to:<br>• ATS-optimized resumes<br>• High-converting cover letters<br>• Premium templates<br><br><a href="${PAYWALL_URL}" target="_blank" style="display:inline-block;padding:10px 16px;border-radius:8px;background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);color:#0e0e0f;text-decoration:none;font-weight:500;">Unlock My Resume Tool</a>`;
+      errorEl.classList.add('visible');
+      return false;
+    }
+    fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage?email=eq.${email}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ usage_count: usage + 1 }),
+    });
+  } else {
+    fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "return=minimal" },
+      body: JSON.stringify({ email: email, usage_count: 1 }),
+    });
+  }
+  return true;
 }
 
-  function increaseUsage() {
+function increaseUsage() {
   if (!userEmail) return;
   if (!usageData[userEmail]) usageData[userEmail] = 0;
   usageData[userEmail] += 1;
   localStorage.setItem('aiJobSuiteUsageData', JSON.stringify(usageData));
 }
-  function switchTab(name) {
-    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0 && name==='cover')||(i===1 && name==='resume')));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.getElementById('panel-' + name).classList.add('active');
+
+async function callAPI(prompt) {
+  const res = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Error ${res.status}`);
   }
+  const data = await res.json();
+  return Array.isArray(data.content) ? data.content.map(i => i.text || '').join('') : '';
+}
 
-  function selectTone(el, prefix, tone) {
-    el.closest('.tone-chips').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
-    tones[prefix] = tone;
-  }
+async function generate(prefix) {
+  const errorEl = document.getElementById(prefix + '-error');
+  errorEl.classList.remove('visible');
+  errorEl.innerHTML = '';
 
-  function getVal(id) { return document.getElementById(id).value.trim(); }
+  let prompt = '';
+  if (prefix === 'cl') {
+    const name = getVal('cl-name'), job = getVal('cl-job'), company = getVal('cl-company'), desc = getVal('cl-desc'), skills = getVal('cl-skills');
+    if (!name || !job || !company || !skills) {
+      errorEl.textContent = 'Please fill in all required cover letter fields.';
+      errorEl.classList.add('visible');
+      return;
+    }
+    const email = getAccessEmail(prefix);
+    const allowed = await checkUsage(email);
+    if (!allowed) return;
 
-  async function generate(prefix) {
-    const errorEl = document.getElementById(prefix + '-error');
-    errorEl.classList.remove('visible');
-    errorEl.innerHTML = '';
-
-    let prompt = '';
-    if (prefix === 'cl') {
-      const name = getVal('cl-name'), job = getVal('cl-job'), company = getVal('cl-company'), desc = getVal('cl-desc'), skills = getVal('cl-skills');
-      if (!name || !job || !company || !skills) {
-        errorEl.textContent = 'Please fill in all required cover letter fields.';
-        errorEl.classList.add('visible');
-        return;
-      }
-
-      const email = getAccessEmail(prefix);
-const allowed = await checkUsage(email);
-if (!allowed) return;
-      
-      prompt = `Write a ${tones.cl}, ATS-optimized, recruiter-focused cover letter for ${name} applying for the ${job} role at ${company}.
-
+    prompt = `Write a ${tones.cl}, ATS-optimized, recruiter-focused cover letter for ${name} applying for the ${job} role at ${company}.
 IMPORTANT INSTRUCTIONS:
 - Keep the cover letter between 120–180 words (concise and impactful)
 - Make it sound confident and slightly senior-level (not beginner or desperate)
@@ -766,471 +1008,789 @@ IMPORTANT INSTRUCTIONS:
 - Avoid fluff, repetition, and generic phrases
 - Do NOT include placeholders or brackets
 - Start with a strong, natural opening that immediately shows value or relevance to the role
-- Avoid common or overused phrases (e.g., "I am excited to apply", "I am writing to express", "With hands-on experience")
-- Do not start with "I'm applying" or similar intent-based phrases; start with value or capability instead
-- The opening should feel human, specific, and slightly unique — not templated or generic
-- Vary sentence structure so outputs do not sound repetitive or AI-generated
-- Avoid repeating the same opening style across different generations
-- Write like a real candidate speaking confidently, not like a formal template
+- Avoid common or overused phrases (e.g., "I am excited to apply", "I am writing to express")
+- Write like a real candidate speaking confidently
 - Naturally include relevant keywords from this job description: ${desc}
-- Do NOT include placeholder text such as [Your Name], [Date], [Email], or similar
-- Do NOT include a header section unless explicitly provided by the user
-- Prioritize keywords like: technical support, troubleshooting, networking, system administration, customer support, IT operations (when relevant)
-- Prefer concise, direct phrasing over soft or filler transitions (e.g., replace "Beyond technical proficiency" with stronger alternatives)
-
+- Do NOT include placeholder text such as [Your Name], [Date], [Email]
 CANDIDATE DETAILS:
-- Name: ${name}
-- Role: ${job}
-- Company: ${company}
-- Skills & experience: ${skills}
-
-STRUCTURE:
-1. Strong opening (clear interest + role + company)
-2. Technical value (skills + impact)
-3. Customer/service strength (communication, problem-solving)
-4. Growth + alignment with company
-5. Short, confident closing
-
-STYLE:
-- Professional, modern, and clean
-- No long paragraphs (max 2–3 lines each)
-- No over-explaining
-
+- Name: ${name}, Role: ${job}, Company: ${company}, Skills: ${skills}
 Output only the final cover letter text.`;
-    } else {
-      const name = getVal('rv-name');
-const job = getVal('rv-job');
-const email = getVal('rv-email');
-const phone = getVal('rv-phone');
-const location = getVal('rv-location');
-const edu = getVal('rv-edu');
-const skills = getVal('rv-skills');
-const desc = getVal('rv-desc');
-const exp = getVal('rv-exp');
-      if (!name || !job || !skills) {
-        errorEl.textContent = 'Please fill in at least your name, target job, and skills.';
-        errorEl.classList.add('visible');
-        return;
-      }
-      
-  const accessEmail = getAccessEmail(prefix);
-const allowed = await checkUsage(accessEmail);
-if (!allowed) return;
-      
-      prompt = `Create a ${tones.rv}, ATS-optimized, recruiter-focused resume for ${name} targeting a ${job} role.
-      - Do NOT use placeholders or vague titles like "In Development"
-- Create realistic, professional job titles based on the candidate’s skills (e.g., IT Support Specialist, Help Desk Technician, Desktop Support Technician)
-      
+  } else {
+    const name = getVal('rv-name'), job = getVal('rv-job'), email = getVal('rv-email'), phone = getVal('rv-phone'),
+          location = getVal('rv-location'), edu = getVal('rv-edu'), skills = getVal('rv-skills'),
+          desc = getVal('rv-desc'), exp = getVal('rv-exp');
+    if (!name || !job || !skills) {
+      errorEl.textContent = 'Please fill in at least your name, target job, and skills.';
+      errorEl.classList.add('visible');
+      return;
+    }
+    const accessEmail = getAccessEmail(prefix);
+    const allowed = await checkUsage(accessEmail);
+    if (!allowed) return;
+
+    prompt = `Create a ${tones.rv}, ATS-optimized, recruiter-focused resume for ${name} targeting a ${job} role.
 IMPORTANT INSTRUCTIONS:
 - Make the resume concise, professional, and results-oriented
-- Make it sound like a strong early-career candidate with 1–3 years equivalent experience, not a beginner
-- Focus on impact, outcomes, and capability — not lack of experience
-- Use strong action verbs such as Resolved, Supported, Optimized, Configured, Improved, Diagnosed, and Reduced
-- Prefer concise, direct phrasing over soft or filler language
-- Avoid repetition, fluff, generic statements, and phrases like "responsible for"
-- Do NOT describe the candidate as "entry-level"
-- Do NOT use phrases like "in development", "learning", or "beginner"
-- Do NOT include placeholders such as [Your Name] or [Date]
-- Do NOT invent employers, dates, degrees, certifications, or experience not provided
-- Do NOT create fake job titles, companies, or dates
-- Include only fields that are provided and do not display missing or empty fields
-- Start the summary with a strong professional title such as "IT Support Specialist with..."
-- Create realistic professional titles based on the candidate’s skills, such as IT Support Specialist, Help Desk Technician, or Desktop Support Technician
-- If no formal work experience is provided, label the section as "Technical Experience" instead of "Work Experience"
-- Merge projects, labs, coursework, and hands-on work into the Technical Experience section
-- Do NOT create a separate "Projects" section unless absolutely necessary
-- Present hands-on projects or labs as professional technical experience without overusing words like "project", "lab", or "academic"
-- Rewrite all bullet points to sound impactful and results-driven
-- Each bullet must show impact, not just tasks
-- Include measurable or clear outcomes where possible, such as reduced downtime, improved efficiency, enhanced user experience, or increased user satisfaction
-- Output the resume in clean plain text format with no markdown symbols like ##, **, or ---
-- Use standard resume section headers such as PROFESSIONAL SUMMARY, TECHNICAL SKILLS, TECHNICAL EXPERIENCE, and EDUCATION
-- Only include metrics (e.g., %, numbers, scale) if they are realistic and consistent with the experience level; otherwise, keep impact qualitative
-- Differentiate each role by emphasizing growth, increased responsibility, or different focus areas (e.g., support → infrastructure → troubleshooting depth)
-- Keep bullet points concise (1 line when possible) and remove unnecessary filler words
-- Use consistent, industry-standard job titles aligned with IT support roles
-- Ensure the resume reads naturally and does not sound AI-generated; prioritize clarity, realism, and professionalism
-
-ATS OPTIMIZATION:
-- Naturally include relevant keywords from this job description: ${desc}
-- Prioritize keywords like: technical support, troubleshooting, networking, system administration, customer support, IT operations (when relevant)
-
+- Use strong action verbs: Resolved, Supported, Optimized, Configured, Improved, Diagnosed, Reduced
+- Do NOT include placeholders or fake companies, dates, or degrees
+- Output in clean plain text format with no markdown symbols
+- Use section headers: PROFESSIONAL SUMMARY, TECHNICAL SKILLS, TECHNICAL EXPERIENCE, EDUCATION
+ATS OPTIMIZATION: Naturally include relevant keywords from: ${desc}
 CANDIDATE DETAILS:
-- Name: ${name}
-- Target Role: ${job}
-- Email: ${email} 
-- Phone: ${phone} 
-- Location: ${location}
-- Education: ${edu}
-- Skills & Experience: ${skills}
-
-STRUCTURE:
-1. Header:
-   - Display name on first line
-   - Display contact info on second line in this format:
-   - Show phone and email on second line, and include location if provided (format: Phone | Email | Location)
-2. Professional Summary (2–3 lines, strong and impact-focused)
-3. Skills Section (group into categories like Technical Skills, Tools, Systems)
-4. Experience / Technical Experience
-5. Projects (if applicable)
-6. Education
-
-EXPERIENCE BULLETS:
-- Start each bullet with a strong action verb
-- Show impact or outcome where possible (efficiency, reliability, user support)
-- Keep bullets short and specific (1–2 lines max)
-- NEVER use weak verbs like "helped", "worked on", or "assisted with" — always rewrite into strong action statements
-- Where exact metrics are unavailable, imply impact (e.g., improved efficiency, reduced downtime, enhanced user experience)
-- Avoid weak verbs like "helped", "worked on", "assisted with" — replace with strong, specific actions
-- Rewrite bullets to emphasize impact and outcomes (e.g., reducing downtime, improving performance, increasing user satisfaction)
-
-STYLE:
-- Clean, modern, and easy to scan
-- Use bullet points (not long paragraphs)
-- No over-explaining
-- Use consistent formatting (aligned sections, clear spacing, no clutter)
-
+- Name: ${name}, Target Role: ${job}, Email: ${email}, Phone: ${phone}, Location: ${location}
+- Education: ${edu}, Skills: ${skills}, Experience: ${exp}
 Output only the final resume text.`;
-
-    }
-
-    const btn = document.getElementById(prefix + '-btn');
-    const originalBtnText = btn.textContent;
-    btn.disabled = true;
-    document.getElementById(prefix + '-loading').classList.add('visible');
-    document.getElementById(prefix + '-output').classList.remove('visible');
-
-    try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || err.details?.error?.message || `Error ${res.status}`);
-      }
-
-      const data = await res.json();
-      const text = Array.isArray(data.content) ? data.content.map(i => i.text || '').join('') : '';
-      if (!text) throw new Error('No output was returned.');
-      document.getElementById(prefix + '-text').textContent = text;
-      document.getElementById(prefix + '-output').classList.add('visible');
-      increaseUsage();
-    } catch (err) {
-      errorEl.textContent = 'Error: ' + (err.message || 'Something went wrong. Check your API key and try again.');
-      errorEl.classList.add('visible');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = originalBtnText;
-      document.getElementById(prefix + '-loading').classList.remove('visible');
-    }
   }
 
-  function copyOutput(id, btn) {
-    const text = document.getElementById(id).textContent;
-    if (!text) return;
-    navigator.clipboard.writeText(text).then(() => {
-      const original = btn.textContent;
-      btn.textContent = 'Copied ✓';
-      setTimeout(() => btn.textContent = original, 2000);
+  const btn = document.getElementById(prefix + '-btn');
+  const originalBtnText = btn.textContent;
+  btn.disabled = true;
+  document.getElementById(prefix + '-loading').classList.add('visible');
+  document.getElementById(prefix + '-output').classList.remove('visible');
+  if (prefix === 'rv') {
+    document.getElementById('rv-ats-card').classList.remove('visible');
+    document.getElementById('rv-interview-card').classList.remove('visible');
+    document.getElementById('cl-interview-card') && document.getElementById('cl-interview-card').classList.remove('visible');
+  }
+
+  try {
+    const text = await callAPI(prompt);
+    if (!text) throw new Error('No output was returned.');
+    document.getElementById(prefix + '-text').textContent = text;
+    document.getElementById(prefix + '-output').classList.add('visible');
+    increaseUsage();
+
+    // After generation — run ATS score (resume only) and interview questions
+    if (prefix === 'rv') {
+      const job = getVal('rv-job');
+      const desc = getVal('rv-desc');
+      generateATSScore(text, job, desc);
+      generateInterviewQuestions('rv', job, desc, text);
+    } else {
+      const job = getVal('cl-job');
+      const company = getVal('cl-company');
+      const desc = getVal('cl-desc');
+      generateInterviewQuestions('cl', job, desc, text);
+    }
+
+  } catch (err) {
+    errorEl.textContent = 'Error: ' + (err.message || 'Something went wrong. Try again.');
+    errorEl.classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalBtnText;
+    document.getElementById(prefix + '-loading').classList.remove('visible');
+  }
+}
+
+/* ===== ATS SCORE ===== */
+async function generateATSScore(resumeText, jobTitle, jobDesc) {
+  const card = document.getElementById('rv-ats-card');
+  const loadingEl = document.getElementById('rv-ats-loading');
+  const contentEl = document.getElementById('rv-ats-content');
+  card.classList.add('visible');
+  loadingEl.classList.add('visible');
+  contentEl.style.display = 'none';
+
+  const prompt = `You are an ATS (Applicant Tracking System) expert. Analyse this resume for the role of "${jobTitle}"${jobDesc ? ' with this job description: ' + jobDesc : ''}.
+
+RESUME:
+${resumeText}
+
+Respond ONLY with valid JSON in this exact format, no other text:
+{
+  "overall": 82,
+  "keyword_match": 78,
+  "format_score": 90,
+  "impact_score": 76,
+  "label": "Strong Match",
+  "tips": "1. Add more specific keywords like X and Y from the job description.\\n2. Quantify your achievements with numbers where possible.\\n3. Ensure your contact info is on the first line for ATS parsing."
+}
+
+Rules:
+- overall: number 0-100
+- keyword_match: number 0-100 (how well keywords match the job)
+- format_score: number 0-100 (structure, headers, formatting)
+- impact_score: number 0-100 (action verbs, outcomes, achievements)
+- label: one of "Weak Match", "Fair Match", "Good Match", "Strong Match", "Excellent Match"
+- tips: 3 short actionable tips as a numbered string`;
+
+  try {
+    const raw = await callAPI(prompt);
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    document.getElementById('rv-ats-score').textContent = parsed.overall + '%';
+    document.getElementById('rv-ats-label').textContent = parsed.label;
+
+    const scoreEl = document.getElementById('rv-ats-score');
+    if (parsed.overall >= 80) scoreEl.style.borderColor = '#4caf7d';
+    else if (parsed.overall >= 60) scoreEl.style.borderColor = '#c9a84c';
+    else scoreEl.style.borderColor = '#e07070';
+
+    setTimeout(() => {
+      document.getElementById('rv-bar-kw').style.width = parsed.keyword_match + '%';
+      document.getElementById('rv-bar-kw-val').textContent = parsed.keyword_match + '%';
+      document.getElementById('rv-bar-fmt').style.width = parsed.format_score + '%';
+      document.getElementById('rv-bar-fmt-val').textContent = parsed.format_score + '%';
+      document.getElementById('rv-bar-imp').style.width = parsed.impact_score + '%';
+      document.getElementById('rv-bar-imp-val').textContent = parsed.impact_score + '%';
+    }, 100);
+
+    document.getElementById('rv-ats-tips').textContent = parsed.tips;
+    loadingEl.classList.remove('visible');
+    contentEl.style.display = 'block';
+  } catch(e) {
+    loadingEl.classList.remove('visible');
+    contentEl.style.display = 'block';
+    document.getElementById('rv-ats-tips').textContent = 'Could not generate ATS analysis. Please try again.';
+  }
+}
+
+/* ===== INTERVIEW QUESTIONS ===== */
+async function generateInterviewQuestions(prefix, jobTitle, jobDesc, documentText) {
+  const card = document.getElementById(prefix + '-interview-card');
+  const loadingEl = document.getElementById(prefix + '-interview-loading');
+  const listEl = document.getElementById(prefix + '-questions');
+  card.classList.add('visible');
+  loadingEl.classList.add('visible');
+  listEl.innerHTML = '';
+
+  const prompt = `You are an expert career coach. Based on this ${prefix === 'rv' ? 'resume' : 'cover letter'} for a "${jobTitle}" role, generate exactly 5 likely interview questions the candidate should prepare for.
+
+DOCUMENT:
+${documentText}
+${jobDesc ? 'JOB DESCRIPTION: ' + jobDesc : ''}
+
+Respond ONLY with valid JSON in this exact format, no other text:
+{
+  "questions": [
+    "Tell me about your experience with X...",
+    "How would you handle...",
+    "Describe a time when...",
+    "What is your approach to...",
+    "Where do you see yourself..."
+  ]
+}
+
+Rules:
+- Make questions specific to the candidate's actual skills and the role
+- Mix behavioural, technical, and situational questions
+- Do NOT use generic questions like "Tell me about yourself" alone
+- Each question should be 1 sentence`;
+
+  try {
+    const raw = await callAPI(prompt);
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    loadingEl.classList.remove('visible');
+    parsed.questions.forEach((q, i) => {
+      const li = document.createElement('li');
+      li.className = 'question-item';
+      li.innerHTML = `<span class="q-num">${i + 1}</span><span>${q}</span>`;
+      listEl.appendChild(li);
     });
+  } catch(e) {
+    loadingEl.classList.remove('visible');
+    const li = document.createElement('li');
+    li.className = 'question-item';
+    li.innerHTML = '<span style="color:var(--muted)">Could not generate questions. Please try again.</span>';
+    listEl.appendChild(li);
   }
+}
 
-  function downloadOutput(id, filename) {
+function copyInterviewQuestions(prefix) {
+  const items = document.querySelectorAll(`#${prefix}-questions .question-item`);
+  const text = Array.from(items).map((item, i) => `${i+1}. ${item.querySelector('span:last-child').textContent}`).join('\n');
+  navigator.clipboard.writeText(text).then(() => alert('Interview questions copied!'));
+}
+
+function copyATS() {
+  const score = document.getElementById('rv-ats-score').textContent;
+  const label = document.getElementById('rv-ats-label').textContent;
+  const tips = document.getElementById('rv-ats-tips').textContent;
+  const kw = document.getElementById('rv-bar-kw-val').textContent;
+  const fmt = document.getElementById('rv-bar-fmt-val').textContent;
+  const imp = document.getElementById('rv-bar-imp-val').textContent;
+  const text = `ATS Score: ${score} — ${label}\n\nKeyword Match: ${kw}\nFormat & Structure: ${fmt}\nImpact & Action Verbs: ${imp}\n\nImprovement Tips:\n${tips}`;
+  navigator.clipboard.writeText(text).then(() => alert('ATS report copied!'));
+}
+
+function copyOutput(id, btn) {
+  const text = document.getElementById(id).textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const original = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => btn.textContent = original, 2000);
+  });
+}
+
+function downloadOutput(id, filename) {
   const text = document.getElementById(id).textContent;
   const a = document.createElement('a');
   a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
   a.download = filename;
   a.click();
 }
-const SUPABASE_URL = "https://roqhmdqrgovnqjiuoewe.supabase.co";
-const SUPABASE_KEY = "sb_publishable_cC8Fx8q75VUwEXU_x4sx9g__Iw7aS79";
 
-async function checkUsage(email) {
-  if (!email) {
-    alert("Please enter your email first.");
-    return false;
-  }
-
-  // Check existing usage
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage?email=eq.${email}`, {
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-    },
-  });
-
-  const data = await res.json();
-
-  // If user exists
-  if (data.length > 0) {
-    const usage = data[0].usage_count;
-
-    if (usage >= 2) {
-      alert("You've used your 2 free generations.\n\nUpgrade for $7 to unlock:\n• Unlimited resumes\n• Professional PDF downloads\n• Premium templates");
-      return false;
-    }
-
-    // Update usage
-    fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage?email=eq.${email}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      },
-      body: JSON.stringify({
-        usage_count: usage + 1,
-      }),
-    });
-
-  } else {
-    // New user → insert
-    fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({
-        email: email,
-        usage_count: 1,
-      }),
-    });
-  }
-
-  return true;
-}
-/* 👇 ADD THIS RIGHT HERE 👇 */
+/* ===== PDF DOWNLOAD ===== */
 async function downloadPDF(elementId, filename) {
   const source = document.getElementById(elementId);
-
-  if (!source || !source.innerText.trim()) {
-    alert("Please generate your resume first.");
-    return;
-  }
-
+  if (!source || !source.innerText.trim()) { alert("Please generate your resume first."); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p", "pt", "letter");
+  const rawText = source.innerText || source.textContent;
+  const allLines = rawText.split("\n").map(l => l.trim()).filter(l => l !== "");
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
 
-  const text = source.innerText || source.textContent;
-  const lines = text.split("\n").filter(line => line.trim() !== "");
+  const headings = ["PROFESSIONAL SUMMARY","TECHNICAL SKILLS","TECHNICAL EXPERIENCE","WORK EXPERIENCE","PROJECTS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING","SKILLS","EXPERIENCE","SUMMARY"];
 
- let y = 60;
-let left = selectedTemplate === "modern" ? 70 : 54;
-let pageWidth = doc.internal.pageSize.getWidth();
-let usableWidth = pageWidth - left * 2;
+  const isHeading = (line) => headings.includes(line.toUpperCase());
+  const isBullet = (line) => line.startsWith("-") || line.startsWith("•");
 
-const addPageIfNeeded = () => {
-  if (y > 735) {
-    doc.addPage();
-    y = 60;
-  }
-};
+  // ─────────────────────────────────────────
+  // TEMPLATE 1: MODERN
+  // Dark full-width header, gold section bars, white body
+  // ─────────────────────────────────────────
+  if (selectedTemplate === "modern") {
+    const left = 54; const right = pageWidth - 54; const usable = right - left;
+    let y = 0;
 
-  if (selectedTemplate === "premium") {
-  doc.setFillColor(28, 28, 32);
-  doc.rect(0, 0, pageWidth, pageHeight, "F");
+    // Header background
+    doc.setFillColor(22, 22, 26);
+    doc.rect(0, 0, pageWidth, 110, "F");
+    // Gold accent bar at bottom of header
+    doc.setFillColor(201, 168, 76);
+    doc.rect(0, 108, pageWidth, 4, "F");
 
-  doc.setFillColor(201, 168, 76);
-  doc.rect(0, 0, 60, pageHeight, "F");
+    // Name
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(26);
+    doc.text(allLines[0].toUpperCase(), left, 52);
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text(lines[0].toUpperCase(), 80, 50);
+    // Job title line (line 1 = contact info)
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(200, 190, 170);
+    doc.text(allLines[1] || "", left, 72);
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(lines[1] || "", 80, 70);
-
-  y = 110;
-
-} else
-if (selectedTemplate === "modern") {
-  doc.setFillColor(30, 30, 30);
-  doc.rect(0, 0, pageWidth, 100, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text(lines[0].toUpperCase(), left, 45);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(lines[1] || "", left, 68);
-  y = 130;
-} else if (selectedTemplate === "minimal") {
-  doc.setTextColor(20, 20, 20);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text(lines[0].toUpperCase(), left, y);
-  y += 18;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text(lines[1] || "", left, y);
-  y += 34;
-} else if (selectedTemplate === "detailed") {
-  doc.setDrawColor(201, 168, 76);
-  doc.setLineWidth(4);
-  doc.line(left, 42, left, 105);
-
-  doc.setTextColor(20, 20, 20);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text(lines[0].toUpperCase(), left + 18, 60);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(lines[1] || "", left + 18, 84);
-  y = 130;
-} else {
-  doc.setTextColor(20, 20, 20);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.text(lines[0].toUpperCase(), left, y);
-  y += 22;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(lines[1] || "", left, y);
-  y += 38;
-}
-
-const headings = [
-  "PROFESSIONAL SUMMARY",
-  "TECHNICAL SKILLS",
-  "TECHNICAL EXPERIENCE",
-  "WORK EXPERIENCE",
-  "PROJECTS",
-  "EDUCATION",
-  "CERTIFICATIONS",
-  "CERTIFICATIONS & TRAINING"
-];
-
-lines.slice(2).forEach(line => {
-  const cleanLine = line.trim();
-  if (!cleanLine) return;
-
-  addPageIfNeeded();
-
-  if (headings.includes(cleanLine.toUpperCase())) {
-    y += selectedTemplate === "minimal" ? 6 : 12;
-
-    if (selectedTemplate === "modern") {
-      doc.setFillColor(201, 168, 76);
-      doc.rect(left, y - 14, usableWidth, 24, "F");
-      doc.setTextColor(255, 255, 255);
-    } else if (selectedTemplate === "detailed") {
-      doc.setTextColor(201, 168, 76);
-      doc.setDrawColor(201, 168, 76);
-      doc.setLineWidth(1.2);
-      doc.line(left, y + 7, pageWidth - left, y + 7);
-      } else if (selectedTemplate === "premium") {
-  doc.setFillColor(28, 28, 32);
-  doc.rect(0, 0, pageWidth, pageHeight, "F");
-
-  doc.setFillColor(201, 168, 76);
-  doc.rect(0, 0, 60, pageHeight, "F");
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text(lines[0].toUpperCase(), 80, 50);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(lines[1] || "", 80, 70);
-
-  y = 110;
-    } else {
-    
-      doc.setTextColor(30, 30, 30);
-      doc.setDrawColor(220, 220, 220);
-      doc.setLineWidth(0.7);
-      doc.line(left, y + 7, pageWidth - left, y + 7);
+    // Contact line (line 2)
+    if (allLines[2] && !isHeading(allLines[2])) {
+      doc.text(allLines[2], left, 88);
     }
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(selectedTemplate === "minimal" ? 11 : 13);
-    doc.text(cleanLine.toUpperCase(), left, y);
-    y += selectedTemplate === "modern" ? 32 : selectedTemplate === "minimal" ? 22 : 28;
-    return;
-  }
+    y = 140;
+    const startIdx = (allLines[2] && !isHeading(allLines[2])) ? 3 : 2;
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(selectedTemplate === "minimal" ? 9 : 10);
-  doc.setTextColor(45, 45, 45);
-
-  if (cleanLine.startsWith("-") || cleanLine.startsWith("•")) {
-    const bulletText = cleanLine.replace(/^[-•]\s*/, "");
-    const wrapped = doc.splitTextToSize(bulletText, usableWidth - 14);
-
-    wrapped.forEach((wrappedLine, i) => {
-      addPageIfNeeded();
-      doc.text(i === 0 ? "• " + wrappedLine : "   " + wrappedLine, left, y);
-      y += selectedTemplate === "minimal" ? 12 : 14;
+    allLines.slice(startIdx).forEach(line => {
+      if (y > 740) { doc.addPage(); y = 50; }
+      if (isHeading(line)) {
+        y += 8;
+        doc.setFillColor(201, 168, 76);
+        doc.rect(left, y - 13, usable, 22, "F");
+        doc.setTextColor(22, 22, 26);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text(line.toUpperCase(), left + 8, y + 2);
+        y += 30;
+      } else if (isBullet(line)) {
+        const bt = line.replace(/^[-•]\s*/, "");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(40, 40, 40);
+        const wrapped = doc.splitTextToSize(bt, usable - 16);
+        wrapped.forEach((wl, i) => {
+          if (y > 740) { doc.addPage(); y = 50; }
+          doc.text(i === 0 ? "▸  " + wl : "    " + wl, left + 4, y);
+          y += 13;
+        });
+        y += 2;
+      } else {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(50, 50, 50);
+        const wrapped = doc.splitTextToSize(line, usable);
+        wrapped.forEach(wl => {
+          if (y > 740) { doc.addPage(); y = 50; }
+          doc.text(wl, left, y);
+          y += 13;
+        });
+        y += 3;
+      }
     });
 
-    y += selectedTemplate === "detailed" ? 4 : 2;
-    return;
+  // ─────────────────────────────────────────
+  // TEMPLATE 2: MINIMAL
+  // Ultra clean white, serif-style bold name, thin gold rule under name, simple underline headings
+  // ─────────────────────────────────────────
+  } else if (selectedTemplate === "minimal") {
+    const left = 60; const right = pageWidth - 60; const usable = right - left;
+    let y = 70;
+
+    // White background
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+    // Name — large, spaced
+    doc.setTextColor(20, 20, 20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(28);
+    doc.text(allLines[0].toUpperCase(), left, y);
+    y += 6;
+
+    // Thin gold line under name
+    doc.setDrawColor(201, 168, 76);
+    doc.setLineWidth(1.5);
+    doc.line(left, y + 4, right, y + 4);
+    y += 18;
+
+    // Contact
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(allLines[1] || "", left, y);
+    y += 10;
+    if (allLines[2] && !isHeading(allLines[2])) {
+      doc.text(allLines[2], left, y);
+      y += 10;
+    }
+    y += 16;
+
+    const startIdx = (allLines[2] && !isHeading(allLines[2])) ? 3 : 2;
+
+    allLines.slice(startIdx).forEach(line => {
+      if (y > 745) { doc.addPage(); y = 50; }
+      if (isHeading(line)) {
+        y += 10;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(20, 20, 20);
+        doc.text(line.toUpperCase(), left, y);
+        // Thin underline
+        doc.setDrawColor(201, 168, 76);
+        doc.setLineWidth(0.8);
+        doc.line(left, y + 4, right, y + 4);
+        y += 20;
+      } else if (isBullet(line)) {
+        const bt = line.replace(/^[-•]\s*/, "");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(55, 55, 55);
+        const wrapped = doc.splitTextToSize(bt, usable - 14);
+        wrapped.forEach((wl, i) => {
+          if (y > 745) { doc.addPage(); y = 50; }
+          doc.text(i === 0 ? "• " + wl : "  " + wl, left + 4, y);
+          y += 12;
+        });
+        y += 2;
+      } else {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(55, 55, 55);
+        const wrapped = doc.splitTextToSize(line, usable);
+        wrapped.forEach(wl => {
+          if (y > 745) { doc.addPage(); y = 50; }
+          doc.text(wl, left, y);
+          y += 12;
+        });
+        y += 2;
+      }
+    });
+
+  // ─────────────────────────────────────────
+  // TEMPLATE 3: EXECUTIVE
+  // Deep navy sidebar · Gold initials circle · Bold name · Premium section styling
+  // ─────────────────────────────────────────
+  } else if (selectedTemplate === "executive" || selectedTemplate === "premium") {
+    const variant = colorVariants.executive[selectedExecVariant] || colorVariants.executive.navy;
+    const [sr, sg, sb] = variant.sidebar;
+    const [tr, tg, tb] = variant.sidebarText;
+    const [ar, ag, ab] = variant.accent;
+
+    const sideW = 210;
+    const bodyLeft = sideW + 32;
+    const bodyRight = pageWidth - 30;
+    const bodyUsable = bodyRight - bodyLeft;
+    const sideUsable = sideW - 36;
+
+    const drawSidebar = () => {
+      doc.setFillColor(sr, sg, sb);
+      doc.rect(0, 0, sideW, pageHeight, "F");
+      doc.setFillColor(ar, ag, ab);
+      doc.rect(sideW - 3, 0, 3, pageHeight, "F");
+    };
+    drawSidebar();
+
+    const name = allLines[0] || "";
+    const initials = name.split(" ").map(w => w[0]).filter(Boolean).slice(0,2).join("").toUpperCase();
+    doc.setFillColor(ar, ag, ab);
+    doc.circle(sideW / 2, 52, 28, "F");
+    doc.setTextColor(sr, sg, sb);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    const initW = doc.getTextWidth(initials);
+    doc.text(initials, sideW / 2 - initW / 2, 58);
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    const nameLines = doc.splitTextToSize(name.toUpperCase(), sideUsable);
+    let sy = 100;
+    nameLines.forEach(nl => {
+      const nw = doc.getTextWidth(nl);
+      doc.text(nl, sideW / 2 - nw / 2, sy);
+      sy += 16;
+    });
+
+    doc.setFillColor(ar, ag, ab);
+    doc.rect(18, sy + 2, sideUsable, 1.5, "F");
+    sy += 18;
+
+    const contactLines = [allLines[1] || "", allLines[2] || ""].filter(l => l && !isHeading(l));
+    const allContact = contactLines.join(" | ").split("|").map(p => p.trim()).filter(Boolean);
+
+    const sideHeading = (label, yPos) => {
+      doc.setFillColor(ar, ag, ab);
+      doc.rect(18, yPos - 10, sideUsable, 16, "F");
+      doc.setTextColor(sr, sg, sb);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text(label.toUpperCase(), 22, yPos + 1);
+      return yPos + 22;
+    };
+
+    sy = sideHeading("Contact", sy);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(tr, tg, tb);
+    allContact.forEach(c => {
+      if (sy > pageHeight - 20) return;
+      const wrapped = doc.splitTextToSize(c, sideUsable);
+      wrapped.forEach(wl => { doc.text(wl, 18, sy); sy += 12; });
+      sy += 3;
+    });
+    sy += 6;
+
+    const skillsStart = allLines.findIndex(l => l.toUpperCase().includes("SKILL"));
+    const eduStart = allLines.findIndex(l => l.toUpperCase() === "EDUCATION");
+
+    if (skillsStart > -1) {
+      sy = sideHeading("Skills", sy);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(tr, tg, tb);
+      let si = skillsStart + 1;
+      while (si < allLines.length && !isHeading(allLines[si]) && sy < pageHeight - 60) {
+        const skillLine = allLines[si].replace(/^[-•]\s*/, "").trim();
+        if (skillLine) {
+          doc.setFillColor(sr + 10, sg + 16, sb + 22);
+          const sw = doc.getTextWidth(skillLine) + 12;
+          if (sy + 14 < pageHeight - 60) {
+            doc.roundedRect(18, sy - 8, Math.min(sw, sideUsable), 13, 3, 3, "F");
+            doc.text(skillLine.length > 22 ? skillLine.substring(0, 22) + "..." : skillLine, 24, sy);
+            sy += 17;
+          }
+        }
+        si++;
+      }
+      sy += 4;
+    }
+
+    if (eduStart > -1 && sy < pageHeight - 80) {
+      sy = sideHeading("Education", sy);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(tr, tg, tb);
+      let ei = eduStart + 1;
+      while (ei < allLines.length && !isHeading(allLines[ei]) && sy < pageHeight - 30) {
+        const eduLine = allLines[ei].replace(/^[-•]\s*/, "").trim();
+        if (eduLine) {
+          const ew = doc.splitTextToSize(eduLine, sideUsable);
+          ew.forEach(el => { if (sy < pageHeight - 20) { doc.text(el, 18, sy); sy += 12; } });
+          sy += 3;
+        }
+        ei++;
+      }
+    }
+
+    let y = 30;
+    doc.setFillColor(ar, ag, ab);
+    doc.rect(bodyLeft, 0, bodyUsable, 5, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(sr, sg, sb);
+    doc.text(name.toUpperCase(), bodyLeft, 40);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(ar, ag, ab);
+    const jobLine = allLines.find((l, i) => i > 0 && i < 4 && !isHeading(l) && !l.includes("@") && !l.includes("|") && !l.match(/\d{3}/));
+    if (jobLine) { doc.text(jobLine, bodyLeft, 56); y = 76; }
+    else { y = 62; }
+
+    doc.setFillColor(ar, ag, ab);
+    doc.rect(bodyLeft, y, bodyUsable, 2, "F");
+    y += 16;
+
+    const skipSections = ["TECHNICAL SKILLS","SKILLS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING"];
+    const startIdx = (allLines[2] && !isHeading(allLines[2])) ? 3 : 2;
+
+    allLines.slice(startIdx).forEach(line => {
+      if (skipSections.includes(line.toUpperCase())) return;
+      if (y > 745) { doc.addPage(); drawSidebar(); y = 30; }
+
+      if (isHeading(line)) {
+        y += 12;
+        doc.setFillColor(240, 243, 250);
+        doc.rect(bodyLeft, y - 13, bodyUsable, 20, "F");
+        doc.setFillColor(ar, ag, ab);
+        doc.rect(bodyLeft, y - 13, 4, 20, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(sr, sg, sb);
+        doc.text(line.toUpperCase(), bodyLeft + 10, y);
+        y += 18;
+      } else if (isBullet(line)) {
+        const bt = line.replace(/^[-•]\s*/, "");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(40, 40, 40);
+        const wrapped = doc.splitTextToSize(bt, bodyUsable - 16);
+        wrapped.forEach((wl, i) => {
+          if (y > 745) { doc.addPage(); drawSidebar(); y = 30; }
+          if (i === 0) {
+            doc.setFillColor(ar, ag, ab);
+            doc.rect(bodyLeft + 2, y - 6, 5, 5, "F");
+            doc.text(wl, bodyLeft + 14, y);
+          } else {
+            doc.text(wl, bodyLeft + 14, y);
+          }
+          y += 13;
+        });
+        y += 3;
+      } else {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(50, 50, 50);
+        const wrapped = doc.splitTextToSize(line, bodyUsable);
+        wrapped.forEach(wl => {
+          if (y > 745) { doc.addPage(); drawSidebar(); y = 30; }
+          doc.text(wl, bodyLeft, y);
+          y += 13;
+        });
+        y += 3;
+      }
+    });
+
+  // ─────────────────────────────────────────
+  // TEMPLATE 4: ELEGANT (Premium)
+  // Rich burgundy/dark top header · Centered bold name · Two-column body
+  // Left: skills/education sidebar · Right: experience content
+  // ─────────────────────────────────────────
+  } else {
+    const variant = colorVariants.elegant[selectedElegantVariant] || colorVariants.elegant.brown;
+    const [hr, hg, hb] = variant.header;
+    const [ar, ag, ab] = variant.accent;
+    const [pr, pg, pb] = variant.pillBg;
+
+    const pageW = pageWidth;
+    const left = 40;
+    const right = pageW - 40;
+
+    // Rich dark header using variant color
+    doc.setFillColor(hr, hg, hb);
+    doc.rect(0, 0, pageW, 125, "F");
+    // Accent top strip
+    doc.setFillColor(ar, ag, ab);
+    doc.rect(0, 0, pageW, 6, "F");
+    // Accent bottom strip
+    doc.setFillColor(ar, ag, ab);
+    doc.rect(0, 121, pageW, 4, "F");
+
+    // Decorative lines left and right of name
+    doc.setDrawColor(ar, ag, ab);
+    doc.setLineWidth(0.8);
+    doc.line(left, 58, left + 60, 58);
+    doc.line(right - 60, 58, right, 58);
+
+    // Centered name
+    doc.setTextColor(255, 248, 230);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(30);
+    const nameText = allLines[0].toUpperCase();
+    const nameW = doc.getTextWidth(nameText);
+    doc.text(nameText, (pageW - nameW) / 2, 58);
+
+    // Decorative dots
+    doc.setFillColor(ar, ag, ab);
+    doc.circle((pageW / 2) - (nameW / 2) - 14, 55, 3, "F");
+    doc.circle((pageW / 2) + (nameW / 2) + 14, 55, 3, "F");
+
+    // Job title centered
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(ar, ag, ab);
+    const titleLine = allLines.find((l, i) => i > 0 && i < 4 && !isHeading(l) && !l.includes("|") && !l.includes("@") && !l.match(/^\+?\d/));
+    if (titleLine) {
+      const tw = doc.getTextWidth(titleLine);
+      doc.text(titleLine, (pageW - tw) / 2, 76);
+    }
+
+    // Contact centered
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(185, 175, 150);
+    const contactStr = [allLines[1] || "", allLines[2] || ""].filter(l => l && !isHeading(l)).join("  |  ");
+    if (contactStr.trim()) {
+      const cw = doc.getTextWidth(contactStr);
+      doc.text(contactStr, (pageW - cw) / 2, 100);
+    }
+
+    // Two-column body
+    const col1Left = left;
+    const col1Right = left + 185;
+    const col1Usable = col1Right - col1Left;
+    const col2Left = col1Right + 20;
+    const col2Right = right;
+    const col2Usable = col2Right - col2Left;
+
+    // Vertical divider
+    doc.setDrawColor(ar, ag, ab);
+    doc.setLineWidth(0.5);
+    doc.line(col1Right + 10, 138, col1Right + 10, 750);
+
+    let y1 = 148;
+    let y2 = 148;
+
+    const drawLeftHeading = (label, yPos) => {
+      doc.setFillColor(ar, ag, ab);
+      doc.rect(col1Left, yPos - 11, col1Usable, 17, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(hr, hg, hb);
+      doc.text(label.toUpperCase(), col1Left + 5, yPos);
+      return yPos + 20;
+    };
+
+    const drawRightHeading = (label, yPos) => {
+      doc.setFillColor(hr, hg, hb);
+      doc.rect(col2Left, yPos - 12, col2Usable, 18, "F");
+      doc.setFillColor(ar, ag, ab);
+      doc.rect(col2Left, yPos - 12, 3, 18, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text(label.toUpperCase(), col2Left + 8, yPos);
+      return yPos + 22;
+    };
+
+    const leftSections = ["TECHNICAL SKILLS","SKILLS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING"];
+
+    leftSections.forEach(section => {
+      const sIdx = allLines.findIndex(l => l.toUpperCase() === section);
+      if (sIdx === -1 || y1 > 720) return;
+
+      y1 = drawLeftHeading(section, y1);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(50, 45, 35);
+
+      let i = sIdx + 1;
+      while (i < allLines.length && !isHeading(allLines[i]) && y1 < 730) {
+        const sl = allLines[i].replace(/^[-•]\s*/, "").trim();
+        if (sl) {
+          if (section.includes("SKILL")) {
+            doc.setFillColor(pr, pg, pb);
+            doc.roundedRect(col1Left, y1 - 8, col1Usable, 13, 2, 2, "F");
+            doc.setDrawColor(ar, ag, ab);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(col1Left, y1 - 8, col1Usable, 13, 2, 2, "S");
+            doc.setFillColor(ar, ag, ab);
+            doc.circle(col1Left + 8, y1 - 1.5, 2.5, "F");
+            doc.setTextColor(35, 28, 20);
+            const sw = doc.splitTextToSize(sl, col1Usable - 20);
+            doc.text(sw[0], col1Left + 15, y1);
+            y1 += 17;
+          } else {
+            const sw = doc.splitTextToSize(sl, col1Usable - 4);
+            sw.forEach(swl => { doc.text(swl, col1Left + 2, y1); y1 += 12; });
+            y1 += 3;
+          }
+        }
+        i++;
+      }
+      y1 += 6;
+    });
+
+    // Populate right column: Summary, Experience, Projects
+    const rightSkip = new Set(["TECHNICAL SKILLS","SKILLS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING"]);
+    const startIdx = (allLines[2] && !isHeading(allLines[2])) ? 3 : 2;
+
+    allLines.slice(startIdx).forEach(line => {
+      if (rightSkip.has(line.toUpperCase())) return;
+      if (y2 > 745) { return; } // handle multipage if needed
+
+      if (isHeading(line)) {
+        y2 += 8;
+        y2 = drawRightHeading(line, y2);
+      } else if (isBullet(line)) {
+        const bt = line.replace(/^[-•]\s*/, "");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(40, 38, 30);
+        const wrapped = doc.splitTextToSize(bt, col2Usable - 16);
+        wrapped.forEach((wl, i) => {
+          if (y2 > 745) return;
+          if (i === 0) {
+            doc.setFillColor(ar, ag, ab);
+            doc.rect(col2Left + 2, y2 - 5.5, 4, 4, "F");
+            doc.text(wl, col2Left + 12, y2);
+          } else {
+            doc.text(wl, col2Left + 12, y2);
+          }
+          y2 += 13;
+        });
+        y2 += 3;
+      } else {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(50, 45, 35);
+        const wrapped = doc.splitTextToSize(line, col2Usable);
+        wrapped.forEach(wl => {
+          if (y2 > 745) return;
+          doc.text(wl, col2Left, y2);
+          y2 += 13;
+        });
+        y2 += 3;
+      }
+    });
   }
 
-  const wrapped = doc.splitTextToSize(cleanLine, usableWidth);
-  wrapped.forEach(wrappedLine => {
-    addPageIfNeeded();
-    doc.text(wrappedLine, left, y);
-    y += selectedTemplate === "detailed" ? 17 : selectedTemplate === "minimal" ? 12 : 14;
-  });
-
-  y += selectedTemplate === "detailed" ? 6 : selectedTemplate === "minimal" ? 2 : 4;
-});
-
   doc.save(filename);
-  
 }
-  let premiumUnlocked = localStorage.getItem("premiumUnlocked") === "true";
-  if (premiumUnlocked) {
-  document.querySelectorAll(".template-card.locked").forEach(card => {
-    card.classList.remove("locked");
-  });
+
+
+
+function handleLockedTemplate(template) {
+  if (premiumUnlocked) { setTemplate(template); }
+  else { window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank"); }
 }
 
 function unlockPremium() {
   const code = document.getElementById("unlock-code").value.trim();
-
   if (code === "AIJOBPRO") {
     premiumUnlocked = true;
     localStorage.setItem("premiumUnlocked", "true");
-
-    alert("✅ Premium templates unlocked!");
-
-    document.querySelectorAll(".template-card.locked").forEach(card => {
-      card.classList.remove("locked");
-    });
+    alert("✅ Premium templates unlocked! You now have access to Executive and Elegant templates.");
+    document.querySelectorAll(".template-card.locked").forEach(card => card.classList.remove("locked"));
   } else {
     alert("❌ Invalid code. Check your Gumroad purchase.");
   }
-}
+}</script>
 
-function handleLockedTemplate(template) {
-  if (premiumUnlocked) {
-    setTemplate(template);
-  } else {
-    window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank");
-  }
-}
- 
- </script>
 </body>
 </html>
