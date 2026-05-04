@@ -953,6 +953,14 @@ function setTemplate(template) {
 }
 
 function setColorVariant(template, variant, el) {
+  // Check lock — only allow color change if premium unlocked
+  const cardId = template === 'elegant' ? 'tpl-detailed' : 'tpl-' + template;
+  const card = document.getElementById(cardId);
+  if (card && card.classList.contains('locked')) {
+    window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank");
+    return;
+  }
+
   // Update active swatch
   el.closest('.variant-row').querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
   el.classList.add('active');
@@ -1988,8 +1996,11 @@ function downloadCoverPDF() {
 }
 
 function handleLockedTemplate(template) {
-  if (premiumUnlocked) { setTemplate(template); }
-  else { window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank"); }
+  if (premiumUnlocked) {
+    setTemplate(template === 'detailed' ? 'detailed' : template);
+  } else {
+    window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank");
+  }
 }
 
 function unlockPremium() {
