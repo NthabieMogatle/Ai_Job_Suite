@@ -1031,29 +1031,46 @@ Output only the final cover letter text.`;
     prompt = `Create a ${tones.rv}, ATS-optimized, recruiter-focused resume for ${name} targeting a ${job} role.
 
 CRITICAL RULES — MUST FOLLOW:
-- NEVER output the words "ATS KEYWORDS" anywhere in the resume — not as a section, label, or heading
-- NEVER repeat sections — each section (Summary, Skills, Experience, Education) appears ONCE only
-- NEVER repeat the candidate's name more than once (header only)
-- NEVER output raw keyword lists labeled as "ATS KEYWORDS" or similar
-- Do NOT include a separate keywords section of any kind
+- NEVER output the words "ATS KEYWORDS" anywhere in the resume
+- NEVER repeat sections — each section appears ONCE only
+- NEVER write long paragraphs in the experience section — use bullet points ONLY
+- NEVER combine multiple roles or projects into one long paragraph
 - Output in clean plain text with NO markdown symbols (no **, ##, --, etc.)
 - Do NOT include placeholders or fake companies, dates, or degrees
-- Keep the entire resume under 600 words
+- Keep the entire resume under 550 words
 
 STRUCTURE (use exactly these section headers, each appearing ONCE):
 1. [Candidate name on first line]
-2. [Job title on second line]  
+2. [Job title on second line]
 3. [Phone | Email | Location on third line]
 4. PROFESSIONAL SUMMARY
 5. TECHNICAL SKILLS
 6. TECHNICAL EXPERIENCE
 7. EDUCATION
 
+EXPERIENCE FORMATTING RULES — VERY IMPORTANT:
+- Each role or project must have its own title on its own line (e.g. "Software Development Projects")
+- Leave ONE blank line between the title and the bullets
+- Use bullet points (starting with -) for ALL experience descriptions — NO paragraphs
+- Each bullet must be 1 line max, starting with a strong action verb
+- If there are multiple roles or projects, separate them with ONE blank line between each
+- Maximum 4-5 bullets per role
+- Example format:
+  Software Development Projects
+
+  - Developed full-stack applications using Java and JavaScript improving system performance
+  - Optimized SQL databases reducing query execution time by 30%
+  - Implemented RESTful APIs enabling seamless frontend-backend communication
+
+PROFESSIONAL SUMMARY:
+- 2-3 sentences maximum, no bullets, concise paragraph only
+
+TECHNICAL SKILLS:
+- List skills separated by commas or on separate lines — no bullets needed here
+
 CONTENT RULES:
-- Use strong action verbs: Resolved, Supported, Optimized, Configured, Improved, Diagnosed, Reduced
-- Make it sound like a strong candidate with relevant experience
-- Each bullet point starts with a strong action verb
-- Show impact and outcomes in bullet points
+- Use strong action verbs: Resolved, Supported, Optimized, Configured, Improved, Diagnosed, Reduced, Developed, Implemented, Designed
+- Show impact and outcomes in every bullet point
 - Naturally weave keywords from this job description into the content (do NOT list them separately): ${desc || 'not provided'}
 
 CANDIDATE DETAILS:
