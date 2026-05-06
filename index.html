@@ -1078,15 +1078,18 @@ function isValidEmail(email) {
   const domainName = domain?.split('.')[0];
   if (local === domainName) return false;
   if (/^(.)\1{2,}/.test(local)) return false; // aaa, bbb, ccc etc
-  if (/^(test|fake|asdf|qwerty|admin|null|none|noemail|nope|blah|dummy|temp|user|hello|hi|yo|abc|xyz|foo|bar)/.test(local)) return false;
+  if (/^(test|fake|asdf|qwerty|admin|null|none|noemail|nope|blah|dummy|temp|user|hello|hi|yo|abc|xyz|foo|bar|random|sample|email|myemail|name|noone|nobody|someone|anyone|person|guy|girl|man|woman|john|jane|donotreply|noreply|spam|junk|trash|delete|ignore|skip)/.test(local)) return false;
 
   return true;
 }
 
 function getAccessEmail(prefix) {
   const emailInput = document.getElementById(prefix + '-access-email');
-  const email = (emailInput?.value || userEmail || '').trim().toLowerCase();
   const errorEl = document.getElementById(prefix + '-error');
+
+  // Always prioritise what the user typed in the field
+  const typedEmail = emailInput?.value?.trim().toLowerCase() || '';
+  const email = typedEmail || userEmail || '';
 
   if (!email) {
     errorEl.textContent = 'Please enter your email to start your 2 free generations.';
@@ -1094,14 +1097,22 @@ function getAccessEmail(prefix) {
     return '';
   }
 
+  // Always validate — even if coming from localStorage
   if (!isValidEmail(email)) {
-    errorEl.textContent = '⚠ Please enter a valid email address to generate your documents.';
+    errorEl.textContent = '⚠ Please enter a real, valid email address. We use this to manage your free generations.';
     errorEl.classList.add('visible');
+    // Clear the saved fake email so they can't bypass it next time
+    if (!typedEmail) {
+      userEmail = '';
+      localStorage.removeItem('aiJobSuiteUserEmail');
+    }
     return '';
   }
 
+  // Save valid email
   userEmail = email;
   localStorage.setItem('aiJobSuiteUserEmail', userEmail);
+  if (emailInput) emailInput.value = email; // fill input so user sees it
   return userEmail;
 }
 
