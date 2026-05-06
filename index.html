@@ -1253,7 +1253,7 @@ async function callAPI(prompt) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 3000,
+      max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }]
     })
   });
@@ -1437,8 +1437,8 @@ async function runGeneration(prefix, prompt) {
     // Clean up any ATS keyword sections or repeated content
     if (prefix === 'rv') {
       text = text
-        .replace(/ATS KEYWORDS?[:\s]*[\s\S]*?(?=\n[A-Z ]{4,}\n|$)/gi, '')
-        .replace(/KEYWORDS?[:\s]*[\s\S]*?(?=\n[A-Z ]{4,}\n|$)/gi, '')
+        .replace(/^ATS KEYWORDS?[:\s]*$[\s\S]*?(?=\n[A-Z ]{4,}\n|$)/gim, '')
+        .replace(/^KEYWORDS?[:\s]*$[\s\S]*?(?=\n[A-Z ]{4,}\n|$)/gim, '')
         .replace(/\n{3,}/g, '\n\n')
         .trim();
     }
