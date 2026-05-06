@@ -1105,7 +1105,7 @@ function getAccessEmail(prefix) {
   return userEmail;
 }
 
-async function checkUsage(email) {
+async function checkUsage(email, prefix) {
   if (!email) return false;
 
   try {
@@ -1114,8 +1114,7 @@ async function checkUsage(email) {
     });
 
     if (!res.ok) {
-      // If Supabase fails, fall back to localStorage limit
-      return checkLocalUsage(email);
+      return checkLocalUsage(email, prefix);
     }
 
     const data = await res.json();
@@ -1123,17 +1122,15 @@ async function checkUsage(email) {
     if (data.length > 0) {
       const usage = data[0].usage_count;
       if (usage >= FREE_GENERATION_LIMIT) {
-        showPaywall(email);
+        showPaywall(email, prefix);
         return false;
       }
-      // Update usage count
       await fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage?email=eq.${encodeURIComponent(email)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
         body: JSON.stringify({ usage_count: usage + 1 }),
       });
     } else {
-      // New user — insert
       await fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "return=minimal" },
@@ -1143,15 +1140,14 @@ async function checkUsage(email) {
     return true;
 
   } catch(err) {
-    // Supabase unreachable — fall back to localStorage
-    return checkLocalUsage(email);
+    return checkLocalUsage(email, prefix);
   }
 }
 
-function checkLocalUsage(email) {
+function checkLocalUsage(email, prefix) {
   if (!usageData[email]) usageData[email] = 0;
   if (usageData[email] >= FREE_GENERATION_LIMIT) {
-    showPaywall(email);
+    showPaywall(email, prefix);
     return false;
   }
   usageData[email] += 1;
@@ -1159,10 +1155,7 @@ function checkLocalUsage(email) {
   return true;
 }
 
-function showPaywall(email) {
-  const activePanel = document.querySelector('.panel.active');
-  if (!activePanel) return;
-  const prefix = activePanel.id.replace('panel-', '');
+function showPaywall(email, prefix) {
   const errorEl = document.getElementById(prefix + '-error');
   if (!errorEl) return;
 
@@ -1188,7 +1181,6 @@ function showPaywall(email) {
     ">🚀 Unlock Full Access — $7</a>
   `;
   errorEl.classList.add('visible');
-  // Scroll to error so user sees it
   errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -1231,7 +1223,7 @@ async function generate(prefix) {
       return;
     }
     const email = getAccessEmail(prefix);
-    const allowed = await checkUsage(email);
+    const allowed = await checkUsage(email, prefix);
     if (!allowed) return;
 
     prompt = `Write a ${tones.li} LinkedIn "About" section for ${name}, a ${job}.
@@ -1264,7 +1256,7 @@ Output ONLY the final LinkedIn summary text.`;
       return;
     }
     const email = getAccessEmail(prefix);
-    const allowed = await checkUsage(email);
+    const allowed = await checkUsage(email, prefix);
     if (!allowed) return;
 
     prompt = `Write a ${tones.cl}, ATS-optimized, recruiter-focused cover letter for ${name} applying for the ${job} role at ${company}.
@@ -1293,7 +1285,7 @@ Output only the final cover letter text.`;
       return;
     }
     const accessEmail = getAccessEmail(prefix);
-    const allowed = await checkUsage(accessEmail);
+    const allowed = await checkUsage(accessEmail, prefix);
     if (!allowed) return;
 
     prompt = `Create a ${tones.rv}, ATS-optimized, recruiter-focused resume for ${name} targeting a ${job} role.
