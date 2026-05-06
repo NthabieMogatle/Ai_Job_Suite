@@ -442,11 +442,17 @@ body::before {
   font-size: 14px;
   color: var(--text);
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .question-item:last-child { border-bottom: none; }
+
+.question-top {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
 
 .q-num {
   min-width: 26px;
@@ -462,6 +468,60 @@ body::before {
   justify-content: center;
   flex-shrink: 0;
   margin-top: 2px;
+}
+
+.q-text { flex: 1; line-height: 1.6; }
+
+.q-answer-btn {
+  font-size: 12px;
+  color: var(--gold);
+  background: var(--gold-dim);
+  border: 1px solid rgba(201,168,76,0.25);
+  border-radius: 20px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+  align-self: flex-start;
+  margin-left: 38px;
+}
+
+.q-answer-btn:hover { background: rgba(201,168,76,0.2); }
+
+.q-answer-box {
+  display: none;
+  margin-left: 38px;
+  background: rgba(201,168,76,0.05);
+  border: 1px solid rgba(201,168,76,0.15);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--text);
+}
+
+.q-answer-box.open { display: block; }
+
+.q-answer-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+.q-answer-framework {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.q-answer-example {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .interview-loading {
@@ -657,13 +717,13 @@ body::before {
 <!-- Interview Prep for Cover Letter -->
 <div class="interview-card" id="cl-interview-card">
   <div class="interview-header">
-    <span class="interview-title">🎯 Interview Prep Questions</span>
+    <span class="interview-title">🎯 Interview Prep & Answer Guide</span>
     <span class="output-badge">AI Generated</span>
   </div>
   <div class="interview-loading" id="cl-interview-loading"><div class="spinner"></div>Generating interview questions...</div>
   <ul class="question-list" id="cl-questions"></ul>
   <div class="output-actions">
-    <button class="btn-action" onclick="copyInterviewQuestions('cl')">Copy All Questions</button>
+    <button class="btn-action" onclick="copyInterviewQuestions('cl')">Copy Questions & Answers</button>
   </div>
 </div>
 ```
@@ -826,13 +886,13 @@ body::before {
 <!-- Interview Prep Card for Resume -->
 <div class="interview-card" id="rv-interview-card">
   <div class="interview-header">
-    <span class="interview-title">🎯 Interview Prep Questions</span>
+    <span class="interview-title">🎯 Interview Prep & Answer Guide</span>
     <span class="output-badge">AI Generated</span>
   </div>
   <div class="interview-loading" id="rv-interview-loading"><div class="spinner"></div>Generating interview questions...</div>
   <ul class="question-list" id="rv-questions"></ul>
   <div class="output-actions">
-    <button class="btn-action" onclick="copyInterviewQuestions('rv')">Copy All Questions</button>
+    <button class="btn-action" onclick="copyInterviewQuestions('rv')">Copy Questions & Answers</button>
   </div>
 </div>
 ```
@@ -893,13 +953,13 @@ body::before {
     <!-- Interview Prep for LinkedIn -->
     <div class="interview-card" id="li-interview-card">
       <div class="interview-header">
-        <span class="interview-title">🎯 Interview Prep Questions</span>
+        <span class="interview-title">🎯 Interview Prep & Answer Guide</span>
         <span class="output-badge">AI Generated</span>
       </div>
       <div class="interview-loading" id="li-interview-loading"><div class="spinner"></div>Generating interview questions...</div>
       <ul class="question-list" id="li-questions"></ul>
       <div class="output-actions">
-        <button class="btn-action" onclick="copyInterviewQuestions('li')">Copy All Questions</button>
+        <button class="btn-action" onclick="copyInterviewQuestions('li')">Copy Questions & Answers</button>
       </div>
     </div>
   </div>
@@ -1329,7 +1389,7 @@ async function generateInterviewQuestions(prefix, jobTitle, jobDesc, documentTex
   loadingEl.classList.add('visible');
   listEl.innerHTML = '';
 
-  const prompt = `You are an expert career coach. Based on this ${prefix === 'rv' ? 'resume' : 'cover letter'} for a "${jobTitle}" role, generate exactly 5 likely interview questions the candidate should prepare for.
+  const prompt = `You are an expert career coach. Based on this ${prefix === 'rv' ? 'resume' : prefix === 'li' ? 'LinkedIn summary' : 'cover letter'} for a "${jobTitle}" role, generate exactly 5 likely interview questions with answer guidance.
 
 DOCUMENT:
 ${documentText}
@@ -1338,17 +1398,20 @@ ${jobDesc ? 'JOB DESCRIPTION: ' + jobDesc : ''}
 Respond ONLY with valid JSON in this exact format, no other text:
 {
   "questions": [
-    "Tell me about your experience with X...",
-    "How would you handle...",
-    "Describe a time when...",
-    "What is your approach to...",
-    "Where do you see yourself..."
+    {
+      "question": "The interview question here?",
+      "framework": "Use the STAR method: Situation, Task, Action, Result. Start by describing a specific situation...",
+      "example": "Example answer tailored to this candidate: Start with [specific context from their background], then explain how you [specific action], resulting in [specific outcome]."
+    }
   ]
 }
 
 Rules:
-- Make questions specific to the candidate's actual skills and the role
-- Mix behavioural, technical, and situational questions
+- Generate exactly 5 questions
+- Make questions SPECIFIC to the candidate's actual skills and the role — not generic
+- Mix behavioural (Tell me about a time...), technical (How would you...), and situational (What would you do if...) questions
+- For the framework: give a 1-2 sentence guide on HOW to structure the answer
+- For the example: write a 2-3 sentence tailored sample answer using details from the candidate's actual document
 - Do NOT use generic questions like "Tell me about yourself" alone
 - Each question should be 1 sentence`;
 
@@ -1357,25 +1420,50 @@ Rules:
     const clean = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
     loadingEl.classList.remove('visible');
+
     parsed.questions.forEach((q, i) => {
       const li = document.createElement('li');
       li.className = 'question-item';
-      li.innerHTML = `<span class="q-num">${i + 1}</span><span>${q}</span>`;
+      const answerId = `${prefix}-answer-${i}`;
+      li.innerHTML = `
+        <div class="question-top">
+          <span class="q-num">${i + 1}</span>
+          <span class="q-text">${q.question}</span>
+        </div>
+        <button class="q-answer-btn" onclick="toggleAnswer('${answerId}', this)">✦ Show Answer Tips</button>
+        <div class="q-answer-box" id="${answerId}">
+          <div class="q-answer-label">How to answer</div>
+          <div class="q-answer-framework">${q.framework}</div>
+          <div class="q-answer-label" style="margin-top:10px;">Sample answer</div>
+          <div class="q-answer-example">${q.example}</div>
+        </div>`;
       listEl.appendChild(li);
     });
   } catch(e) {
     loadingEl.classList.remove('visible');
     const li = document.createElement('li');
     li.className = 'question-item';
-    li.innerHTML = '<span style="color:var(--muted)">Could not generate questions. Please try again.</span>';
+    li.innerHTML = '<div class="question-top"><span style="color:var(--muted)">Could not generate questions. Please try again.</span></div>';
     listEl.appendChild(li);
   }
 }
 
+function toggleAnswer(id, btn) {
+  const box = document.getElementById(id);
+  const isOpen = box.classList.contains('open');
+  box.classList.toggle('open');
+  btn.textContent = isOpen ? '✦ Show Answer Tips' : '✦ Hide Answer Tips';
+}
+
 function copyInterviewQuestions(prefix) {
   const items = document.querySelectorAll(`#${prefix}-questions .question-item`);
-  const text = Array.from(items).map((item, i) => `${i+1}. ${item.querySelector('span:last-child').textContent}`).join('\n');
-  navigator.clipboard.writeText(text).then(() => alert('Interview questions copied!'));
+  const text = Array.from(items).map((item, i) => {
+    const q = item.querySelector('.q-text')?.textContent || '';
+    const framework = item.querySelector('.q-answer-framework')?.textContent || '';
+    const example = item.querySelector('.q-answer-example')?.textContent || '';
+    return `${i+1}. ${q}\n   How to answer: ${framework}\n   Sample: ${example}`;
+  }).join('\n\n');
+  navigator.clipboard.writeText(text).then(() => alert('Interview questions & answers copied!'));
 }
 
 function copyATS() {
