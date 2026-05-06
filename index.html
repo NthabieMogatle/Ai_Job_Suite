@@ -2257,13 +2257,9 @@ async function sendVerificationCode(email, prefix) {
   verificationPrefix = prefix;
 
   try {
-    await emailjs.send('service_4bkmqeg', 'template_gssd82m', {
-      to_name: 'there',
+    await emailjs.send('service_4bkmqeg', 'template_49ddkup', {
       to_email: email,
-      job_title: 'Your Verification Code',
-      company_name: 'Élève Emporium',
-      documents: `Your one-time verification code is:\n\n${verificationCode}\n\nEnter this code on the site to start generating your documents.\nThis code expires in 10 minutes.\n\nIf you didn't request this, you can safely ignore this email.\n\n— Élève Emporium`,
-      from_name: 'Élève Emporium'
+      code: verificationCode
     });
     return true;
   } catch(e) {
