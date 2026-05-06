@@ -1057,47 +1057,139 @@ function selectTone(el, prefix, tone) {
 
 function getVal(id) { return document.getElementById(id).value.trim(); }
 
+function isValidEmail(email) {
+  // Basic format check
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  if (!emailRegex.test(email)) return false;
+
+  // Block obviously fake/test emails
+  const fakeDomains = [
+    'test.com','fake.com','example.com','mailinator.com',
+    'guerrillamail.com','tempmail.com','throwaway.com',
+    'yopmail.com','trashmail.com','fakeinbox.com',
+    'sharklasers.com','guerrillamailblock.com','dispostable.com',
+    'spam.la','binkmail.com','safetymail.info'
+  ];
+  const domain = email.split('@')[1]?.toLowerCase();
+  if (fakeDomains.includes(domain)) return false;
+
+  // Block obvious fake patterns like aaa@bbb.com, abc@abc.com, 123@123.com
+  const local = email.split('@')[0]?.toLowerCase();
+  const domainName = domain?.split('.')[0];
+  if (local === domainName) return false;
+  if (/^(.)\1{2,}/.test(local)) return false; // aaa, bbb, ccc etc
+  if (/^(test|fake|asdf|qwerty|admin|null|none|noemail|nope|blah|dummy|temp|user|hello|hi|yo|abc|xyz|foo|bar)/.test(local)) return false;
+
+  return true;
+}
+
 function getAccessEmail(prefix) {
   const emailInput = document.getElementById(prefix + '-access-email');
   const email = (emailInput?.value || userEmail || '').trim().toLowerCase();
+  const errorEl = document.getElementById(prefix + '-error');
+
   if (!email) {
-    const errorEl = document.getElementById(prefix + '-error');
     errorEl.textContent = 'Please enter your email to start your 2 free generations.';
     errorEl.classList.add('visible');
     return '';
   }
+
+  if (!isValidEmail(email)) {
+    errorEl.textContent = '⚠ Please enter a valid email address to generate your documents.';
+    errorEl.classList.add('visible');
+    return '';
+  }
+
   userEmail = email;
   localStorage.setItem('aiJobSuiteUserEmail', userEmail);
   return userEmail;
 }
 
 async function checkUsage(email) {
-  if (!email) { alert("Please enter your email first."); return false; }
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage?email=eq.${email}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-  });
-  const data = await res.json();
-  if (data.length > 0) {
-    const usage = data[0].usage_count;
-    if (usage >= 2) {
-      const errorEl = document.getElementById(document.querySelector('.panel.active').id.replace('panel-','') + '-error');
-      errorEl.innerHTML = `<strong>🔒 You're 1 step away from landing the job.</strong><br><br>You've used your ${FREE_GENERATION_LIMIT} free generations for ${email}.<br><br>Unlock unlimited access to:<br>• ATS-optimized resumes<br>• High-converting cover letters<br>• Premium templates<br><br><a href="${PAYWALL_URL}" target="_blank" style="display:inline-block;padding:10px 16px;border-radius:8px;background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);color:#0e0e0f;text-decoration:none;font-weight:500;">Unlock My Resume Tool</a>`;
-      errorEl.classList.add('visible');
-      return false;
+  if (!email) return false;
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage?email=eq.${encodeURIComponent(email)}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    });
+
+    if (!res.ok) {
+      // If Supabase fails, fall back to localStorage limit
+      return checkLocalUsage(email);
     }
-    fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage?email=eq.${email}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-      body: JSON.stringify({ usage_count: usage + 1 }),
-    });
-  } else {
-    fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "return=minimal" },
-      body: JSON.stringify({ email: email, usage_count: 1 }),
-    });
+
+    const data = await res.json();
+
+    if (data.length > 0) {
+      const usage = data[0].usage_count;
+      if (usage >= FREE_GENERATION_LIMIT) {
+        showPaywall(email);
+        return false;
+      }
+      // Update usage count
+      await fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage?email=eq.${encodeURIComponent(email)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+        body: JSON.stringify({ usage_count: usage + 1 }),
+      });
+    } else {
+      // New user — insert
+      await fetch(`${SUPABASE_URL}/rest/v1/Email%20Usage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "return=minimal" },
+        body: JSON.stringify({ email: email, usage_count: 1 }),
+      });
+    }
+    return true;
+
+  } catch(err) {
+    // Supabase unreachable — fall back to localStorage
+    return checkLocalUsage(email);
   }
+}
+
+function checkLocalUsage(email) {
+  if (!usageData[email]) usageData[email] = 0;
+  if (usageData[email] >= FREE_GENERATION_LIMIT) {
+    showPaywall(email);
+    return false;
+  }
+  usageData[email] += 1;
+  localStorage.setItem('aiJobSuiteUsageData', JSON.stringify(usageData));
   return true;
+}
+
+function showPaywall(email) {
+  const activePanel = document.querySelector('.panel.active');
+  if (!activePanel) return;
+  const prefix = activePanel.id.replace('panel-', '');
+  const errorEl = document.getElementById(prefix + '-error');
+  if (!errorEl) return;
+
+  errorEl.innerHTML = `
+    <strong>🔒 You've used your ${FREE_GENERATION_LIMIT} free generations!</strong><br><br>
+    You've reached the limit for <strong>${email}</strong>.<br><br>
+    Unlock <strong>unlimited access</strong> to:<br>
+    • Unlimited resume & cover letter generations<br>
+    • ATS Score Analysis & Auto-Improve<br>
+    • Interview Prep & Answer Guide<br>
+    • LinkedIn Summary Generator<br>
+    • Premium Executive & Elegant templates<br><br>
+    <a href="${PAYWALL_URL}" target="_blank" rel="noopener noreferrer" style="
+      display:inline-block;
+      padding:12px 20px;
+      border-radius:10px;
+      background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+      color:#0e0e0f;
+      text-decoration:none;
+      font-weight:600;
+      font-size:15px;
+      margin-top:4px;
+    ">🚀 Unlock Full Access — $7</a>
+  `;
+  errorEl.classList.add('visible');
+  // Scroll to error so user sees it
+  errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function increaseUsage() {
