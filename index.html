@@ -2472,6 +2472,11 @@ function handleLockedTemplate(template) {
   } else {
     window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank");
   }
+function toggleAnswer(answerId, btn) {
+  const box = document.getElementById(answerId);
+  if (!box) return;
+  const isOpen = box.classList.toggle('open');
+  btn.textContent = isOpen ? '✦ Hide Answer Tips' : '✦ Show Answer Tips';
 }
 
 function unlockPremium() {
