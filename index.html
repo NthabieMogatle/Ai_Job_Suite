@@ -2469,10 +2469,12 @@ async function requireEmailVerification(email, prefix, callback) {
 function handleLockedTemplate(template) {
   if (premiumUnlocked) {
     setTemplate(template === 'detailed' ? 'detailed' : template);
-  } else {
-    window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank");
+    } else {
+    window.open("<https://eleveemporium.gumroad.com/l/pllrsk>", "_blank");
   }
+}
 function toggleAnswer(answerId, btn) {
+
   const box = document.getElementById(answerId);
   if (!box) return;
   const isOpen = box.classList.toggle('open');
