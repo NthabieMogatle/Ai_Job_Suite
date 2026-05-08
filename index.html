@@ -2439,13 +2439,11 @@ async function resendVerificationCode() {
 }
 
 async function requireEmailVerification(email, prefix, callback) {
+  callback(); return; // TESTING BYPASS — remove before launch
   // Skip if already verified this email
   if (verifiedEmails.includes(email)) {
     callback();
-    return;async function requireEmailVerification(email, prefix, callback) {
-  callback(); return; // TESTING BYPASS — remove before launch
-  // Skip if already verified this email
-  if (verifiedEmails.includes(email))
+    return;
   }
 
   // Send code and show modal
