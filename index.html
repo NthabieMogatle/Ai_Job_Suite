@@ -1,4 +1,4 @@
-e<!DOCTYPE html>
+no e<!DOCTYPE html>
 
 <html lang="en">
 <head>
@@ -1894,24 +1894,44 @@ async function downloadPDF(elementId, filename) {
   // TEMPLATE 2: MINIMAL
   // Pure white · Large spaced name · Thin gold rule · Clean typography
   // ══════════════════════════════════════════
-    } else if (selectedTemplate === "modern") {
-    const SIDE_W = 185;
+       } else if (selectedTemplate === "modern") {
+    const SIDE_W = 182;
+    const SIDE_PAD_L = 30;
+    const SIDE_INNER_W = SIDE_W - SIDE_PAD_L;
     const TIMELINE_X = 205;
     const ICON_X = 205;
-    const TOP = 30;
-    const RIGHT_M = 30;
-    const BOTTOM = 30;
-    const SIDE_PAD_L = 30;
-    const SIDE_INNER_W = SIDE_W - SIDE_PAD_L - 5;
     const BODY_L = 222;
-    const BODY_R = pageWidth - RIGHT_M;
+    const BODY_R = pageWidth - 30;
     const BODY_W = BODY_R - BODY_L;
+    const BOTTOM = 30;
 
     const NAVY = [26, 31, 54];
     const BODY_DARK = [51, 51, 51];
     const BODY_MID = [85, 85, 85];
     const BODY_MUTED = [136, 136, 136];
     const RULE_GREY = [204, 204, 204];
+
+    const drawRule = (x1, y, x2) => {
+      doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
+      doc.setLineWidth(0.5);
+      doc.line(x1, y, x2, y);
+    };
+    const splitCommaList = (lines) => {
+      const out = [];
+      lines.forEach(l => {
+        const cleaned = l.replace(/^[-•]\s*/, "").trim();
+        if (!cleaned) return;
+        if (cleaned.includes(",")) {
+          cleaned.split(",").forEach(item => {
+            const t = item.trim();
+            if (t) out.push(t);
+          });
+        } else {
+          out.push(cleaned);
+        }
+      });
+      return out;
+    };
 
     doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, pageWidth, pageHeight, "F");
@@ -1924,31 +1944,40 @@ async function downloadPDF(elementId, filename) {
     }
     doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
     const nameWrapped = doc.splitTextToSize(name.toUpperCase(), SIDE_INNER_W);
-    let nameY = 40;
-    nameWrapped.forEach(line => { doc.text(line, SIDE_PAD_L, nameY); nameY += nSize + 1; });
+    let nameY = 50;
+    nameWrapped.forEach(line => { doc.text(line, SIDE_PAD_L, nameY); nameY += nSize + 2; });
 
     if (subtitle) {
       doc.setFont("helvetica", "normal"); doc.setFontSize(10);
       doc.setTextColor(BODY_MID[0], BODY_MID[1], BODY_MID[2]);
-      doc.text(subtitle, SIDE_PAD_L, nameY + 6);
-      nameY += 16;
+      doc.text(subtitle, SIDE_PAD_L, nameY + 4);
+      nameY += 14;
     }
 
-    const ruleY = Math.max(64, nameY + 6);
-    doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2]);
-    doc.setLineWidth(0.5);
-    doc.line(SIDE_PAD_L, ruleY, SIDE_W - 5, ruleY);
+    const topRuleY = nameY + 8;
+    drawRule(SIDE_PAD_L, topRuleY, SIDE_W);
 
-    let sy = ruleY + 18;
+    let sy = topRuleY + 22;
 
     const sbHead = (label, yp) => {
       doc.setFont("helvetica", "bold"); doc.setFontSize(9);
       doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
       doc.text(label.toUpperCase(), SIDE_PAD_L, yp);
-      doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
-      doc.setLineWidth(0.5);
-      doc.line(SIDE_PAD_L, yp + 3, SIDE_W - 5, yp + 3);
-      return yp + 13;
+      drawRule(SIDE_PAD_L, yp + 4, SIDE_W);
+      return yp + 12;
+    };
+
+    const sbBullet = (text, yp) => {
+      doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+      doc.text("•", SIDE_PAD_L, yp);
+      const wrapped = doc.splitTextToSize(text, SIDE_INNER_W - 10);
+      let cy = yp;
+      wrapped.forEach(wl => {
+        if (cy > pageHeight - BOTTOM) return;
+        doc.text(wl, SIDE_PAD_L + 8, cy); cy += 11;
+      });
+      return cy + 6;
     };
 
     if (contact.trim()) {
@@ -1963,47 +1992,31 @@ async function downloadPDF(elementId, filename) {
           if (sy > pageHeight - BOTTOM) return;
           doc.text(wl, SIDE_PAD_L + 4, sy); sy += 11;
         });
-        sy += 2;
+        sy += 6;
       });
-      sy += 6;
+      sy += 8;
     }
 
     const skillsKey = Object.keys(sections).find(k => k.includes("SKILL"));
     if (skillsKey) {
       sy = sbHead("Skills", sy);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
-      doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-      sections[skillsKey].forEach(skill => {
-        const s = skill.replace(/^[-•]\s*/, "").trim();
-        if (!s || sy > pageHeight - BOTTOM) return;
-        doc.text("•", SIDE_PAD_L, sy);
-        const wrapped = doc.splitTextToSize(s, SIDE_INNER_W - 8);
-        wrapped.forEach(wl => {
-          if (sy > pageHeight - BOTTOM) return;
-          doc.text(wl, SIDE_PAD_L + 8, sy); sy += 11;
-        });
-        sy += 1;
+      const skills = splitCommaList(sections[skillsKey]);
+      skills.forEach(s => {
+        if (sy > pageHeight - BOTTOM) return;
+        sy = sbBullet(s, sy);
       });
-      sy += 6;
+      sy += 8;
     }
 
     const langKey = Object.keys(sections).find(k => k.includes("LANGUAGE"));
     if (langKey) {
       sy = sbHead("Languages", sy);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
-      doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-      sections[langKey].forEach(line => {
-        const lt = line.replace(/^[-•]\s*/, "").trim();
-        if (!lt || sy > pageHeight - BOTTOM) return;
-        doc.text("•", SIDE_PAD_L, sy);
-        const wrapped = doc.splitTextToSize(lt, SIDE_INNER_W - 8);
-        wrapped.forEach(wl => {
-          if (sy > pageHeight - BOTTOM) return;
-          doc.text(wl, SIDE_PAD_L + 8, sy); sy += 11;
-        });
-        sy += 1;
+      const langs = splitCommaList(sections[langKey]);
+      langs.forEach(l => {
+        if (sy > pageHeight - BOTTOM) return;
+        sy = sbBullet(l, sy);
       });
-      sy += 6;
+      sy += 8;
     }
 
     const refKey = Object.keys(sections).find(k => k.includes("REFERENCE"));
@@ -2011,7 +2024,7 @@ async function downloadPDF(elementId, filename) {
       sy = sbHead("Reference", sy);
       sections[refKey].forEach(line => {
         const lt = line.replace(/^[-•]\s*/, "").trim();
-        if (!lt) { sy += 4; return; }
+        if (!lt) { sy += 6; return; }
         if (sy > pageHeight - BOTTOM) return;
         const isEmail = lt.includes("@");
         const isPhone = lt.match(/^\+?\d/);
@@ -2021,7 +2034,8 @@ async function downloadPDF(elementId, filename) {
         if (isName) {
           doc.setFont("helvetica", "bold"); doc.setFontSize(9);
           doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-          doc.text(lt, SIDE_PAD_L, sy); sy += 11;
+          const wrapped = doc.splitTextToSize(lt, SIDE_INNER_W);
+          wrapped.forEach(wl => { if (sy < pageHeight - BOTTOM) { doc.text(wl, SIDE_PAD_L, sy); sy += 11; } });
         } else if (hasAt) {
           doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
           doc.setTextColor(BODY_MID[0], BODY_MID[1], BODY_MID[2]);
@@ -2030,25 +2044,28 @@ async function downloadPDF(elementId, filename) {
         } else if (isPhone) {
           doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
           doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-          doc.text("Phone: " + lt, SIDE_PAD_L, sy); sy += 10;
+          const wrapped = doc.splitTextToSize("Phone: " + lt, SIDE_INNER_W);
+          wrapped.forEach(wl => { if (sy < pageHeight - BOTTOM) { doc.text(wl, SIDE_PAD_L, sy); sy += 10; } });
         } else if (isEmail) {
           doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
           doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-          doc.text("Email: " + lt, SIDE_PAD_L, sy); sy += 10;
+          const wrapped = doc.splitTextToSize("Email: " + lt, SIDE_INNER_W);
+          wrapped.forEach(wl => { if (sy < pageHeight - BOTTOM) { doc.text(wl, SIDE_PAD_L, sy); sy += 10; } });
         } else {
           doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
           doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
           const wrapped = doc.splitTextToSize(lt, SIDE_INNER_W);
           wrapped.forEach(wl => { if (sy < pageHeight - BOTTOM) { doc.text(wl, SIDE_PAD_L, sy); sy += 10; } });
         }
+        sy += 2;
       });
     }
 
-    let by = 50;
-    const timelineStart = by;
-    const subDotYs = [];
+    let by = 60;
+    const timelineStart = by - 12;
     const sectionDotYs = [];
     const iconLetters = [];
+    const subDotYs = [];
 
     const bodyHead = (label, yp, iconLetter) => {
       sectionDotYs.push(yp);
@@ -2056,11 +2073,9 @@ async function downloadPDF(elementId, filename) {
       doc.setFont("helvetica", "bold"); doc.setFontSize(11);
       doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
       doc.text(label.toUpperCase(), BODY_L, yp);
-      doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
-      doc.setLineWidth(0.5);
       const labelW = doc.getTextWidth(label.toUpperCase());
-      doc.line(BODY_L + labelW + 8, yp - 2, BODY_R, yp - 2);
-      return yp + 18;
+      drawRule(BODY_L + labelW + 8, yp - 2, BODY_R);
+      return yp + 12;
     };
 
     const summKey = Object.keys(sections).find(k => k.includes("SUMMARY") || k.includes("PROFILE") || k.includes("ABOUT"));
@@ -2073,19 +2088,22 @@ async function downloadPDF(elementId, filename) {
         const wrapped = doc.splitTextToSize(line, BODY_W - 4);
         wrapped.forEach(wl => {
           if (by > pageHeight - BOTTOM) return;
-          doc.text(wl, BODY_L, by); by += 12;
+          doc.text(wl, BODY_L, by); by += 13;
         });
-        by += 3;
+        by += 4;
       });
-      by += 12;
+      by += 14;
     }
 
     const expKey = Object.keys(sections).find(k => k.includes("EXPERIENCE") || k.includes("PROJECTS"));
     if (expKey) {
       by = bodyHead("Work Experience", by, "W");
+      let firstRole = true;
       sections[expKey].forEach(line => {
         if (by > pageHeight - BOTTOM) return;
         if (line.includes("|")) {
+          if (!firstRole) by += 10;
+          firstRole = false;
           const parts = line.split("|").map(p => p.trim());
           subDotYs.push(by - 3);
           doc.setFont("helvetica", "bold"); doc.setFontSize(10);
@@ -2097,7 +2115,7 @@ async function downloadPDF(elementId, filename) {
             const dW = doc.getTextWidth(parts[1]);
             doc.text(parts[1], BODY_R - dW, by);
           }
-          by += 12;
+          by += 14;
         } else if (isBullet(line)) {
           const bt = line.replace(/^[-•▸◆]\s*/, "");
           doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
@@ -2109,21 +2127,21 @@ async function downloadPDF(elementId, filename) {
               doc.text("•", BODY_L, by);
               doc.text(wl, BODY_L + 10, by);
             } else doc.text(wl, BODY_L + 10, by);
-            by += 11;
+            by += 12;
           });
-          by += 1;
-        } else {
+          by += 2;
+        } else if (line.trim()) {
           doc.setFont("helvetica", "normal"); doc.setFontSize(9);
           doc.setTextColor(BODY_MID[0], BODY_MID[1], BODY_MID[2]);
           const wrapped = doc.splitTextToSize(line, BODY_W);
           wrapped.forEach(wl => {
             if (by > pageHeight - BOTTOM) return;
-            doc.text(wl, BODY_L, by); by += 11;
+            doc.text(wl, BODY_L, by); by += 12;
           });
-          by += 3;
+          by += 4;
         }
       });
-      by += 8;
+      by += 14;
     }
 
     const eduKey = Object.keys(sections).find(k => k === "EDUCATION");
@@ -2142,16 +2160,16 @@ async function downloadPDF(elementId, filename) {
             const dW = doc.getTextWidth(parts[1]);
             doc.text(parts[1], BODY_R - dW, by);
           }
-          by += 12;
+          by += 13;
         } else {
           doc.setFont("helvetica", "normal"); doc.setFontSize(9);
           doc.setTextColor(BODY_MID[0], BODY_MID[1], BODY_MID[2]);
           const wrapped = doc.splitTextToSize(line, BODY_W);
           wrapped.forEach(wl => {
             if (by > pageHeight - BOTTOM) return;
-            doc.text(wl, BODY_L, by); by += 11;
+            doc.text(wl, BODY_L, by); by += 12;
           });
-          by += 2;
+          by += 3;
         }
       });
     }
@@ -2159,17 +2177,7 @@ async function downloadPDF(elementId, filename) {
     const timelineEnd = by;
     doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
     doc.setLineWidth(1);
-    doc.line(TIMELINE_X, timelineStart - 10, TIMELINE_X, timelineEnd);
-
-    sectionDotYs.forEach((yp, idx) => {
-      doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.circle(ICON_X, yp - 3, 10, "F");
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      const letter = iconLetters[idx];
-      const lW = doc.getTextWidth(letter);
-      doc.text(letter, ICON_X - lW/2, yp + 1);
-    });
+    doc.line(TIMELINE_X, timelineStart, TIMELINE_X, timelineEnd);
 
     subDotYs.forEach(yp => {
       doc.setFillColor(255, 255, 255);
@@ -2178,7 +2186,18 @@ async function downloadPDF(elementId, filename) {
       doc.circle(TIMELINE_X, yp, 3, "FD");
     });
 
-  } else if (selectedTemplate === "__modern_old__") {
+    sectionDotYs.forEach((yp, idx) => {
+      const letter = iconLetters[idx];
+      if (!letter) return;
+      doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
+      doc.circle(ICON_X, yp - 3, 9, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      const lW = doc.getTextWidth(letter);
+      doc.text(letter, ICON_X - lW/2, yp + 1);
+    });
+
+  } else if (selectedTemplate === "__modern_v2__") {
 
     const L = 56, R = pageWidth-56, W = R-L;
 
