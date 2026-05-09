@@ -771,9 +771,17 @@ body::before {
         <label>Job description or posting (optional)</label>
         <textarea id="rv-desc" placeholder="Paste the target job description to tailor the resume."></textarea>
       </div>
-      <div class="form-group">
+            <div class="form-group">
         <label>Experience & projects</label>
         <textarea id="rv-exp" placeholder="e.g. Personal projects, internships, coursework..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Languages (optional)</label>
+        <textarea id="rv-languages" placeholder="e.g. English (Fluent), Spanish (Conversational), French (Basic)"></textarea>
+      </div>
+      <div class="form-group">
+        <label>References (optional)</label>
+        <textarea id="rv-references" placeholder="e.g. Jane Doe, Manager at Acme Corp, jane@example.com, +1 555 0100"></textarea>
       </div>
       <div class="form-group">
         <label>Enter your email to generate your resume (2 free uses)</label>
@@ -1362,9 +1370,10 @@ CANDIDATE DETAILS:
 
 Output only the final cover letter text.`;
   } else {
-    const name = getVal('rv-name'), job = getVal('rv-job'), email = getVal('rv-email'), phone = getVal('rv-phone'),
+        const name = getVal('rv-name'), job = getVal('rv-job'), email = getVal('rv-email'), phone = getVal('rv-phone'),
           location = getVal('rv-location'), edu = getVal('rv-edu'), skills = getVal('rv-skills'),
-          desc = getVal('rv-desc'), exp = getVal('rv-exp');
+          desc = getVal('rv-desc'), exp = getVal('rv-exp'),
+          languages = getVal('rv-languages'), references = getVal('rv-references');
     if (!name || !job || !skills) {
       errorEl.textContent = 'Please fill in at least your name, target job, and skills.';
       errorEl.classList.add('visible');
@@ -1387,7 +1396,7 @@ CRITICAL RULES — MUST FOLLOW:
 - Do NOT include placeholders or fake companies, dates, or degrees
 - Keep the entire resume under 550 words
 
-STRUCTURE (use exactly these section headers, each appearing ONCE):
+STRUCTURE (use exactly these section headers, each appearing ONCE — only include LANGUAGES and REFERENCES sections if content is provided):
 1. [Candidate name on first line]
 2. [Job title on second line]
 3. [Phone | Email | Location on third line]
@@ -1395,6 +1404,8 @@ STRUCTURE (use exactly these section headers, each appearing ONCE):
 5. TECHNICAL SKILLS
 6. TECHNICAL EXPERIENCE
 7. EDUCATION
+8. LANGUAGES (only if content provided below)
+9. REFERENCES (only if content provided below)
 
 EXPERIENCE FORMATTING RULES — VERY IMPORTANT:
 - Each role or project must have its own title on its own line
@@ -1437,9 +1448,11 @@ CANDIDATE DETAILS:
 - Email: ${email || 'not provided'}
 - Phone: ${phone || 'not provided'}
 - Location: ${location || 'not provided'}
-- Education: ${edu || 'not provided'}
+- - Education: ${edu || 'not provided'}
 - Skills: ${skills}
 - Experience/Projects: ${exp || 'not provided'}
+- Languages: ${languages || 'not provided'}
+- References: ${references || 'not provided'}
 
 Output ONLY the final resume text. No labels, no explanations, no keyword sections.`;
   }
