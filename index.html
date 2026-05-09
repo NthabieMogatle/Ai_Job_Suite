@@ -803,10 +803,10 @@ body::before {
               <p>Navy sidebar · Gold initials · Skill pills · Premium</p>
               <div class="variant-row" onclick="event.stopPropagation()">
                 <span style="font-size:10px;color:var(--muted);">Color:</span>
-                <div class="color-swatch active" style="background:#121a2e;" title="Navy" onclick="setColorVariant('executive','navy',this)"></div>
+                <div class="color-swatch active" style="background:#7d192d;" title="Crimson" onclick="setColorVariant('executive','crimson',this)"></div>
                 <div class="color-swatch" style="background:#1a2e1a;" title="Forest" onclick="setColorVariant('executive','forest',this)"></div>
                 <div class="color-swatch" style="background:#1e1e1e;" title="Charcoal" onclick="setColorVariant('executive','charcoal',this)"></div>
-                <span class="variant-name" id="exec-variant-name">Navy</span>
+                span class="variant-name" id="exec-variant-name">Crimson</span>
               </div>
             </div>
             <div class="template-card locked" onclick="handleLockedTemplate('detailed')" id="tpl-detailed">
@@ -979,7 +979,9 @@ let selectedTemplate = "modern";
 // Color variants for premium templates
 const colorVariants = {
   executive: {
+      executive: {
     navy:     { sidebar: [18, 26, 46],   sidebarText: [176, 188, 212], accent: [201, 168, 76] },
+    crimson:  { sidebar: [125, 25, 45],  sidebarText: [220, 195, 200], accent: [220, 180, 110] },
     forest:   { sidebar: [18, 46, 26],   sidebarText: [176, 212, 188], accent: [100, 180, 100] },
     charcoal: { sidebar: [28, 28, 32],   sidebarText: [185, 185, 195], accent: [201, 168, 76] }
   },
