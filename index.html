@@ -1780,7 +1780,7 @@ async function downloadPDF(elementId, filename) {
 
   // Parse resume into structured sections
   const rawLines = rawText.split("\n").map(l => l.trim()).filter(l => l !== "");
-  const SECTION_HEADERS = ["PROFESSIONAL SUMMARY","TECHNICAL SKILLS","SKILLS","TECHNICAL EXPERIENCE","WORK EXPERIENCE","EXPERIENCE","PROJECTS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING","SUMMARY"];
+  const SECTION_HEADERS = ["PROFESSIONAL SUMMARY","TECHNICAL SKILLS","SKILLS","TECHNICAL EXPERIENCE","WORK EXPERIENCE","EXPERIENCE","PROJECTS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING","SUMMARY","LANGUAGES","LANGUAGE","REFERENCES","REFERENCE","PROFILE","ABOUT ME","ABOUT"];
   const isHeading = l => SECTION_HEADERS.includes(l.toUpperCase().replace(/[^A-Z &]/g,'').trim());
   const isBullet = l => /^[-•▸◆]/.test(l);
 
@@ -1894,9 +1894,9 @@ async function downloadPDF(elementId, filename) {
   // TEMPLATE 2: MINIMAL
   // Pure white · Large spaced name · Thin gold rule · Clean typography
   // ══════════════════════════════════════════
-    } else if (selectedTemplate === "minimal") {
+   } else if (selectedTemplate === "minimal") {
     const L = 40;
-    const SIDE_W = 195;
+    const SIDE_W = 220;
     const DIVIDER_X = L + SIDE_W + 18;
     const BODY_L = DIVIDER_X + 22;
     const BODY_R = pageWidth - 40;
@@ -1906,6 +1906,7 @@ async function downloadPDF(elementId, filename) {
     const TEXT_DARK = [45, 45, 55];
     const TEXT_MID = [95, 95, 105];
     const RULE_GREY = [200, 200, 200];
+    const RULE_W = 0.5;
 
     doc.setFillColor(255,255,255);
     doc.rect(0,0,pageWidth,pageHeight,"F");
@@ -1947,20 +1948,21 @@ async function downloadPDF(elementId, filename) {
       doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
       doc.text(label.toUpperCase(), L, yp);
       doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
-      doc.setLineWidth(0.5);
-      doc.line(L, yp + 4, L + SIDE_W - 10, yp + 4);
+      doc.setLineWidth(RULE_W);
+      doc.line(L, yp + 4, L + SIDE_W - 8, yp + 4);
       return yp + 16;
     };
 
-    const sbBullet = (text, yp, fontSize, maxW) => {
-      doc.setFont("helvetica","normal"); doc.setFontSize(fontSize);
+    const sbBullet = (text, yp, maxW) => {
+      doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
+      doc.circle(L + 3, yp - 2.5, 1.7, "F");
       doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
-      doc.text("•", L + 2, yp);
+      doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
       const wrapped = doc.splitTextToSize(text, maxW);
       let cy = yp;
       wrapped.forEach((wl, i) => {
         if (cy > pageHeight - 22) return;
-        doc.text(wl, L + 10, cy); cy += 11;
+        doc.text(wl, L + 11, cy); cy += 11;
       });
       return cy;
     };
@@ -1970,7 +1972,7 @@ async function downloadPDF(elementId, filename) {
       const parts = contact.split("|").map(p=>p.trim()).filter(Boolean);
       parts.forEach(p => {
         if (sy > pageHeight - 30) return;
-        sy = sbBullet(p, sy, 8.5, SIDE_W - 16);
+        sy = sbBullet(p, sy, SIDE_W - 18);
         sy += 2;
       });
       sy += 8;
@@ -1982,7 +1984,7 @@ async function downloadPDF(elementId, filename) {
       sections[skillsKey].forEach(skill => {
         const s = skill.replace(/^[-•]\s*/,"").trim();
         if (!s || sy > pageHeight - 30) return;
-        sy = sbBullet(s, sy, 8.5, SIDE_W - 16);
+        sy = sbBullet(s, sy, SIDE_W - 18);
         sy += 1;
       });
       sy += 8;
@@ -1994,7 +1996,7 @@ async function downloadPDF(elementId, filename) {
       sections[langKey].forEach(line => {
         const lt = line.replace(/^[-•]\s*/,"").trim();
         if (!lt || sy > pageHeight - 30) return;
-        sy = sbBullet(lt, sy, 8.5, SIDE_W - 16);
+        sy = sbBullet(lt, sy, SIDE_W - 18);
         sy += 1;
       });
       sy += 8;
@@ -2037,7 +2039,7 @@ async function downloadPDF(elementId, filename) {
       doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
       doc.text(label.toUpperCase(), BODY_L, yp);
       doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
-      doc.setLineWidth(0.5);
+      doc.setLineWidth(RULE_W);
       const labelW = doc.getTextWidth(label.toUpperCase());
       doc.line(BODY_L + labelW + 8, yp - 2, BODY_R, yp - 2);
       return yp + 16;
@@ -2087,9 +2089,10 @@ async function downloadPDF(elementId, filename) {
           wrapped.forEach((wl, i) => {
             if (by > 740) { doc.addPage(); by = 50; }
             if (i === 0) {
-              doc.text("•", BODY_L, by);
-              doc.text(wl, BODY_L + 8, by);
-            } else doc.text(wl, BODY_L + 8, by);
+              doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
+              doc.circle(BODY_L + 3, by - 2.5, 1.6, "F");
+              doc.text(wl, BODY_L + 10, by);
+            } else doc.text(wl, BODY_L + 10, by);
             by += 12;
           });
           by += 1;
@@ -2134,10 +2137,8 @@ async function downloadPDF(elementId, filename) {
     maxContentY = Math.max(maxContentY, by);
 
     doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
-    doc.setLineWidth(0.5);
-  doc.line(DIVIDER_X, headerY - 6, DIVIDER_X, Math.min(maxContentY + 6, pageHeight - 30));
- 
-    } else if (selectedTemplate === "__minimal_old__") {
+    doc.setLineWidth(RULE_W);
+    doc.line(DIVIDER_X, headerY - 6, DIVIDER_X, Math.min(maxContentY + 6, pageHeight - 30));
 
     const L = 56, R = pageWidth-56, W = R-L;
     let y = 68;
