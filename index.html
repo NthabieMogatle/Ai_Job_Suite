@@ -1894,26 +1894,29 @@ async function downloadPDF(elementId, filename) {
   // TEMPLATE 2: MINIMAL
   // Pure white · Large spaced name · Thin gold rule · Clean typography
   // ══════════════════════════════════════════
-       } else if (selectedTemplate === "modern") {
+          } else if (selectedTemplate === "modern") {
     const SIDE_W = 182;
     const SIDE_PAD_L = 30;
     const SIDE_INNER_W = SIDE_W - SIDE_PAD_L;
-    const TIMELINE_X = 205;
-    const ICON_X = 205;
-    const BODY_L = 222;
+    const VERT_DIVIDER_X = 192;
+    const TIMELINE_X = 215;
+    const ICON_X = 215;
+    const BODY_L = 230;
     const BODY_R = pageWidth - 30;
     const BODY_W = BODY_R - BODY_L;
+    const TOP = 30;
     const BOTTOM = 30;
 
     const NAVY = [26, 31, 54];
     const BODY_DARK = [51, 51, 51];
     const BODY_MID = [85, 85, 85];
     const BODY_MUTED = [136, 136, 136];
-    const RULE_GREY = [204, 204, 204];
+    const RULE_HORIZ = [170, 170, 170];
+    const RULE_VERT = [204, 204, 204];
 
     const drawRule = (x1, y, x2) => {
-      doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
-      doc.setLineWidth(0.5);
+      doc.setDrawColor(RULE_HORIZ[0], RULE_HORIZ[1], RULE_HORIZ[2]);
+      doc.setLineWidth(0.8);
       doc.line(x1, y, x2, y);
     };
     const splitCommaList = (lines) => {
@@ -1957,14 +1960,14 @@ async function downloadPDF(elementId, filename) {
     const topRuleY = nameY + 8;
     drawRule(SIDE_PAD_L, topRuleY, SIDE_W);
 
-    let sy = topRuleY + 22;
+    let sy = topRuleY + 14;
 
     const sbHead = (label, yp) => {
       doc.setFont("helvetica", "bold"); doc.setFontSize(9);
       doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
       doc.text(label.toUpperCase(), SIDE_PAD_L, yp);
       drawRule(SIDE_PAD_L, yp + 4, SIDE_W);
-      return yp + 12;
+      return yp + 14;
     };
 
     const sbBullet = (text, yp) => {
@@ -1977,7 +1980,7 @@ async function downloadPDF(elementId, filename) {
         if (cy > pageHeight - BOTTOM) return;
         doc.text(wl, SIDE_PAD_L + 8, cy); cy += 11;
       });
-      return cy + 6;
+      return cy;
     };
 
     if (contact.trim()) {
@@ -1988,11 +1991,11 @@ async function downloadPDF(elementId, filename) {
       parts.forEach(p => {
         if (sy > pageHeight - BOTTOM) return;
         const wrapped = doc.splitTextToSize(p, SIDE_INNER_W - 4);
-        wrapped.forEach((wl, i) => {
+        wrapped.forEach((wl) => {
           if (sy > pageHeight - BOTTOM) return;
           doc.text(wl, SIDE_PAD_L + 4, sy); sy += 11;
         });
-        sy += 6;
+        sy += 4;
       });
       sy += 8;
     }
@@ -2004,6 +2007,7 @@ async function downloadPDF(elementId, filename) {
       skills.forEach(s => {
         if (sy > pageHeight - BOTTOM) return;
         sy = sbBullet(s, sy);
+        sy += 4;
       });
       sy += 8;
     }
@@ -2015,6 +2019,7 @@ async function downloadPDF(elementId, filename) {
       langs.forEach(l => {
         if (sy > pageHeight - BOTTOM) return;
         sy = sbBullet(l, sy);
+        sy += 4;
       });
       sy += 8;
     }
@@ -2060,22 +2065,20 @@ async function downloadPDF(elementId, filename) {
         sy += 2;
       });
     }
+    const sidebarEndY = sy;
 
     let by = 60;
-    const timelineStart = by - 12;
-    const sectionDotYs = [];
-    const iconLetters = [];
+    const sectionMarkers = [];
     const subDotYs = [];
 
     const bodyHead = (label, yp, iconLetter) => {
-      sectionDotYs.push(yp);
-      iconLetters.push(iconLetter);
+      sectionMarkers.push({ y: yp, letter: iconLetter });
       doc.setFont("helvetica", "bold"); doc.setFontSize(11);
       doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
       doc.text(label.toUpperCase(), BODY_L, yp);
       const labelW = doc.getTextWidth(label.toUpperCase());
       drawRule(BODY_L + labelW + 8, yp - 2, BODY_R);
-      return yp + 12;
+      return yp + 14;
     };
 
     const summKey = Object.keys(sections).find(k => k.includes("SUMMARY") || k.includes("PROFILE") || k.includes("ABOUT"));
@@ -2092,7 +2095,7 @@ async function downloadPDF(elementId, filename) {
         });
         by += 4;
       });
-      by += 14;
+      by += 8;
     }
 
     const expKey = Object.keys(sections).find(k => k.includes("EXPERIENCE") || k.includes("PROJECTS"));
@@ -2141,7 +2144,7 @@ async function downloadPDF(elementId, filename) {
           by += 4;
         }
       });
-      by += 14;
+      by += 8;
     }
 
     const eduKey = Object.keys(sections).find(k => k === "EDUCATION");
@@ -2173,11 +2176,20 @@ async function downloadPDF(elementId, filename) {
         }
       });
     }
+    const bodyEndY = by;
 
-    const timelineEnd = by;
-    doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
+    const dividerEndY = Math.min(750, Math.max(sidebarEndY, bodyEndY) + 10);
+    doc.setDrawColor(RULE_VERT[0], RULE_VERT[1], RULE_VERT[2]);
+    doc.setLineWidth(0.8);
+    doc.line(VERT_DIVIDER_X, TOP, VERT_DIVIDER_X, dividerEndY);
+
+    doc.setDrawColor(RULE_VERT[0], RULE_VERT[1], RULE_VERT[2]);
     doc.setLineWidth(1);
-    doc.line(TIMELINE_X, timelineStart, TIMELINE_X, timelineEnd);
+    if (sectionMarkers.length > 0) {
+      const tStart = sectionMarkers[0].y - 12;
+      const tEnd = bodyEndY;
+      doc.line(TIMELINE_X, tStart, TIMELINE_X, tEnd);
+    }
 
     subDotYs.forEach(yp => {
       doc.setFillColor(255, 255, 255);
@@ -2186,18 +2198,18 @@ async function downloadPDF(elementId, filename) {
       doc.circle(TIMELINE_X, yp, 3, "FD");
     });
 
-    sectionDotYs.forEach((yp, idx) => {
-      const letter = iconLetters[idx];
-      if (!letter) return;
+    sectionMarkers.forEach(marker => {
+      if (!marker || !marker.letter) return;
       doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.circle(ICON_X, yp - 3, 9, "F");
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.circle(ICON_X, marker.y - 3, 9, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
       doc.setTextColor(255, 255, 255);
-      const lW = doc.getTextWidth(letter);
-      doc.text(letter, ICON_X - lW/2, yp + 1);
+      const lW = doc.getTextWidth(marker.letter);
+      doc.text(marker.letter, ICON_X - lW/2, marker.y + 1);
     });
 
-  } else if (selectedTemplate === "__modern_v2__") { 
+  } else if (selectedTemplate === "__modern_v3__") {
 
     const L = 56, R = pageWidth-56, W = R-L;
 
