@@ -1062,7 +1062,8 @@ function setColorVariant(template, variant, el) {
   const cardId = template === 'elegant' ? 'tpl-detailed' : 'tpl-' + template;
   const card = document.getElementById(cardId);
   if (card && card.classList.contains('locked')) {
-    window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank");
+    window.open("<https://eleveemporium.gumroad.com/l/pllrsk>", "_blank");
+
     return;
   }
 
