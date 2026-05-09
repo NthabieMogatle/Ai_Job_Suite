@@ -1894,253 +1894,263 @@ async function downloadPDF(elementId, filename) {
   // TEMPLATE 2: MINIMAL
   // Pure white · Large spaced name · Thin gold rule · Clean typography
   // ══════════════════════════════════════════
-   } else if (selectedTemplate === "minimal") {
-    const L = 40;
-    const SIDE_W = 220;
-    const DIVIDER_X = L + SIDE_W + 18;
-    const BODY_L = DIVIDER_X + 22;
-    const BODY_R = pageWidth - 40;
+     } else if (selectedTemplate === "modern") {
+    const SIDE_W = 180;
+    const SIDE_PAD = 18;
+    const SIDE_INNER = SIDE_W - SIDE_PAD * 2;
+    const BODY_L = SIDE_W + 32;
+    const BODY_R = pageWidth - 36;
     const BODY_W = BODY_R - BODY_L;
-    const HEADER_W = BODY_R - L;
-    const NAVY = [29, 36, 64];
-    const TEXT_DARK = [45, 45, 55];
-    const TEXT_MID = [95, 95, 105];
-    const RULE_GREY = [200, 200, 200];
-    const RULE_W = 0.5;
+    const TIMELINE_X = BODY_L - 14;
 
-    doc.setFillColor(255,255,255);
-    doc.rect(0,0,pageWidth,pageHeight,"F");
+    const NAVY = [26, 31, 54];
+    const WHITE = [255, 255, 255];
+    const SIDEBAR_MUTED = [180, 185, 200];
+    const BODY_DARK = [51, 51, 51];
+    const BODY_MUTED = [120, 120, 130];
+    const RULE_GREY = [204, 204, 204];
+    const RULE_W = 0.6;
 
-    let y = 70;
-    doc.setFont("helvetica","bold");
-    let nSize = name.length > 30 ? 22 : name.length > 24 ? 26 : name.length > 18 ? 30 : 34;
+    doc.setFillColor(WHITE[0], WHITE[1], WHITE[2]);
+    doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+    doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
+    doc.rect(0, 0, SIDE_W, pageHeight, "F");
+
+    let sy = 60;
+
+    doc.setFont("helvetica", "bold");
+    let nSize = name.length > 22 ? 16 : name.length > 16 ? 18 : 22;
     doc.setFontSize(nSize);
-    while (doc.getTextWidth(name.toUpperCase()) > HEADER_W - 4 && nSize > 14) {
-      nSize -= 1; doc.setFontSize(nSize);
+    while (doc.getTextWidth(name) > SIDE_INNER && nSize > 12) {
+      nSize -= 0.5; doc.setFontSize(nSize);
     }
-    doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-    doc.text(name.toUpperCase(), L, y);
-    y += 4;
+    doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
+    const nameWrapped = doc.splitTextToSize(name, SIDE_INNER);
+    nameWrapped.forEach(line => { doc.text(line, SIDE_PAD, sy); sy += nSize + 2; });
+    sy += 4;
 
     if (subtitle) {
-      doc.setFont("helvetica","normal");
-      let sub = 12;
-      doc.setFontSize(sub);
-      while (doc.getTextWidth(subtitle) > HEADER_W - 4 && sub > 9) {
-        sub -= 0.5; doc.setFontSize(sub);
+      doc.setFont("helvetica", "normal");
+      let subSize = 10;
+      doc.setFontSize(subSize);
+      while (doc.getTextWidth(subtitle) > SIDE_INNER && subSize > 8) {
+        subSize -= 0.5; doc.setFontSize(subSize);
       }
-      doc.setTextColor(TEXT_MID[0], TEXT_MID[1], TEXT_MID[2]);
-      doc.text(subtitle, L, y + 12);
-      y += 22;
-    } else { y += 12; }
+      doc.setTextColor(SIDEBAR_MUTED[0], SIDEBAR_MUTED[1], SIDEBAR_MUTED[2]);
+      const subWrapped = doc.splitTextToSize(subtitle, SIDE_INNER);
+      subWrapped.forEach(line => { doc.text(line, SIDE_PAD, sy); sy += 13; });
+      sy += 4;
+    }
 
-    doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2]);
-    doc.setLineWidth(0.9);
-    doc.line(L, y, BODY_R, y);
-    y += 24;
-
-    const headerY = y;
-    let maxContentY = headerY;
-    let sy = headerY;
+    doc.setDrawColor(SIDEBAR_MUTED[0], SIDEBAR_MUTED[1], SIDEBAR_MUTED[2]);
+    doc.setLineWidth(RULE_W);
+    doc.line(SIDE_PAD, sy, SIDE_W - SIDE_PAD, sy);
+    sy += 18;
 
     const sbHead = (label, yp) => {
-      doc.setFont("helvetica","bold"); doc.setFontSize(11);
-      doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.text(label.toUpperCase(), L, yp);
-      doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10.5);
+      doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
+      doc.text(label.toUpperCase(), SIDE_PAD, yp);
+      doc.setDrawColor(SIDEBAR_MUTED[0], SIDEBAR_MUTED[1], SIDEBAR_MUTED[2]);
       doc.setLineWidth(RULE_W);
-      doc.line(L, yp + 4, L + SIDE_W - 8, yp + 4);
+      doc.line(SIDE_PAD, yp + 4, SIDE_W - SIDE_PAD, yp + 4);
       return yp + 16;
     };
 
-    const sbBullet = (text, yp, maxW) => {
-      doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.circle(L + 3, yp - 2.5, 1.7, "F");
-      doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
-      doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
-      const wrapped = doc.splitTextToSize(text, maxW);
+    const sbBullet = (text, yp, fontSize) => {
+      doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(fontSize);
+      doc.text("•", SIDE_PAD, yp);
+      const wrapped = doc.splitTextToSize(text, SIDE_INNER - 10);
       let cy = yp;
-      wrapped.forEach((wl, i) => {
-        if (cy > pageHeight - 22) return;
-        doc.text(wl, L + 11, cy); cy += 11;
+      wrapped.forEach((wl) => {
+        if (cy > pageHeight - 25) return;
+        doc.text(wl, SIDE_PAD + 8, cy); cy += 12;
       });
       return cy;
     };
 
     if (contact.trim()) {
       sy = sbHead("Contact", sy);
-      const parts = contact.split("|").map(p=>p.trim()).filter(Boolean);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+      doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
+      const parts = contact.split("|").map(p => p.trim()).filter(Boolean);
       parts.forEach(p => {
         if (sy > pageHeight - 30) return;
-        sy = sbBullet(p, sy, SIDE_W - 18);
-        sy += 2;
+        const wrapped = doc.splitTextToSize(p, SIDE_INNER);
+        wrapped.forEach((wl, i) => {
+          if (sy > pageHeight - 25) return;
+          doc.text(wl, SIDE_PAD, sy); sy += 11;
+        });
+        sy += 3;
       });
-      sy += 8;
+      sy += 12;
     }
 
     const skillsKey = Object.keys(sections).find(k => k.includes("SKILL"));
     if (skillsKey) {
       sy = sbHead("Skills", sy);
       sections[skillsKey].forEach(skill => {
-        const s = skill.replace(/^[-•]\s*/,"").trim();
+        const s = skill.replace(/^[-•]\s*/, "").trim();
         if (!s || sy > pageHeight - 30) return;
-        sy = sbBullet(s, sy, SIDE_W - 18);
-        sy += 1;
+        sy = sbBullet(s, sy, 8.5);
+        sy += 2;
       });
-      sy += 8;
+      sy += 12;
     }
 
     const langKey = Object.keys(sections).find(k => k.includes("LANGUAGE"));
     if (langKey) {
       sy = sbHead("Languages", sy);
       sections[langKey].forEach(line => {
-        const lt = line.replace(/^[-•]\s*/,"").trim();
+        const lt = line.replace(/^[-•]\s*/, "").trim();
         if (!lt || sy > pageHeight - 30) return;
-        sy = sbBullet(lt, sy, SIDE_W - 18);
-        sy += 1;
+        sy = sbBullet(lt, sy, 8.5);
+        sy += 2;
       });
-      sy += 8;
+      sy += 12;
     }
 
     const refKey = Object.keys(sections).find(k => k.includes("REFERENCE"));
     if (refKey) {
       sy = sbHead("Reference", sy);
-      doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
       sections[refKey].forEach(line => {
-        const lt = line.replace(/^[-•]\s*/,"").trim();
-        if (!lt || sy > pageHeight - 25) return;
-        const isName = lt.length < 35 && !lt.includes("@") && !lt.match(/^\+?\d/);
+        const lt = line.replace(/^[-•]\s*/, "").trim();
+        if (!lt) { sy += 3; return; }
+        if (sy > pageHeight - 25) return;
+        const isName = lt.length < 35 && !lt.includes("@") && !lt.match(/^\+?\d/) && !lt.toLowerCase().includes("at ");
         doc.setFont("helvetica", isName ? "bold" : "normal");
-        doc.setTextColor(isName ? NAVY[0] : TEXT_MID[0], isName ? NAVY[1] : TEXT_MID[1], isName ? NAVY[2] : TEXT_MID[2]);
-        const wrapped = doc.splitTextToSize(lt, SIDE_W - 4);
+        doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
+        const wrapped = doc.splitTextToSize(lt, SIDE_INNER);
         wrapped.forEach(wl => {
           if (sy > pageHeight - 22) return;
-          doc.text(wl, L, sy); sy += 11;
+          doc.text(wl, SIDE_PAD, sy); sy += 10;
         });
-        sy += 2;
+        sy += 1;
       });
     }
-    maxContentY = Math.max(maxContentY, sy);
 
-    let by = headerY;
+    let by = 60;
 
-    const bodyIcon = (letter, yp) => {
-      doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.circle(DIVIDER_X, yp - 3, 7, "F");
-      doc.setTextColor(255,255,255);
-      doc.setFont("helvetica","bold"); doc.setFontSize(8);
-      const lW = doc.getTextWidth(letter);
-      doc.text(letter, DIVIDER_X - lW/2, yp);
-    };
-
-    const bodyHead = (label, yp, iconLetter) => {
-      bodyIcon(iconLetter, yp);
-      doc.setFont("helvetica","bold"); doc.setFontSize(13);
+    const bodyHead = (label, yp) => {
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11.5);
       doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
       doc.text(label.toUpperCase(), BODY_L, yp);
       doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
       doc.setLineWidth(RULE_W);
-      const labelW = doc.getTextWidth(label.toUpperCase());
-      doc.line(BODY_L + labelW + 8, yp - 2, BODY_R, yp - 2);
-      return yp + 16;
+      doc.line(BODY_L, yp + 5, BODY_R, yp + 5);
+      return yp + 18;
     };
 
-    const renderEntryHead = (line, yp) => {
-      const parts = line.split("|").map(p => p.trim());
-      doc.setFont("helvetica","bold"); doc.setFontSize(10);
-      doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.text(parts[0] || "", BODY_L, yp);
-      if (parts.length > 1) {
-        doc.setFont("helvetica","normal"); doc.setFontSize(9);
-        doc.setTextColor(TEXT_MID[0], TEXT_MID[1], TEXT_MID[2]);
-        const dW = doc.getTextWidth(parts[1]);
-        doc.text(parts[1], BODY_R - dW, yp);
-      }
-      return yp + 12;
-    };
+    const timelineSegments = [];
+    let currentTimelineStart = null;
 
     const summKey = Object.keys(sections).find(k => k.includes("SUMMARY") || k.includes("PROFILE") || k.includes("ABOUT"));
     if (summKey) {
-      by = bodyHead("Profile", by, "P");
-      doc.setFont("helvetica","normal"); doc.setFontSize(9.5);
-      doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+      by = bodyHead("Profile", by);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+      doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
       sections[summKey].forEach(line => {
         if (!line.trim() || by > 740) return;
         const wrapped = doc.splitTextToSize(line, BODY_W - 4);
         wrapped.forEach(wl => {
           if (by > 740) return;
-          doc.text(wl, BODY_L, by); by += 12;
+          doc.text(wl, BODY_L, by); by += 13;
         });
-        by += 2;
+        by += 3;
       });
       by += 14;
     }
 
     const expKey = Object.keys(sections).find(k => k.includes("EXPERIENCE") || k.includes("PROJECTS"));
     if (expKey) {
-      by = bodyHead("Work Experience", by, "W");
+      by = bodyHead("Work Experience", by);
+      currentTimelineStart = by;
       sections[expKey].forEach(line => {
-        if (by > 740) { doc.addPage(); by = 50; }
-        if (isBullet(line)) {
-          const bt = line.replace(/^[-•▸◆]\s*/,"");
-          doc.setFont("helvetica","normal"); doc.setFontSize(9);
-          doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+        if (by > 740) return;
+        if (line.includes("|")) {
+          const parts = line.split("|").map(p => p.trim());
+          doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
+          doc.circle(TIMELINE_X, by - 3, 2.5, "F");
+          doc.setFont("helvetica", "bold"); doc.setFontSize(10.5);
+          doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
+          doc.text(parts[0] || "", BODY_L, by);
+          if (parts.length > 1) {
+            doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+            doc.setTextColor(BODY_MUTED[0], BODY_MUTED[1], BODY_MUTED[2]);
+            const dW = doc.getTextWidth(parts[1]);
+            doc.text(parts[1], BODY_R - dW, by);
+          }
+          by += 13;
+        } else if (isBullet(line)) {
+          const bt = line.replace(/^[-•▸◆]\s*/, "");
+          doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+          doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
           const wrapped = doc.splitTextToSize(bt, BODY_W - 14);
           wrapped.forEach((wl, i) => {
-            if (by > 740) { doc.addPage(); by = 50; }
+            if (by > 740) return;
             if (i === 0) {
-              doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
-              doc.circle(BODY_L + 3, by - 2.5, 1.6, "F");
-              doc.text(wl, BODY_L + 10, by);
-            } else doc.text(wl, BODY_L + 10, by);
+              doc.setFillColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
+              doc.circle(BODY_L + 3, by - 3, 1.4, "F");
+              doc.text(wl, BODY_L + 12, by);
+            } else doc.text(wl, BODY_L + 12, by);
             by += 12;
           });
           by += 1;
-        } else if (line.includes("|")) {
-          by = renderEntryHead(line, by);
         } else {
-          const looksLikeRole = line.length < 60 && !line.endsWith(".");
-          doc.setFont("helvetica", looksLikeRole ? "bold" : "normal"); doc.setFontSize(9.5);
-          doc.setTextColor(looksLikeRole ? TEXT_DARK[0] : TEXT_MID[0], looksLikeRole ? TEXT_DARK[1] : TEXT_MID[1], looksLikeRole ? TEXT_DARK[2] : TEXT_MID[2]);
-          const wrapped = doc.splitTextToSize(line, BODY_W);
-          wrapped.forEach(wl => {
-            if (by > 740) { doc.addPage(); by = 50; }
-            doc.text(wl, BODY_L, by); by += 12;
-          });
-          by += looksLikeRole ? 2 : 1;
-        }
-      });
-      by += 14;
-    }
-
-    const eduKey = Object.keys(sections).find(k => k === "EDUCATION");
-    if (eduKey) {
-      if (by > 720) { doc.addPage(); by = 50; }
-      by = bodyHead("Education", by, "E");
-      sections[eduKey].forEach(line => {
-        if (!line.trim() || by > 740) return;
-        if (line.includes("|")) {
-          by = renderEntryHead(line, by);
-        } else {
-          doc.setFont("helvetica","normal"); doc.setFontSize(9.5);
-          doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+          doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+          doc.setTextColor(BODY_MUTED[0], BODY_MUTED[1], BODY_MUTED[2]);
           const wrapped = doc.splitTextToSize(line, BODY_W);
           wrapped.forEach(wl => {
             if (by > 740) return;
             doc.text(wl, BODY_L, by); by += 12;
           });
-          by += 1;
+          by += 3;
+        }
+      });
+      timelineSegments.push({ start: currentTimelineStart - 8, end: by });
+      by += 14;
+    }
+
+    const eduKey = Object.keys(sections).find(k => k === "EDUCATION");
+    if (eduKey && by <= 720) {
+      by = bodyHead("Education", by);
+      sections[eduKey].forEach(line => {
+        if (!line.trim() || by > 740) return;
+        if (line.includes("|")) {
+          const parts = line.split("|").map(p => p.trim());
+          doc.setFont("helvetica", "bold"); doc.setFontSize(10.5);
+          doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
+          doc.text(parts[0] || "", BODY_L, by);
+          if (parts.length > 1) {
+            doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+            doc.setTextColor(BODY_MUTED[0], BODY_MUTED[1], BODY_MUTED[2]);
+            const dW = doc.getTextWidth(parts[1]);
+            doc.text(parts[1], BODY_R - dW, by);
+          }
+          by += 13;
+        } else {
+          doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+          doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
+          const wrapped = doc.splitTextToSize(line, BODY_W);
+          wrapped.forEach(wl => {
+            if (by > 740) return;
+            doc.text(wl, BODY_L, by); by += 12;
+          });
+          by += 2;
         }
       });
     }
 
-    maxContentY = Math.max(maxContentY, by);
+    doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2]);
+    doc.setLineWidth(0.6);
+    timelineSegments.forEach(seg => {
+      doc.line(TIMELINE_X, seg.start, TIMELINE_X, seg.end);
+    });
 
-    doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
-    doc.setLineWidth(RULE_W);
-        doc.line(DIVIDER_X, headerY - 6, DIVIDER_X, Math.min(maxContentY + 6, pageHeight - 30));
-
-  } else if (selectedTemplate === "__minimal_old__") {
+  } else if (selectedTemplate === "__modern_old__") {
 
     const L = 56, R = pageWidth-56, W = R-L;
 
