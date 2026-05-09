@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+e<!DOCTYPE html>
 
 <html lang="en">
 <head>
@@ -1894,74 +1894,90 @@ async function downloadPDF(elementId, filename) {
   // TEMPLATE 2: MINIMAL
   // Pure white · Large spaced name · Thin gold rule · Clean typography
   // ══════════════════════════════════════════
-  } else if (selectedTemplate === "minimal") {
-    const SIDE_W = 175;
+  }  } else if (selectedTemplate === "minimal") {
+    const SIDE_W = 195;
     const L = 36;
     const SIDE_R = L + SIDE_W;
-    const BODY_L = SIDE_R + 28;
+    const BODY_L = SIDE_R + 32;
     const BODY_R = pageWidth - 36;
     const BODY_W = BODY_R - BODY_L;
     const HEADER_W = BODY_R - L;
+    const NAVY = [29, 36, 64];
+    const TEXT_DARK = [40, 40, 50];
+    const TEXT_MID = [70, 70, 80];
 
     doc.setFillColor(255,255,255);
     doc.rect(0,0,pageWidth,pageHeight,"F");
 
-    let y = 72;
+    let y = 70;
     doc.setFont("helvetica","bold");
-    let nSize = name.length > 30 ? 24 : name.length > 24 ? 28 : name.length > 18 ? 32 : 38;
+    let nSize = name.length > 30 ? 22 : name.length > 24 ? 26 : name.length > 18 ? 30 : 34;
     doc.setFontSize(nSize);
-    while (doc.getTextWidth(name.toUpperCase()) > HEADER_W - 4 && nSize > 16) {
+    while (doc.getTextWidth(name.toUpperCase()) > HEADER_W - 4 && nSize > 14) {
       nSize -= 1; doc.setFontSize(nSize);
     }
-    doc.setTextColor(29,36,64);
+    doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
     doc.text(name.toUpperCase(), L, y);
-    y += 6;
+    y += 4;
 
     if (subtitle) {
       doc.setFont("helvetica","normal");
-      let sub = 13;
+      let sub = 12;
       doc.setFontSize(sub);
       while (doc.getTextWidth(subtitle) > HEADER_W - 4 && sub > 9) {
         sub -= 0.5; doc.setFontSize(sub);
       }
-      doc.setTextColor(85,85,85);
-      doc.text(subtitle, L, y + 10);
-      y += 22;
+      doc.setTextColor(TEXT_MID[0], TEXT_MID[1], TEXT_MID[2]);
+      doc.text(subtitle, L, y + 11);
+      y += 21;
     } else { y += 12; }
 
-    doc.setDrawColor(29,36,64);
-    doc.setLineWidth(1);
+    doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2]);
+    doc.setLineWidth(0.9);
     doc.line(L, y, BODY_R, y);
-    y += 26;
+    y += 22;
 
     const headerY = y;
     let sy = headerY;
 
     const sbHead = (label, yp) => {
       doc.setFont("helvetica","bold"); doc.setFontSize(10.5);
-      doc.setTextColor(29,36,64);
+      doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
       doc.text(label.toUpperCase(), L, yp);
-      doc.setDrawColor(200,200,200);
-      doc.setLineWidth(0.5);
-      doc.line(L, yp + 4, SIDE_R - 12, yp + 4);
-      return yp + 15;
+      doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2]);
+      doc.setLineWidth(0.6);
+      doc.line(L, yp + 4, SIDE_R - 14, yp + 4);
+      return yp + 14;
+    };
+
+    const sbBullet = (text, yp, fontSize, maxW) => {
+      doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
+      doc.circle(L + 2, yp - 2.5, 1.7, "F");
+      doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+      doc.setFont("helvetica","normal"); doc.setFontSize(fontSize);
+      const wrapped = doc.splitTextToSize(text, maxW);
+      let cy = yp;
+      wrapped.forEach(wl => {
+        if (cy > pageHeight - 22) return;
+        doc.text(wl, L + 9, cy); cy += 11;
+      });
+      return cy;
     };
 
     if (contact.trim()) {
       sy = sbHead("Contact", sy);
       doc.setFont("helvetica","normal"); doc.setFontSize(8);
-      doc.setTextColor(85,85,85);
+      doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
       const parts = contact.split("|").map(p=>p.trim()).filter(Boolean);
-      const symbols = ["☎", "✉", "◈", "⦿"];
-      parts.forEach((p, i) => {
+      parts.forEach(p => {
         if (sy > pageHeight - 30) return;
-        const sym = symbols[i] || "·";
-        const wrapped = doc.splitTextToSize(p, SIDE_W - 22);
+        doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
+        doc.circle(L + 2, sy - 2.5, 1.5, "F");
+        const maxW = SIDE_W - 16;
+        const wrapped = doc.splitTextToSize(p, maxW);
         wrapped.forEach((wl, j) => {
           if (sy > pageHeight - 25) return;
-          if (j === 0) doc.text(sym + "  " + wl, L, sy);
-          else doc.text("    " + wl, L, sy);
-          sy += 11;
+          doc.text(wl, L + 9, sy); sy += 11;
         });
         sy += 2;
       });
@@ -1971,86 +1987,75 @@ async function downloadPDF(elementId, filename) {
     const skillsKey = Object.keys(sections).find(k => k.includes("SKILL"));
     if (skillsKey) {
       sy = sbHead("Skills", sy);
-      doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
-      doc.setTextColor(85,85,85);
       sections[skillsKey].forEach(skill => {
         const s = skill.replace(/^[-•]\s*/,"").trim();
         if (!s || sy > pageHeight - 30) return;
-        doc.setFillColor(29,36,64);
-        doc.circle(L + 2, sy - 2.5, 1.3, "F");
-        const wrapped = doc.splitTextToSize(s, SIDE_W - 16);
-        wrapped.forEach(wl => {
-          if (sy > pageHeight - 25) return;
-          doc.text(wl, L + 8, sy); sy += 11;
-        });
+        sy = sbBullet(s, sy, 8.5, SIDE_W - 14);
         sy += 1;
       });
       sy += 8;
     }
 
     const langKey = Object.keys(sections).find(k => k.includes("LANGUAGE"));
-    if (langKey && sy < pageHeight - 60) {
-      sy = sbHead("Languages", sy);
-      doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
-      doc.setTextColor(85,85,85);
-      sections[langKey].forEach(line => {
-        const lt = line.replace(/^[-•]\s*/,"").trim();
-        if (!lt || sy > pageHeight - 30) return;
-        doc.setFillColor(29,36,64);
-        doc.circle(L + 2, sy - 2.5, 1.3, "F");
-        const wrapped = doc.splitTextToSize(lt, SIDE_W - 16);
-        wrapped.forEach(wl => {
-          if (sy > pageHeight - 25) return;
-          doc.text(wl, L + 8, sy); sy += 11;
+    if (langKey) {
+      if (sy < pageHeight - 50) {
+        sy = sbHead("Languages", sy);
+        sections[langKey].forEach(line => {
+          const lt = line.replace(/^[-•]\s*/,"").trim();
+          if (!lt || sy > pageHeight - 30) return;
+          sy = sbBullet(lt, sy, 8.5, SIDE_W - 14);
+          sy += 1;
         });
-        sy += 1;
-      });
-      sy += 8;
+        sy += 8;
+      }
     }
 
     const refKey = Object.keys(sections).find(k => k.includes("REFERENCE"));
-    if (refKey && sy < pageHeight - 60) {
-      sy = sbHead("Reference", sy);
-      doc.setFontSize(8);
-      sections[refKey].forEach(line => {
-        const lt = line.replace(/^[-•]\s*/,"").trim();
-        if (!lt || sy > pageHeight - 25) return;
-        const bold = lt.includes("—") || lt.length < 35;
-        doc.setFont("helvetica", bold ? "bold" : "normal");
-        doc.setTextColor(bold ? 25 : 85, bold ? 25 : 85, bold ? 25 : 85);
-        const wrapped = doc.splitTextToSize(lt, SIDE_W - 4);
-        wrapped.forEach(wl => {
-          if (sy > pageHeight - 22) return;
-          doc.text(wl, L, sy); sy += 10;
+    if (refKey) {
+      if (sy < pageHeight - 50) {
+        sy = sbHead("Reference", sy);
+        doc.setFontSize(8);
+        sections[refKey].forEach(line => {
+          const lt = line.replace(/^[-•]\s*/,"").trim();
+          if (!lt || sy > pageHeight - 25) return;
+          const bold = lt.includes("—") || (lt.length < 35 && !lt.includes("@") && !lt.match(/\d{3}/));
+          doc.setFont("helvetica", bold ? "bold" : "normal");
+          doc.setTextColor(bold ? NAVY[0] : TEXT_MID[0], bold ? NAVY[1] : TEXT_MID[1], bold ? NAVY[2] : TEXT_MID[2]);
+          const wrapped = doc.splitTextToSize(lt, SIDE_W - 4);
+          wrapped.forEach(wl => {
+            if (sy > pageHeight - 22) return;
+            doc.text(wl, L, sy); sy += 10;
+          });
+          sy += 2;
         });
-        sy += 2;
-      });
+      }
     }
 
     let by = headerY;
 
     const bodySectionHead = (label, yp) => {
-      doc.setFillColor(29,36,64);
-      doc.circle(BODY_L - 14, yp - 4, 7.5, "F");
+      doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
+      doc.circle(BODY_L - 14, yp - 4, 8, "F");
       doc.setTextColor(255,255,255);
-      doc.setFont("helvetica","bold"); doc.setFontSize(8);
+      doc.setFont("helvetica","bold"); doc.setFontSize(8.5);
       const letter = label.charAt(0).toUpperCase();
       const lW = doc.getTextWidth(letter);
-      doc.text(letter, BODY_L - 14 - lW/2, yp - 1.5);
+      doc.text(letter, BODY_L - 14 - lW/2, yp - 1.2);
       doc.setFont("helvetica","bold"); doc.setFontSize(12);
-      doc.setTextColor(29,36,64);
+      doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
       doc.text(label.toUpperCase(), BODY_L, yp);
-      doc.setDrawColor(200,200,200);
-      doc.setLineWidth(0.5);
-      doc.line(BODY_L, yp + 4, BODY_R, yp + 4);
-      return yp + 17;
+      doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2]);
+      doc.setLineWidth(0.6);
+      const labelW = doc.getTextWidth(label.toUpperCase());
+      doc.line(BODY_L + labelW + 8, yp - 1, BODY_R, yp - 1);
+      return yp + 16;
     };
 
     const summKey = Object.keys(sections).find(k => k.includes("SUMMARY") || k.includes("PROFILE") || k.includes("ABOUT"));
     if (summKey) {
       by = bodySectionHead("Profile", by);
       doc.setFont("helvetica","normal"); doc.setFontSize(9.5);
-      doc.setTextColor(85,85,85);
+      doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
       sections[summKey].forEach(line => {
         if (!line.trim() || by > 740) return;
         const wrapped = doc.splitTextToSize(line, BODY_W - 4);
@@ -2071,13 +2076,13 @@ async function downloadPDF(elementId, filename) {
         if (isBullet(line)) {
           const bt = line.replace(/^[-•▸◆]\s*/,"");
           doc.setFont("helvetica","normal"); doc.setFontSize(9);
-          doc.setTextColor(85,85,85);
+          doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
           const wrapped = doc.splitTextToSize(bt, BODY_W - 16);
           wrapped.forEach((wl, i) => {
             if (by > 740) { doc.addPage(); by = 50; }
             if (i === 0) {
-              doc.setFillColor(29,36,64);
-              doc.circle(BODY_L + 4, by - 3, 1.4, "F");
+              doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
+              doc.circle(BODY_L + 4, by - 3, 1.6, "F");
               doc.text(wl, BODY_L + 12, by);
             } else doc.text(wl, BODY_L + 12, by);
             by += 12;
@@ -2086,7 +2091,7 @@ async function downloadPDF(elementId, filename) {
         } else {
           const bold = line.includes("—") || line.includes("|");
           doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(bold ? 10 : 9.5);
-          doc.setTextColor(bold ? 25 : 85, bold ? 25 : 85, bold ? 25 : 85);
+          doc.setTextColor(bold ? NAVY[0] : TEXT_DARK[0], bold ? NAVY[1] : TEXT_DARK[1], bold ? NAVY[2] : TEXT_DARK[2]);
           const wrapped = doc.splitTextToSize(line, BODY_W);
           wrapped.forEach(wl => {
             if (by > 740) { doc.addPage(); by = 50; }
@@ -2106,7 +2111,7 @@ async function downloadPDF(elementId, filename) {
         if (!line.trim() || by > 740) return;
         const bold = line.includes("—") || line.includes("|");
         doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(9.5);
-        doc.setTextColor(bold ? 25 : 85, bold ? 25 : 85, bold ? 25 : 85);
+        doc.setTextColor(bold ? NAVY[0] : TEXT_DARK[0], bold ? NAVY[1] : TEXT_DARK[1], bold ? NAVY[2] : TEXT_DARK[2]);
         const wrapped = doc.splitTextToSize(line, BODY_W);
         wrapped.forEach(wl => {
           if (by > 740) return;
@@ -2115,8 +2120,6 @@ async function downloadPDF(elementId, filename) {
         by += bold ? 2 : 1;
       });
     }
-
-  } else if (selectedTemplate === "__minimal_old__") {
 
     const L = 56, R = pageWidth-56, W = R-L;
     let y = 68;
