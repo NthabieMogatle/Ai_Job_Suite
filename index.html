@@ -1798,7 +1798,8 @@ async function downloadPDF(elementId, filename) {
   // TEMPLATE 1: MODERN
   // Dark header · Gold filled section bars · Clean body
   // ══════════════════════════════════════════
-  if (selectedTemplate === "modern") {
+    if (false) {  // disabled — modern routes to executive
+
     const L = 50, R = pageWidth - 50, W = R - L;
 
     // Dark header
@@ -1944,8 +1945,10 @@ async function downloadPDF(elementId, filename) {
   // TEMPLATE 3: EXECUTIVE (Premium)
   // Deep navy sidebar · Gold initials circle · Skill pills · Premium two-column
   // ══════════════════════════════════════════
-  } else if (selectedTemplate === "executive") {
-    const variant = colorVariants.executive[selectedExecVariant] || colorVariants.executive.navy;
+  }   } else if (selectedTemplate === "executive" || selectedTemplate === "modern") {
+
+        const variant = colorVariants.executive[selectedTemplate === "modern" ? "navy" : selectedExecVariant] || colorVariants.executive.navy;
+
     const [sr,sg,sb] = variant.sidebar;
     const [tr,tg,tb] = variant.sidebarText;
     const [ar,ag,ab] = variant.accent;
