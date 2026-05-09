@@ -1895,6 +1895,229 @@ async function downloadPDF(elementId, filename) {
   // Pure white · Large spaced name · Thin gold rule · Clean typography
   // ══════════════════════════════════════════
   } else if (selectedTemplate === "minimal") {
+    const SIDE_W = 175;
+    const L = 36;
+    const SIDE_R = L + SIDE_W;
+    const BODY_L = SIDE_R + 28;
+    const BODY_R = pageWidth - 36;
+    const BODY_W = BODY_R - BODY_L;
+    const HEADER_W = BODY_R - L;
+
+    doc.setFillColor(255,255,255);
+    doc.rect(0,0,pageWidth,pageHeight,"F");
+
+    let y = 72;
+    doc.setFont("helvetica","bold");
+    let nSize = name.length > 30 ? 24 : name.length > 24 ? 28 : name.length > 18 ? 32 : 38;
+    doc.setFontSize(nSize);
+    while (doc.getTextWidth(name.toUpperCase()) > HEADER_W - 4 && nSize > 16) {
+      nSize -= 1; doc.setFontSize(nSize);
+    }
+    doc.setTextColor(29,36,64);
+    doc.text(name.toUpperCase(), L, y);
+    y += 6;
+
+    if (subtitle) {
+      doc.setFont("helvetica","normal");
+      let sub = 13;
+      doc.setFontSize(sub);
+      while (doc.getTextWidth(subtitle) > HEADER_W - 4 && sub > 9) {
+        sub -= 0.5; doc.setFontSize(sub);
+      }
+      doc.setTextColor(85,85,85);
+      doc.text(subtitle, L, y + 10);
+      y += 22;
+    } else { y += 12; }
+
+    doc.setDrawColor(29,36,64);
+    doc.setLineWidth(1);
+    doc.line(L, y, BODY_R, y);
+    y += 26;
+
+    const headerY = y;
+    let sy = headerY;
+
+    const sbHead = (label, yp) => {
+      doc.setFont("helvetica","bold"); doc.setFontSize(10.5);
+      doc.setTextColor(29,36,64);
+      doc.text(label.toUpperCase(), L, yp);
+      doc.setDrawColor(200,200,200);
+      doc.setLineWidth(0.5);
+      doc.line(L, yp + 4, SIDE_R - 12, yp + 4);
+      return yp + 15;
+    };
+
+    if (contact.trim()) {
+      sy = sbHead("Contact", sy);
+      doc.setFont("helvetica","normal"); doc.setFontSize(8);
+      doc.setTextColor(85,85,85);
+      const parts = contact.split("|").map(p=>p.trim()).filter(Boolean);
+      const symbols = ["☎", "✉", "◈", "⦿"];
+      parts.forEach((p, i) => {
+        if (sy > pageHeight - 30) return;
+        const sym = symbols[i] || "·";
+        const wrapped = doc.splitTextToSize(p, SIDE_W - 22);
+        wrapped.forEach((wl, j) => {
+          if (sy > pageHeight - 25) return;
+          if (j === 0) doc.text(sym + "  " + wl, L, sy);
+          else doc.text("    " + wl, L, sy);
+          sy += 11;
+        });
+        sy += 2;
+      });
+      sy += 8;
+    }
+
+    const skillsKey = Object.keys(sections).find(k => k.includes("SKILL"));
+    if (skillsKey) {
+      sy = sbHead("Skills", sy);
+      doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
+      doc.setTextColor(85,85,85);
+      sections[skillsKey].forEach(skill => {
+        const s = skill.replace(/^[-•]\s*/,"").trim();
+        if (!s || sy > pageHeight - 30) return;
+        doc.setFillColor(29,36,64);
+        doc.circle(L + 2, sy - 2.5, 1.3, "F");
+        const wrapped = doc.splitTextToSize(s, SIDE_W - 16);
+        wrapped.forEach(wl => {
+          if (sy > pageHeight - 25) return;
+          doc.text(wl, L + 8, sy); sy += 11;
+        });
+        sy += 1;
+      });
+      sy += 8;
+    }
+
+    const langKey = Object.keys(sections).find(k => k.includes("LANGUAGE"));
+    if (langKey && sy < pageHeight - 60) {
+      sy = sbHead("Languages", sy);
+      doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
+      doc.setTextColor(85,85,85);
+      sections[langKey].forEach(line => {
+        const lt = line.replace(/^[-•]\s*/,"").trim();
+        if (!lt || sy > pageHeight - 30) return;
+        doc.setFillColor(29,36,64);
+        doc.circle(L + 2, sy - 2.5, 1.3, "F");
+        const wrapped = doc.splitTextToSize(lt, SIDE_W - 16);
+        wrapped.forEach(wl => {
+          if (sy > pageHeight - 25) return;
+          doc.text(wl, L + 8, sy); sy += 11;
+        });
+        sy += 1;
+      });
+      sy += 8;
+    }
+
+    const refKey = Object.keys(sections).find(k => k.includes("REFERENCE"));
+    if (refKey && sy < pageHeight - 60) {
+      sy = sbHead("Reference", sy);
+      doc.setFontSize(8);
+      sections[refKey].forEach(line => {
+        const lt = line.replace(/^[-•]\s*/,"").trim();
+        if (!lt || sy > pageHeight - 25) return;
+        const bold = lt.includes("—") || lt.length < 35;
+        doc.setFont("helvetica", bold ? "bold" : "normal");
+        doc.setTextColor(bold ? 25 : 85, bold ? 25 : 85, bold ? 25 : 85);
+        const wrapped = doc.splitTextToSize(lt, SIDE_W - 4);
+        wrapped.forEach(wl => {
+          if (sy > pageHeight - 22) return;
+          doc.text(wl, L, sy); sy += 10;
+        });
+        sy += 2;
+      });
+    }
+
+    let by = headerY;
+
+    const bodySectionHead = (label, yp) => {
+      doc.setFillColor(29,36,64);
+      doc.circle(BODY_L - 14, yp - 4, 7.5, "F");
+      doc.setTextColor(255,255,255);
+      doc.setFont("helvetica","bold"); doc.setFontSize(8);
+      const letter = label.charAt(0).toUpperCase();
+      const lW = doc.getTextWidth(letter);
+      doc.text(letter, BODY_L - 14 - lW/2, yp - 1.5);
+      doc.setFont("helvetica","bold"); doc.setFontSize(12);
+      doc.setTextColor(29,36,64);
+      doc.text(label.toUpperCase(), BODY_L, yp);
+      doc.setDrawColor(200,200,200);
+      doc.setLineWidth(0.5);
+      doc.line(BODY_L, yp + 4, BODY_R, yp + 4);
+      return yp + 17;
+    };
+
+    const summKey = Object.keys(sections).find(k => k.includes("SUMMARY") || k.includes("PROFILE") || k.includes("ABOUT"));
+    if (summKey) {
+      by = bodySectionHead("Profile", by);
+      doc.setFont("helvetica","normal"); doc.setFontSize(9.5);
+      doc.setTextColor(85,85,85);
+      sections[summKey].forEach(line => {
+        if (!line.trim() || by > 740) return;
+        const wrapped = doc.splitTextToSize(line, BODY_W - 4);
+        wrapped.forEach(wl => {
+          if (by > 740) return;
+          doc.text(wl, BODY_L, by); by += 12;
+        });
+        by += 2;
+      });
+      by += 10;
+    }
+
+    const expKey = Object.keys(sections).find(k => k.includes("EXPERIENCE") || k.includes("PROJECTS"));
+    if (expKey) {
+      by = bodySectionHead("Work Experience", by);
+      sections[expKey].forEach(line => {
+        if (by > 740) { doc.addPage(); by = 50; }
+        if (isBullet(line)) {
+          const bt = line.replace(/^[-•▸◆]\s*/,"");
+          doc.setFont("helvetica","normal"); doc.setFontSize(9);
+          doc.setTextColor(85,85,85);
+          const wrapped = doc.splitTextToSize(bt, BODY_W - 16);
+          wrapped.forEach((wl, i) => {
+            if (by > 740) { doc.addPage(); by = 50; }
+            if (i === 0) {
+              doc.setFillColor(29,36,64);
+              doc.circle(BODY_L + 4, by - 3, 1.4, "F");
+              doc.text(wl, BODY_L + 12, by);
+            } else doc.text(wl, BODY_L + 12, by);
+            by += 12;
+          });
+          by += 1;
+        } else {
+          const bold = line.includes("—") || line.includes("|");
+          doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(bold ? 10 : 9.5);
+          doc.setTextColor(bold ? 25 : 85, bold ? 25 : 85, bold ? 25 : 85);
+          const wrapped = doc.splitTextToSize(line, BODY_W);
+          wrapped.forEach(wl => {
+            if (by > 740) { doc.addPage(); by = 50; }
+            doc.text(wl, BODY_L, by); by += 12;
+          });
+          by += bold ? 2 : 1;
+        }
+      });
+      by += 10;
+    }
+
+    const eduKey = Object.keys(sections).find(k => k === "EDUCATION");
+    if (eduKey) {
+      if (by > 720) { doc.addPage(); by = 50; }
+      by = bodySectionHead("Education", by);
+      sections[eduKey].forEach(line => {
+        if (!line.trim() || by > 740) return;
+        const bold = line.includes("—") || line.includes("|");
+        doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(9.5);
+        doc.setTextColor(bold ? 25 : 85, bold ? 25 : 85, bold ? 25 : 85);
+        const wrapped = doc.splitTextToSize(line, BODY_W);
+        wrapped.forEach(wl => {
+          if (by > 740) return;
+          doc.text(wl, BODY_L, by); by += 12;
+        });
+        by += bold ? 2 : 1;
+      });
+    }
+
+  } else if (selectedTemplate === "__minimal_old__") {
+
     const L = 56, R = pageWidth-56, W = R-L;
     let y = 68;
 
