@@ -1894,187 +1894,201 @@ async function downloadPDF(elementId, filename) {
   // TEMPLATE 2: MINIMAL
   // Pure white · Large spaced name · Thin gold rule · Clean typography
   // ══════════════════════════════════════════
-     } else if (selectedTemplate === "modern") {
-    const SIDE_W = 180;
-    const SIDE_PAD = 18;
-    const SIDE_INNER = SIDE_W - SIDE_PAD * 2;
-    const BODY_L = SIDE_W + 32;
-    const BODY_R = pageWidth - 36;
+    } else if (selectedTemplate === "modern") {
+    const SIDE_W = 185;
+    const TIMELINE_X = 205;
+    const ICON_X = 205;
+    const TOP = 30;
+    const RIGHT_M = 30;
+    const BOTTOM = 30;
+    const SIDE_PAD_L = 30;
+    const SIDE_INNER_W = SIDE_W - SIDE_PAD_L - 5;
+    const BODY_L = 222;
+    const BODY_R = pageWidth - RIGHT_M;
     const BODY_W = BODY_R - BODY_L;
-    const TIMELINE_X = BODY_L - 14;
 
     const NAVY = [26, 31, 54];
-    const WHITE = [255, 255, 255];
-    const SIDEBAR_MUTED = [180, 185, 200];
     const BODY_DARK = [51, 51, 51];
-    const BODY_MUTED = [120, 120, 130];
+    const BODY_MID = [85, 85, 85];
+    const BODY_MUTED = [136, 136, 136];
     const RULE_GREY = [204, 204, 204];
-    const RULE_W = 0.6;
 
-    doc.setFillColor(WHITE[0], WHITE[1], WHITE[2]);
+    doc.setFillColor(255, 255, 255);
     doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-    doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
-    doc.rect(0, 0, SIDE_W, pageHeight, "F");
-
-    let sy = 60;
-
     doc.setFont("helvetica", "bold");
-    let nSize = name.length > 22 ? 16 : name.length > 16 ? 18 : 22;
+    let nSize = 20;
     doc.setFontSize(nSize);
-    while (doc.getTextWidth(name) > SIDE_INNER && nSize > 12) {
+    while (doc.getTextWidth(name.toUpperCase()) > SIDE_INNER_W && nSize > 12) {
       nSize -= 0.5; doc.setFontSize(nSize);
     }
-    doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
-    const nameWrapped = doc.splitTextToSize(name, SIDE_INNER);
-    nameWrapped.forEach(line => { doc.text(line, SIDE_PAD, sy); sy += nSize + 2; });
-    sy += 4;
+    doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
+    const nameWrapped = doc.splitTextToSize(name.toUpperCase(), SIDE_INNER_W);
+    let nameY = 40;
+    nameWrapped.forEach(line => { doc.text(line, SIDE_PAD_L, nameY); nameY += nSize + 1; });
 
     if (subtitle) {
-      doc.setFont("helvetica", "normal");
-      let subSize = 10;
-      doc.setFontSize(subSize);
-      while (doc.getTextWidth(subtitle) > SIDE_INNER && subSize > 8) {
-        subSize -= 0.5; doc.setFontSize(subSize);
-      }
-      doc.setTextColor(SIDEBAR_MUTED[0], SIDEBAR_MUTED[1], SIDEBAR_MUTED[2]);
-      const subWrapped = doc.splitTextToSize(subtitle, SIDE_INNER);
-      subWrapped.forEach(line => { doc.text(line, SIDE_PAD, sy); sy += 13; });
-      sy += 4;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+      doc.setTextColor(BODY_MID[0], BODY_MID[1], BODY_MID[2]);
+      doc.text(subtitle, SIDE_PAD_L, nameY + 6);
+      nameY += 16;
     }
 
-    doc.setDrawColor(SIDEBAR_MUTED[0], SIDEBAR_MUTED[1], SIDEBAR_MUTED[2]);
-    doc.setLineWidth(RULE_W);
-    doc.line(SIDE_PAD, sy, SIDE_W - SIDE_PAD, sy);
-    sy += 18;
+    const ruleY = Math.max(64, nameY + 6);
+    doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2]);
+    doc.setLineWidth(0.5);
+    doc.line(SIDE_PAD_L, ruleY, SIDE_W - 5, ruleY);
+
+    let sy = ruleY + 18;
 
     const sbHead = (label, yp) => {
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10.5);
-      doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
-      doc.text(label.toUpperCase(), SIDE_PAD, yp);
-      doc.setDrawColor(SIDEBAR_MUTED[0], SIDEBAR_MUTED[1], SIDEBAR_MUTED[2]);
-      doc.setLineWidth(RULE_W);
-      doc.line(SIDE_PAD, yp + 4, SIDE_W - SIDE_PAD, yp + 4);
-      return yp + 16;
-    };
-
-    const sbBullet = (text, yp, fontSize) => {
-      doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(fontSize);
-      doc.text("•", SIDE_PAD, yp);
-      const wrapped = doc.splitTextToSize(text, SIDE_INNER - 10);
-      let cy = yp;
-      wrapped.forEach((wl) => {
-        if (cy > pageHeight - 25) return;
-        doc.text(wl, SIDE_PAD + 8, cy); cy += 12;
-      });
-      return cy;
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+      doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
+      doc.text(label.toUpperCase(), SIDE_PAD_L, yp);
+      doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
+      doc.setLineWidth(0.5);
+      doc.line(SIDE_PAD_L, yp + 3, SIDE_W - 5, yp + 3);
+      return yp + 13;
     };
 
     if (contact.trim()) {
       sy = sbHead("Contact", sy);
       doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
-      doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
+      doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
       const parts = contact.split("|").map(p => p.trim()).filter(Boolean);
       parts.forEach(p => {
-        if (sy > pageHeight - 30) return;
-        const wrapped = doc.splitTextToSize(p, SIDE_INNER);
+        if (sy > pageHeight - BOTTOM) return;
+        const wrapped = doc.splitTextToSize(p, SIDE_INNER_W - 4);
         wrapped.forEach((wl, i) => {
-          if (sy > pageHeight - 25) return;
-          doc.text(wl, SIDE_PAD, sy); sy += 11;
+          if (sy > pageHeight - BOTTOM) return;
+          doc.text(wl, SIDE_PAD_L + 4, sy); sy += 11;
         });
-        sy += 3;
+        sy += 2;
       });
-      sy += 12;
+      sy += 6;
     }
 
     const skillsKey = Object.keys(sections).find(k => k.includes("SKILL"));
     if (skillsKey) {
       sy = sbHead("Skills", sy);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+      doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
       sections[skillsKey].forEach(skill => {
         const s = skill.replace(/^[-•]\s*/, "").trim();
-        if (!s || sy > pageHeight - 30) return;
-        sy = sbBullet(s, sy, 8.5);
-        sy += 2;
+        if (!s || sy > pageHeight - BOTTOM) return;
+        doc.text("•", SIDE_PAD_L, sy);
+        const wrapped = doc.splitTextToSize(s, SIDE_INNER_W - 8);
+        wrapped.forEach(wl => {
+          if (sy > pageHeight - BOTTOM) return;
+          doc.text(wl, SIDE_PAD_L + 8, sy); sy += 11;
+        });
+        sy += 1;
       });
-      sy += 12;
+      sy += 6;
     }
 
     const langKey = Object.keys(sections).find(k => k.includes("LANGUAGE"));
     if (langKey) {
       sy = sbHead("Languages", sy);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+      doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
       sections[langKey].forEach(line => {
         const lt = line.replace(/^[-•]\s*/, "").trim();
-        if (!lt || sy > pageHeight - 30) return;
-        sy = sbBullet(lt, sy, 8.5);
-        sy += 2;
+        if (!lt || sy > pageHeight - BOTTOM) return;
+        doc.text("•", SIDE_PAD_L, sy);
+        const wrapped = doc.splitTextToSize(lt, SIDE_INNER_W - 8);
+        wrapped.forEach(wl => {
+          if (sy > pageHeight - BOTTOM) return;
+          doc.text(wl, SIDE_PAD_L + 8, sy); sy += 11;
+        });
+        sy += 1;
       });
-      sy += 12;
+      sy += 6;
     }
 
     const refKey = Object.keys(sections).find(k => k.includes("REFERENCE"));
     if (refKey) {
       sy = sbHead("Reference", sy);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
       sections[refKey].forEach(line => {
         const lt = line.replace(/^[-•]\s*/, "").trim();
-        if (!lt) { sy += 3; return; }
-        if (sy > pageHeight - 25) return;
-        const isName = lt.length < 35 && !lt.includes("@") && !lt.match(/^\+?\d/) && !lt.toLowerCase().includes("at ");
-        doc.setFont("helvetica", isName ? "bold" : "normal");
-        doc.setTextColor(WHITE[0], WHITE[1], WHITE[2]);
-        const wrapped = doc.splitTextToSize(lt, SIDE_INNER);
-        wrapped.forEach(wl => {
-          if (sy > pageHeight - 22) return;
-          doc.text(wl, SIDE_PAD, sy); sy += 10;
-        });
-        sy += 1;
+        if (!lt) { sy += 4; return; }
+        if (sy > pageHeight - BOTTOM) return;
+        const isEmail = lt.includes("@");
+        const isPhone = lt.match(/^\+?\d/);
+        const hasAt = lt.toLowerCase().includes(" at ") || lt.toLowerCase().includes("inc.") || lt.toLowerCase().includes("corp") || lt.toLowerCase().includes("ltd");
+        const isName = !isEmail && !isPhone && !hasAt && lt.length < 35;
+
+        if (isName) {
+          doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+          doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
+          doc.text(lt, SIDE_PAD_L, sy); sy += 11;
+        } else if (hasAt) {
+          doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+          doc.setTextColor(BODY_MID[0], BODY_MID[1], BODY_MID[2]);
+          const wrapped = doc.splitTextToSize(lt, SIDE_INNER_W);
+          wrapped.forEach(wl => { if (sy < pageHeight - BOTTOM) { doc.text(wl, SIDE_PAD_L, sy); sy += 10; } });
+        } else if (isPhone) {
+          doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+          doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
+          doc.text("Phone: " + lt, SIDE_PAD_L, sy); sy += 10;
+        } else if (isEmail) {
+          doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+          doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
+          doc.text("Email: " + lt, SIDE_PAD_L, sy); sy += 10;
+        } else {
+          doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+          doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
+          const wrapped = doc.splitTextToSize(lt, SIDE_INNER_W);
+          wrapped.forEach(wl => { if (sy < pageHeight - BOTTOM) { doc.text(wl, SIDE_PAD_L, sy); sy += 10; } });
+        }
       });
     }
 
-    let by = 60;
+    let by = 50;
+    const timelineStart = by;
+    const subDotYs = [];
+    const sectionDotYs = [];
+    const iconLetters = [];
 
-    const bodyHead = (label, yp) => {
-      doc.setFont("helvetica", "bold"); doc.setFontSize(11.5);
+    const bodyHead = (label, yp, iconLetter) => {
+      sectionDotYs.push(yp);
+      iconLetters.push(iconLetter);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
       doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
       doc.text(label.toUpperCase(), BODY_L, yp);
       doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
-      doc.setLineWidth(RULE_W);
-      doc.line(BODY_L, yp + 5, BODY_R, yp + 5);
+      doc.setLineWidth(0.5);
+      const labelW = doc.getTextWidth(label.toUpperCase());
+      doc.line(BODY_L + labelW + 8, yp - 2, BODY_R, yp - 2);
       return yp + 18;
     };
 
-    const timelineSegments = [];
-    let currentTimelineStart = null;
-
     const summKey = Object.keys(sections).find(k => k.includes("SUMMARY") || k.includes("PROFILE") || k.includes("ABOUT"));
     if (summKey) {
-      by = bodyHead("Profile", by);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+      by = bodyHead("Profile", by, "P");
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
       doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
       sections[summKey].forEach(line => {
-        if (!line.trim() || by > 740) return;
+        if (!line.trim() || by > pageHeight - BOTTOM) return;
         const wrapped = doc.splitTextToSize(line, BODY_W - 4);
         wrapped.forEach(wl => {
-          if (by > 740) return;
-          doc.text(wl, BODY_L, by); by += 13;
+          if (by > pageHeight - BOTTOM) return;
+          doc.text(wl, BODY_L, by); by += 12;
         });
         by += 3;
       });
-      by += 14;
+      by += 12;
     }
 
     const expKey = Object.keys(sections).find(k => k.includes("EXPERIENCE") || k.includes("PROJECTS"));
     if (expKey) {
-      by = bodyHead("Work Experience", by);
-      currentTimelineStart = by;
+      by = bodyHead("Work Experience", by, "W");
       sections[expKey].forEach(line => {
-        if (by > 740) return;
+        if (by > pageHeight - BOTTOM) return;
         if (line.includes("|")) {
           const parts = line.split("|").map(p => p.trim());
-          doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
-          doc.circle(TIMELINE_X, by - 3, 2.5, "F");
-          doc.setFont("helvetica", "bold"); doc.setFontSize(10.5);
+          subDotYs.push(by - 3);
+          doc.setFont("helvetica", "bold"); doc.setFontSize(10);
           doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
           doc.text(parts[0] || "", BODY_L, by);
           if (parts.length > 1) {
@@ -2083,45 +2097,43 @@ async function downloadPDF(elementId, filename) {
             const dW = doc.getTextWidth(parts[1]);
             doc.text(parts[1], BODY_R - dW, by);
           }
-          by += 13;
+          by += 12;
         } else if (isBullet(line)) {
           const bt = line.replace(/^[-•▸◆]\s*/, "");
-          doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+          doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
           doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-          const wrapped = doc.splitTextToSize(bt, BODY_W - 14);
+          const wrapped = doc.splitTextToSize(bt, BODY_W - 12);
           wrapped.forEach((wl, i) => {
-            if (by > 740) return;
+            if (by > pageHeight - BOTTOM) return;
             if (i === 0) {
-              doc.setFillColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-              doc.circle(BODY_L + 3, by - 3, 1.4, "F");
-              doc.text(wl, BODY_L + 12, by);
-            } else doc.text(wl, BODY_L + 12, by);
-            by += 12;
+              doc.text("•", BODY_L, by);
+              doc.text(wl, BODY_L + 10, by);
+            } else doc.text(wl, BODY_L + 10, by);
+            by += 11;
           });
           by += 1;
         } else {
-          doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
-          doc.setTextColor(BODY_MUTED[0], BODY_MUTED[1], BODY_MUTED[2]);
+          doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+          doc.setTextColor(BODY_MID[0], BODY_MID[1], BODY_MID[2]);
           const wrapped = doc.splitTextToSize(line, BODY_W);
           wrapped.forEach(wl => {
-            if (by > 740) return;
-            doc.text(wl, BODY_L, by); by += 12;
+            if (by > pageHeight - BOTTOM) return;
+            doc.text(wl, BODY_L, by); by += 11;
           });
           by += 3;
         }
       });
-      timelineSegments.push({ start: currentTimelineStart - 8, end: by });
-      by += 14;
+      by += 8;
     }
 
     const eduKey = Object.keys(sections).find(k => k === "EDUCATION");
-    if (eduKey && by <= 720) {
-      by = bodyHead("Education", by);
+    if (eduKey && by < pageHeight - BOTTOM - 30) {
+      by = bodyHead("Education", by, "E");
       sections[eduKey].forEach(line => {
-        if (!line.trim() || by > 740) return;
+        if (!line.trim() || by > pageHeight - BOTTOM) return;
         if (line.includes("|")) {
           const parts = line.split("|").map(p => p.trim());
-          doc.setFont("helvetica", "bold"); doc.setFontSize(10.5);
+          doc.setFont("helvetica", "bold"); doc.setFontSize(9.5);
           doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
           doc.text(parts[0] || "", BODY_L, by);
           if (parts.length > 1) {
@@ -2130,24 +2142,40 @@ async function downloadPDF(elementId, filename) {
             const dW = doc.getTextWidth(parts[1]);
             doc.text(parts[1], BODY_R - dW, by);
           }
-          by += 13;
+          by += 12;
         } else {
-          doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
-          doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
+          doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+          doc.setTextColor(BODY_MID[0], BODY_MID[1], BODY_MID[2]);
           const wrapped = doc.splitTextToSize(line, BODY_W);
           wrapped.forEach(wl => {
-            if (by > 740) return;
-            doc.text(wl, BODY_L, by); by += 12;
+            if (by > pageHeight - BOTTOM) return;
+            doc.text(wl, BODY_L, by); by += 11;
           });
           by += 2;
         }
       });
     }
 
-    doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2]);
-    doc.setLineWidth(0.6);
-    timelineSegments.forEach(seg => {
-      doc.line(TIMELINE_X, seg.start, TIMELINE_X, seg.end);
+    const timelineEnd = by;
+    doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
+    doc.setLineWidth(1);
+    doc.line(TIMELINE_X, timelineStart - 10, TIMELINE_X, timelineEnd);
+
+    sectionDotYs.forEach((yp, idx) => {
+      doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
+      doc.circle(ICON_X, yp - 3, 10, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      const letter = iconLetters[idx];
+      const lW = doc.getTextWidth(letter);
+      doc.text(letter, ICON_X - lW/2, yp + 1);
+    });
+
+    subDotYs.forEach(yp => {
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2]);
+      doc.setLineWidth(0.7);
+      doc.circle(TIMELINE_X, yp, 3, "FD");
     });
 
   } else if (selectedTemplate === "__modern_old__") {
