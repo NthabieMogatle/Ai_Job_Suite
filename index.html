@@ -2135,7 +2135,9 @@ async function downloadPDF(elementId, filename) {
 
     doc.setDrawColor(RULE_GREY[0], RULE_GREY[1], RULE_GREY[2]);
     doc.setLineWidth(0.5);
-    doc.line(DIVIDER_X, headerY - 6, DIVIDER_X, Math.min(maxContentY + 6, pageHeight - 30));
+  doc.line(DIVIDER_X, headerY - 6, DIVIDER_X, Math.min(maxContentY + 6, pageHeight - 30));
+ 
+    } else if (selectedTemplate === "__minimal_old__") {
 
     const L = 56, R = pageWidth-56, W = R-L;
     let y = 68;
