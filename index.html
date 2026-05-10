@@ -2094,6 +2094,346 @@ async function renderModernResumePDF(parsed, filename) {
   container.remove();
   doc.save(filename);
 }
+
+
+function minimalEscapeHTML(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function minimalSplitList(input) {
+  if (!input) return [];
+  if (Array.isArray(input)) return input.map(s => String(s).trim()).filter(Boolean);
+  return String(input)
+    .split(/\r?\n|,|;|•|\u2022/)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+// Parses a single experience-style item into { title, company, location, dates, bullets, groups }
+// Groups are sub-headings ending in ":" with bullets beneath them.
+function minimalParseExperience(item) {
+  if (!item) return null;
+  if (typeof item === 'string') {
+    return { title: '', company: '', location: '', dates: '', bullets: minimalSplitList(item), groups: [] };
+  }
+  const title    = item.title    || item.role         || item.position  || '';
+  const company  = item.company  || item.organization || item.employer  || '';
+  const location = item.location || '';
+  const dates    = item.dates    || item.date         || item.duration  || '';
+  const description = item.description || item.summary || item.text || '';
+
+  const groups = [];
+  let currentGroup = null;
+  const looseBullets = [];
+
+  // Honor an explicit bullets array if provided
+  if (Array.isArray(item.bullets) && item.bullets.length) {
+    return { title, company, location, dates, bullets: item.bullets.map(String), groups: [] };
+  }
+
+  const lines = String(description).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  for (const line of lines) {
+    // sub-heading: starts uppercase, ends with ":", isn't a bullet
+    if (/^[A-Z][^:]{2,}:$/.test(line) && !/^[•\-\*]/.test(line)) {
+      currentGroup = { heading: line.replace(/:$/, ''), bullets: [] };
+      groups.push(currentGroup);
+    } else {
+      const cleaned = line.replace(/^[•\-\*]\s*/, '');
+      if (currentGroup) currentGroup.bullets.push(cleaned);
+      else looseBullets.push(cleaned);
+    }
+  }
+
+  return { title, company, location, dates, bullets: looseBullets, groups };
+}
+
+// SVG icon library — white strokes designed to sit inside the navy box
+const MINIMAL_ICONS = {
+  briefcase: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></svg>',
+  user:      '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+  education: '<svg viewBox="0 0 24 24"><path d="M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c2 1.5 4 2 6 2s4-.5 6-2v-5"/></svg>',
+  lightbulb: '<svg viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5V16h8v-2.5A6 6 0 0 0 12 3z"/></svg>',
+  star:      '<svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg>',
+  monitor:   '<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>',
+  flag:      '<svg viewBox="0 0 24 24"><path d="M5 22V3"/><path d="M5 3h13l-3 4 3 4H5"/></svg>'
+};
+
+function minimalSectionIcon(title) {
+  const t = (title || '').toLowerCase();
+  if (t.includes('experience') || t.includes('work') || t.includes('employment')) return MINIMAL_ICONS.briefcase;
+  if (t.includes('education') || t.includes('academ')) return MINIMAL_ICONS.education;
+  if (t.includes('course')) return MINIMAL_ICONS.lightbulb;
+  if (t.includes('certif')) return MINIMAL_ICONS.star;
+  if (t.includes('tech') && t.includes('skill')) return MINIMAL_ICONS.monitor;
+  if (t.includes('skill')) return MINIMAL_ICONS.star;
+  if (t.includes('language')) return MINIMAL_ICONS.flag;
+  if (t.includes('personal') || t.includes('contact')) return MINIMAL_ICONS.user;
+  if (t.includes('award')) return MINIMAL_ICONS.star;
+  if (t.includes('interest') || t.includes('hobb')) return MINIMAL_ICONS.lightbulb;
+  if (t.includes('project')) return MINIMAL_ICONS.briefcase;
+  if (t.includes('summary') || t.includes('profile') || t.includes('about')) return MINIMAL_ICONS.user;
+  return MINIMAL_ICONS.briefcase;
+}
+
+function minimalIsSidebarSection(title) {
+  // Right column = flat-list-style sections only.
+  // Dated sections (courses, certifications, awards) stay on the left.
+  const t = (title || '').toLowerCase();
+  return /skill|language|hobb|interest/.test(t);
+}
+
+function minimalIsSummarySection(title) {
+  return /summary|profile|about/i.test(title || '');
+}
+
+// Render one section's HTML (header + body). isMain controls render style.
+function minimalRenderSection(section) {
+  const E = minimalEscapeHTML;
+  const title = section.title || '';
+  const items = Array.isArray(section.items) ? section.items : [];
+  const isSide = minimalIsSidebarSection(title);
+  const t = title.toLowerCase();
+
+  let body = '';
+
+  if (isSide) {
+    if (t.includes('language')) {
+      body = items.map(it => {
+        if (typeof it === 'string') {
+          return `<div class="m-lang"><div class="m-lang-name">${E(it)}</div></div>`;
+        }
+        const name  = it.name || it.language || it.title || '';
+        const level = it.level || it.proficiency || '';
+        const pct = it.percent || it.percentage || (
+          /native|fluent/i.test(level)        ? 100 :
+          /advanced|profic/i.test(level)      ? 85  :
+          /intermed/i.test(level)             ? 60  :
+          /basic|begin|element/i.test(level)  ? 30  : 75
+        );
+        return `
+          <div class="m-lang">
+            <div class="m-lang-name">${E(name)}</div>
+            <div class="m-lang-bar"><div class="m-lang-bar-fill" style="width:${pct}%;"></div></div>
+            ${level ? `<div class="m-lang-level">${E(level)}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    } else {
+      // Flat list (skills / interests / hobbies)
+      const list = items.flatMap(it => {
+        if (typeof it === 'string') return minimalSplitList(it);
+        if (it.name)  return [it.name];
+        if (it.title) return [it.title];
+        return [];
+      });
+      body = list.map(s => `<div class="m-side-list-item">${E(s)}</div>`).join('');
+    }
+  } else {
+    // ===== MAIN COLUMN =====
+    if (t.includes('education') || t.includes('academ')) {
+      body = items.map(raw => {
+        if (typeof raw === 'string') {
+          return `<div class="m-item"><div class="m-item-date"></div><div class="m-item-body"><div class="m-item-title">${E(raw)}</div></div></div>`;
+        }
+        const dates = raw.dates || raw.date || raw.duration || '';
+        const parts = [
+          raw.degree || raw.qualification || '',
+          raw.field  || raw.title || raw.subject || '',
+          raw.school || raw.company || raw.organization || raw.university || raw.institution || ''
+        ].filter(Boolean);
+        const titleLine = parts.join(' / ');
+        const desc = raw.description || '';
+        const bullets = minimalSplitList(desc);
+        return `
+          <div class="m-item">
+            <div class="m-item-date">${E(dates)}</div>
+            <div class="m-item-body">
+              ${titleLine ? `<div class="m-item-title">${E(titleLine)}</div>` : ''}
+              ${bullets.length ? `<ul class="m-bullets">${bullets.map(b => `<li>${E(b)}</li>`).join('')}</ul>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else if (t.includes('course') || t.includes('certif') || t.includes('award')) {
+      body = items.map(raw => {
+        const dates = (typeof raw === 'string') ? '' : (raw.dates || raw.date || '');
+        const text  = (typeof raw === 'string') ? raw : (raw.title || raw.name || raw.description || '');
+        return `
+          <div class="m-item">
+            <div class="m-item-date">${E(dates)}</div>
+            <div class="m-item-body"><div class="m-item-plain">${E(text)}</div></div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      // Experience / Projects / generic
+      body = items.map(raw => {
+        const it = minimalParseExperience(raw);
+        if (!it) return '';
+        const meta = [it.company, it.location].filter(Boolean).join(' / ');
+        const looseBullets = it.bullets.length
+          ? `<ul class="m-bullets">${it.bullets.map(b => `<li>${E(b)}</li>`).join('')}</ul>`
+          : '';
+        const groupsHTML = (it.groups || []).map(g => `
+          <div class="m-item-sub">${E(g.heading)}:</div>
+          <ul class="m-bullets">${g.bullets.map(b => `<li>${E(b)}</li>`).join('')}</ul>
+        `).join('');
+        return `
+          <div class="m-item">
+            <div class="m-item-date">${E(it.dates)}</div>
+            <div class="m-item-body">
+              ${it.title ? `<div class="m-item-title">${E(it.title)}</div>` : ''}
+              ${meta ? `<div class="m-item-meta">${E(meta)}</div>` : ''}
+              ${looseBullets}
+              ${groupsHTML}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  return `
+    <div class="m-section">
+      <div class="m-section-header">
+        <div class="m-icon-box">${minimalSectionIcon(title)}</div>
+        <h2 class="m-section-title">${E(title)}</h2>
+      </div>
+      ${body}
+    </div>
+  `;
+}
+
+// Build the off-screen DOM element that jsPDF.html() will rasterize
+function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
+  const E = minimalEscapeHTML;
+  const safeSections = Array.isArray(sections) ? sections.slice() : [];
+
+  // 1. Pull out summary section for the full-width header band
+  let summaryText = '';
+  const sumIdx = safeSections.findIndex(s => minimalIsSummarySection(s.title));
+  if (sumIdx >= 0) {
+    const sumSec = safeSections.splice(sumIdx, 1)[0];
+    const first  = (sumSec.items && sumSec.items[0]) || '';
+    summaryText  = (typeof first === 'string') ? first : (first.text || first.description || first.summary || '');
+  }
+  const summaryHTML = summaryText ? `<p class="m-summary">${E(summaryText)}</p>` : '';
+
+  // 2. Synthesize Personal Info from the contact object → always top of sidebar
+  let personalInfoHTML = '';
+  if (contact && typeof contact === 'object') {
+    const fields = [];
+    if (contact.phone)    fields.push({ label: 'Phone',    value: contact.phone    });
+    if (contact.email)    fields.push({ label: 'E-mail',   value: contact.email    });
+    if (contact.location) fields.push({ label: 'Location', value: contact.location });
+    if (contact.linkedin) fields.push({ label: 'LinkedIn', value: contact.linkedin });
+    if (contact.website)  fields.push({ label: 'Website',  value: contact.website  });
+    if (contact.github)   fields.push({ label: 'GitHub',   value: contact.github   });
+    if (fields.length) {
+      const itemsHTML = fields.map(f =>
+        `<div class="m-side-item"><div class="m-side-label">${E(f.label)}</div><div class="m-side-value">${E(f.value)}</div></div>`
+      ).join('');
+      personalInfoHTML = `
+        <div class="m-section">
+          <div class="m-section-header">
+            <div class="m-icon-box">${MINIMAL_ICONS.user}</div>
+            <h2 class="m-section-title">Personal Info</h2>
+          </div>
+          ${itemsHTML}
+        </div>
+      `;
+    }
+  }
+
+  // 3. Route remaining sections L/R
+  const mainSections = safeSections.filter(s => !minimalIsSidebarSection(s.title));
+  const sideSections = safeSections.filter(s =>  minimalIsSidebarSection(s.title));
+
+  const mainHTML = mainSections.map(minimalRenderSection).join('');
+  const sideHTML = personalInfoHTML + sideSections.map(minimalRenderSection).join('');
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <style>
+      .m-page { width: 816px; min-height: 1056px; background: #ffffff; padding: 56px 60px 60px 60px; color: #111111; font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.45; box-sizing: border-box; }
+      .m-name { font-size: 38px; font-weight: 800; color: #1e3a5f; margin: 0; line-height: 1.05; letter-spacing: -0.5px; }
+      .m-subtitle { font-size: 19px; color: #1e3a5f; margin: 4px 0 16px 0; font-weight: 400; }
+      .m-summary { font-size: 12.5px; color: #1f2937; margin: 0 0 24px 0; line-height: 1.55; }
+      .m-summary b { color: #111111; font-weight: 700; }
+      .m-columns { display: flex; gap: 30px; }
+      .m-main { flex: 1 1 64%; min-width: 0; }
+      .m-side { flex: 0 0 32%; min-width: 0; }
+      .m-section { margin-bottom: 18px; }
+      .m-section-header { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #c8d0db; padding-bottom: 7px; margin-bottom: 12px; }
+      .m-icon-box { width: 28px; height: 28px; background: #1e3a5f; border-radius: 3px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+      .m-icon-box svg { width: 17px; height: 17px; stroke: #ffffff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .m-section-title { font-size: 17px; font-weight: 700; color: #1e3a5f; margin: 0; letter-spacing: -0.2px; }
+      .m-item { display: flex; gap: 14px; margin-bottom: 14px; }
+      .m-item-date { flex: 0 0 78px; font-size: 12px; font-weight: 700; color: #111111; padding-top: 2px; line-height: 1.4; }
+      .m-item-body { flex: 1 1 auto; min-width: 0; }
+      .m-item-title { font-size: 14px; font-weight: 700; color: #111111; margin: 0 0 1px 0; line-height: 1.3; }
+      .m-item-meta { font-size: 12.5px; font-style: italic; color: #4b5563; margin: 0 0 5px 0; }
+      .m-item-sub { font-size: 12.5px; font-weight: 700; color: #111111; margin: 7px 0 2px 0; }
+      .m-item-plain { font-size: 12.5px; color: #1f2937; margin: 0; padding-top: 2px; }
+      .m-bullets { margin: 2px 0 0 0; padding: 0; list-style: none; }
+      .m-bullets li { padding-left: 14px; position: relative; margin-bottom: 2px; line-height: 1.42; font-size: 12.5px; color: #1f2937; }
+      .m-bullets li::before { content: '\\2022'; position: absolute; left: 2px; color: #111111; }
+      .m-side-item { margin-bottom: 11px; }
+      .m-side-label { font-size: 12.5px; font-weight: 700; color: #111111; margin: 0 0 1px 0; }
+      .m-side-value { font-size: 12.5px; color: #1f2937; margin: 0; word-break: break-word; }
+      .m-side-list-item { font-size: 12.5px; color: #1f2937; padding: 4px 0; }
+      .m-lang { margin-bottom: 10px; }
+      .m-lang-name { font-size: 12.5px; margin: 0 0 4px 0; color: #1f2937; }
+      .m-lang-bar { height: 4px; background: #e5e7eb; border-radius: 2px; overflow: hidden; }
+      .m-lang-bar-fill { height: 100%; background: #1e3a5f; }
+      .m-lang-level { font-size: 11px; color: #6b7280; text-align: right; margin: 3px 0 0 0; }
+    </style>
+    <div class="m-page">
+      <h1 class="m-name">${E(name)}</h1>
+      ${subtitle ? `<p class="m-subtitle">${E(subtitle)}</p>` : ''}
+      ${summaryHTML}
+      <div class="m-columns">
+        <div class="m-main">${mainHTML}</div>
+        <div class="m-side">${sideHTML}</div>
+      </div>
+    </div>
+  `;
+  return wrapper;
+}
+
+async function renderMinimalResumePDF(data, filename) {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
+
+  const element = buildMinimalResumeElement(data);
+  // Mount off-screen so flex layout resolves before rasterizing
+  element.style.position = 'fixed';
+  element.style.left = '-10000px';
+  element.style.top = '0';
+  element.style.width = '816px';
+  document.body.appendChild(element);
+
+  try {
+    await pdf.html(element, {
+      callback: (doc) => doc.save(filename),
+      x: 0,
+      y: 0,
+      width: 612,        // letter width in pt (8.5in × 72)
+      windowWidth: 816,  // matches .m-page width in CSS px → 0.75x scale
+      autoPaging: 'text',
+      margin: 0,
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' }
+    });
+  } finally {
+    if (element.parentNode) element.parentNode.removeChild(element);
+  }
+}
 async function downloadPDF(elementId, filename) {
   const source = document.getElementById(elementId);
   if (!source || !source.innerText.trim()) { alert("Please generate your resume first."); return; }
@@ -2228,69 +2568,14 @@ async function downloadPDF(elementId, filename) {
           }
           return;
 
-  } else if (selectedTemplate === "__modern_v3__") {
-
-    const L = 56, R = pageWidth-56, W = R-L;
-
-    let y = 68;
-
-    doc.setFillColor(255,255,255);
-    doc.rect(0,0,pageWidth,pageHeight,"F");
-
-    // Large name
-    doc.setTextColor(15,15,15);
-    doc.setFont("helvetica","bold");
-    const nSize = name.length > 24 ? 20 : name.length > 18 ? 23 : 26;
-    doc.setFontSize(nSize);
-    doc.text(name.toUpperCase(), L, y);
-    y += 5;
-
-    // Gold rule
-    doc.setFillColor(201,168,76); doc.rect(L, y+2, W, 1.2, "F"); y += 14;
-
-    // Subtitle
-    if (subtitle) {
-      doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(100,100,100);
-      doc.text(subtitle, L, y); y += 14;
+  } else if (selectedTemplate === 'minimal') {
+    try {
+      await renderMinimalResumePDF({ name, subtitle, contact, sections }, filename);
+    } catch (err) {
+      console.error('Minimal PDF render failed:', err);
+      alert('PDF render failed. Please try again.');
     }
-
-    // Contact
-    doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(130,125,115);
-    doc.text(contact, L, y); y += 20;
-
-    const allSections = [...MAIN_SECTIONS, ...SIDEBAR_SECTIONS];
-    allSections.forEach(sKey => {
-      const content = sections[sKey];
-      if (!content || content.length === 0) return;
-      if (y > 720) { doc.addPage(); y = 50; }
-
-      y += 8;
-      doc.setFont("helvetica","bold"); doc.setFontSize(9.5); doc.setTextColor(15,15,15);
-      doc.text(sKey, L, y);
-      doc.setFillColor(201,168,76); doc.rect(L, y+4, W, 0.8, "F");
-      y += 18;
-
-      content.forEach(line => {
-        if (y > 730) { doc.addPage(); y = 50; }
-        if (isBullet(line)) {
-          const bt = line.replace(/^[-•▸◆]\s*/,"");
-          doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(60,60,60);
-          const wrapped = doc.splitTextToSize(bt, W-12);
-          wrapped.forEach((wl,i) => {
-            if (y > 730) { doc.addPage(); y = 50; }
-            doc.text(i===0 ? "• "+wl : "  "+wl, L+4, y); y += 12;
-          });
-          y += 2;
-        } else {
-          const bold = line.includes("—") || line.includes("|");
-          doc.setFont("helvetica", bold?"bold":"normal"); doc.setFontSize(9); doc.setTextColor(bold?15:60,bold?15:60,bold?15:60);
-          const wrapped = doc.splitTextToSize(line, W);
-          wrapped.forEach(wl => { if(y>730){doc.addPage();y=50;} doc.text(wl,L,y); y+=12; });
-          y += bold ? 2 : 1;
-        }
-      });
-      y += 4;
-    });
+    return;
 
   // ══════════════════════════════════════════
   // TEMPLATE 3: EXECUTIVE (Premium)
