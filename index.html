@@ -1888,7 +1888,7 @@ function buildModernResumeElement(parsed) {
   const INK      = '#1f2a44';
   const INK_SOFT = '#334155';
   const MUTED    = '#64748b';
-  const LINE     = '#cbd5e1';
+  const LINE     = '#1f2a44';
   const BG       = '#ffffff';
 
   const sideHead = (label) => `
@@ -1912,12 +1912,12 @@ function buildModernResumeElement(parsed) {
     <section style="margin-bottom:16px;">${sideHead('Contact')}
       <ul style="list-style:none;padding:0;margin:0;">
         ${contactItems.map(c => `
-          <li style="display:flex;align-items:flex-start;gap:9px;margin-bottom:6px;
-                     font-size:10.5px;color:${INK_SOFT};line-height:1.45;word-break:break-word;">
-            <span style="color:${INK};margin-top:1px;width:13px;flex-shrink:0;
-                         font-size:11px;display:inline-flex;align-items:center;justify-content:center;">${c.icon}</span>
+                    <li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;
+                     font-size:10.5px;color:${INK_SOFT};line-height:1.45;">
+            <span style="display:inline-block;width:4px;height:4px;background:${INK};
+                         border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
             <span>${modernEscapeHTML(c.text)}</span>
-          </li>`).join('')}
+          </li>
       </ul>
     </section>` : '';
 
