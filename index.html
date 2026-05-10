@@ -1,4 +1,4 @@
-no e<!DOCTYPE html>
+<!DOCTYPE html>
 
 <html lang="en">
 <head>
@@ -7,8 +7,11 @@ no e<!DOCTYPE html>
   <title>AI Job Application Suite</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500;700;800&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 
 <style>
 :root {
@@ -1769,6 +1772,319 @@ function downloadOutput(id, filename) {
 }
 
 /* ===== PDF DOWNLOAD ===== */
+function modernEscapeHTML(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function modernSplitList(lines) {
+  const out = [];
+  (lines || []).forEach(l => {
+    const cleaned = (l || '').replace(/^[-•▸◆]\s*/, '').trim();
+    if (!cleaned) return;
+    if (cleaned.includes(',')) {
+      cleaned.split(',').forEach(item => {
+        const t = item.trim();
+        if (t) out.push(t);
+      });
+    } else {
+      out.push(cleaned);
+    }
+  });
+  return out;
+}
+
+function modernParseExperience(lines) {
+  const items = [];
+  let current = null;
+  (lines || []).forEach(line => {
+    const t = (line || '').trim();
+    if (!t) return;
+
+    if (/^[-•▸◆]/.test(t)) {
+      const bullet = t.replace(/^[-•▸◆]\s*/, '').trim();
+      if (!current) current = { title: '', date: '', subtitle: '', bullets: [] };
+      current.bullets.push(bullet);
+      return;
+    }
+
+    if (t.includes('|')) {
+      if (current) items.push(current);
+      const parts = t.split('|').map(p => p.trim()).filter(Boolean);
+      current = {
+        title: parts[0] || '',
+        date: parts.length > 1 ? parts[parts.length - 1] : '',
+        subtitle: parts.length > 2 ? parts.slice(1, -1).join(' · ') : '',
+        bullets: []
+      };
+      return;
+    }
+
+    if (current && current.bullets.length === 0 && !current.subtitle) {
+      current.subtitle = t;
+      return;
+    }
+
+    if (current) items.push(current);
+    current = { title: t, date: '', subtitle: '', bullets: [] };
+  });
+  if (current) items.push(current);
+  return items;
+}
+
+function modernContactIcon(token) {
+  const v = (token || '').toLowerCase();
+  if (v.includes('@')) return 'fa-solid fa-envelope';
+  if (v.includes('linkedin')) return 'fa-brands fa-linkedin-in';
+  if (v.includes('github')) return 'fa-brands fa-github';
+  if (/^\+?\d|\(\d/.test(v) || /\d{3}.{0,2}\d{3}/.test(v)) return 'fa-solid fa-phone';
+  if (v.startsWith('http') || /\.(com|io|dev|net|org|co)\b/.test(v)) return 'fa-solid fa-globe';
+  return 'fa-solid fa-location-dot';
+}
+
+function buildModernResumeElement(parsed) {
+  const { name, subtitle, contact, sections } = parsed;
+
+  const contactItems = (contact || '')
+    .split('|')
+    .map(p => p.trim())
+    .filter(Boolean)
+    .map(p => ({ icon: modernContactIcon(p), text: p }));
+
+  const skillsKey = Object.keys(sections).find(k => k.includes('SKILL'));
+  const skills = skillsKey ? modernSplitList(sections[skillsKey]) : [];
+
+  const langKey = Object.keys(sections).find(k => k.includes('LANGUAGE'));
+  const languages = langKey ? modernSplitList(sections[langKey]) : [];
+
+  const eduKey = Object.keys(sections).find(k => k === 'EDUCATION');
+  const education = eduKey ? modernParseExperience(sections[eduKey]) : [];
+
+  const profileKey = Object.keys(sections).find(k =>
+    k.includes('SUMMARY') || k.includes('PROFILE') || k.includes('ABOUT'));
+  const profile = profileKey
+    ? (sections[profileKey] || []).join(' ').replace(/\s+/g, ' ').trim()
+    : '';
+
+  const expKey = Object.keys(sections).find(k =>
+    k.includes('EXPERIENCE') || k.includes('PROJECT'));
+  const experiences = expKey ? modernParseExperience(sections[expKey]) : [];
+
+  const refKey = Object.keys(sections).find(k => k.includes('REFERENCE'));
+  const references = refKey ? sections[refKey].filter(l => l.trim()) : [];
+
+  const INK      = '#1f2a44';
+  const INK_SOFT = '#334155';
+  const MUTED    = '#64748b';
+  const LINE     = '#cbd5e1';
+  const BG       = '#ffffff';
+
+  const sideHead = (label) => `
+    <h3 style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:800;color:${INK};
+               text-transform:uppercase;letter-spacing:2.5px;margin:0 0 12px 0;
+               padding-bottom:6px;border-bottom:1.5px solid ${INK};">${label}</h3>`;
+
+  const mainHead = (icon, label) => `
+    <div style="position:relative;margin:0 0 14px 0;padding-bottom:8px;border-bottom:1.5px solid ${INK};">
+      <div style="position:absolute;left:-50px;top:-6px;width:34px;height:34px;border-radius:50%;
+                  background:${INK};color:${BG};display:flex;align-items:center;justify-content:center;
+                  font-size:14px;box-shadow:0 0 0 4px ${BG};"><i class="${icon}"></i></div>
+      <h2 style="font-family:'DM Sans',sans-serif;font-size:18px;font-weight:800;color:${INK};
+                 text-transform:uppercase;letter-spacing:3px;margin:0;line-height:1.1;">${label}</h2>
+    </div>`;
+
+  const timelineDot = `<div style="position:absolute;left:-44px;top:6px;width:10px;height:10px;
+    border-radius:50%;background:${BG};border:2px solid ${INK};box-shadow:0 0 0 3px ${BG};"></div>`;
+
+  const contactHTML = contactItems.length ? `
+    <section style="margin-bottom:26px;">${sideHead('Contact')}
+      <ul style="list-style:none;padding:0;margin:0;">
+        ${contactItems.map(c => `
+          <li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;
+                     font-size:11px;color:${INK_SOFT};line-height:1.5;word-break:break-word;">
+            <i class="${c.icon}" style="color:${INK};margin-top:3px;width:13px;
+                                        flex-shrink:0;font-size:11px;text-align:center;"></i>
+            <span>${modernEscapeHTML(c.text)}</span>
+          </li>`).join('')}
+      </ul>
+    </section>` : '';
+
+  const skillsHTML = skills.length ? `
+    <section style="margin-bottom:26px;">${sideHead('Skills')}
+      <ul style="list-style:none;padding:0;margin:0;">
+        ${skills.map(s => `
+          <li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:7px;
+                     font-size:11px;color:${INK_SOFT};line-height:1.5;">
+            <span style="display:inline-block;width:5px;height:5px;background:${INK};
+                         border-radius:50%;margin-top:7px;flex-shrink:0;"></span>
+            <span>${modernEscapeHTML(s)}</span>
+          </li>`).join('')}
+      </ul>
+    </section>` : '';
+
+  const languagesHTML = languages.length ? `
+    <section style="margin-bottom:26px;">${sideHead('Languages')}
+      <ul style="list-style:none;padding:0;margin:0;">
+        ${languages.map(l => `
+          <li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:7px;
+                     font-size:11px;color:${INK_SOFT};line-height:1.5;">
+            <span style="display:inline-block;width:5px;height:5px;background:${INK};
+                         border-radius:50%;margin-top:7px;flex-shrink:0;"></span>
+            <span>${modernEscapeHTML(l)}</span>
+          </li>`).join('')}
+      </ul>
+    </section>` : '';
+
+  const referencesHTML = references.length ? `
+    <section style="margin-bottom:18px;">${sideHead('Reference')}
+      <div style="font-size:11px;color:${INK_SOFT};line-height:1.6;">
+        ${references.map((r, i) => {
+          if (i === 0 || /^[A-Z][a-z]+ [A-Z]/.test(r)) {
+            return `<div style="font-weight:700;color:${INK};margin-bottom:2px;">${modernEscapeHTML(r)}</div>`;
+          }
+          return `<div style="margin-bottom:3px;">${modernEscapeHTML(r)}</div>`;
+        }).join('')}
+      </div>
+    </section>` : '';
+
+  const profileHTML = profile ? `
+    <section style="margin-bottom:30px;position:relative;">
+      ${mainHead('fa-solid fa-user', 'Profile')}
+      <p style="margin:0;font-size:11.5px;line-height:1.7;color:${INK_SOFT};text-align:justify;">
+        ${modernEscapeHTML(profile)}
+      </p>
+    </section>` : '';
+
+  const experienceHTML = experiences.length ? `
+    <section style="margin-bottom:30px;position:relative;">
+      ${mainHead('fa-solid fa-briefcase', 'Work Experience')}
+      <div>
+        ${experiences.map(exp => `
+          <div style="position:relative;margin-bottom:18px;page-break-inside:avoid;">
+            ${timelineDot}
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px;">
+              <h3 style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;
+                         color:${INK};margin:0;line-height:1.3;">${modernEscapeHTML(exp.title)}</h3>
+              ${exp.date ? `<span style="font-size:10.5px;color:${MUTED};white-space:nowrap;
+                                         font-weight:500;letter-spacing:0.3px;">${modernEscapeHTML(exp.date)}</span>` : ''}
+            </div>
+            ${exp.subtitle ? `<p style="font-size:11px;color:${INK_SOFT};margin:0 0 8px 0;
+                                        font-weight:500;">${modernEscapeHTML(exp.subtitle)}</p>` : ''}
+            ${exp.bullets.length ? `<ul style="margin:0;padding:0;list-style:none;">
+              ${exp.bullets.map(b => `
+                <li style="position:relative;padding-left:14px;margin-bottom:5px;
+                           font-size:11px;line-height:1.6;color:${INK_SOFT};">
+                  <span style="position:absolute;left:0;top:8px;width:5px;height:5px;
+                               background:${INK};border-radius:50%;"></span>
+                  ${modernEscapeHTML(b)}
+                </li>`).join('')}
+            </ul>` : ''}
+          </div>`).join('')}
+      </div>
+    </section>` : '';
+
+  const educationHTML = education.length ? `
+    <section style="margin-bottom:18px;position:relative;">
+      ${mainHead('fa-solid fa-graduation-cap', 'Education')}
+      <div>
+        ${education.map(ed => `
+          <div style="position:relative;margin-bottom:14px;page-break-inside:avoid;">
+            ${timelineDot}
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px;">
+              <h3 style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;
+                         color:${INK};margin:0;line-height:1.3;">${modernEscapeHTML(ed.title)}</h3>
+              ${ed.date ? `<span style="font-size:10.5px;color:${MUTED};white-space:nowrap;
+                                        font-weight:500;letter-spacing:0.3px;">${modernEscapeHTML(ed.date)}</span>` : ''}
+            </div>
+            ${ed.subtitle ? `<p style="font-size:11px;color:${INK_SOFT};margin:0 0 4px 0;">
+              ${modernEscapeHTML(ed.subtitle)}</p>` : ''}
+            ${ed.bullets.length ? `<ul style="margin:0;padding:0;list-style:none;">
+              ${ed.bullets.map(b => `
+                <li style="position:relative;padding-left:14px;margin-bottom:4px;
+                           font-size:11px;line-height:1.6;color:${INK_SOFT};">
+                  <span style="position:absolute;left:0;top:8px;width:5px;height:5px;
+                               background:${INK};border-radius:50%;"></span>
+                  ${modernEscapeHTML(b)}
+                </li>`).join('')}
+            </ul>` : ''}
+          </div>`).join('')}
+      </div>
+    </section>` : '';
+
+  const container = document.createElement('div');
+  container.id = 'modern-resume-pdf-container';
+  container.style.cssText = 'position:fixed;left:-10000px;top:0;width:816px;background:#ffffff;z-index:-1;';
+
+  container.innerHTML = `
+    <div style="width:816px;min-height:1056px;background:${BG};
+                font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+                color:${INK_SOFT};font-size:11px;line-height:1.55;
+                -webkit-font-smoothing:antialiased;box-sizing:border-box;">
+      <header style="padding:50px 56px 22px 56px;">
+        <h1 style="font-family:'DM Sans',sans-serif;font-size:46px;font-weight:800;color:${INK};
+                   text-transform:uppercase;letter-spacing:1px;margin:0 0 6px 0;line-height:1;">
+          ${modernEscapeHTML(name || '')}</h1>
+        ${subtitle ? `<p style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;
+                                color:${INK_SOFT};text-transform:uppercase;letter-spacing:5px;
+                                margin:0 0 14px 0;">${modernEscapeHTML(subtitle)}</p>`
+                   : '<div style="height:14px;"></div>'}
+        <div style="height:2px;background:${INK};width:100%;"></div>
+      </header>
+
+      <div style="position:relative;padding:30px 56px 50px 56px;">
+        <div style="position:absolute;left:298px;top:18px;bottom:18px;
+                    border-left:2px dotted ${LINE};"></div>
+        <div style="display:flex;align-items:flex-start;">
+          <aside style="width:230px;flex-shrink:0;padding-right:18px;box-sizing:border-box;">
+            ${contactHTML}${skillsHTML}${languagesHTML}${referencesHTML}
+          </aside>
+          <main style="flex:1;padding-left:60px;box-sizing:border-box;min-width:0;">
+            ${profileHTML}${experienceHTML}${educationHTML}
+          </main>
+        </div>
+      </div>
+    </div>`;
+
+  return container;
+}
+
+async function renderModernResumePDF(parsed, filename) {
+  const container = buildModernResumeElement(parsed);
+  document.body.appendChild(container);
+
+  if (document.fonts && document.fonts.ready) {
+    try { await document.fonts.ready; } catch (e) {}
+  }
+  await new Promise(r => setTimeout(r, 300));
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
+
+  await new Promise((resolve) => {
+    doc.html(container, {
+      callback: () => resolve(),
+      x: 0, y: 0,
+      width: 612,
+      windowWidth: 816,
+      autoPaging: 'text',
+      margin: [0, 0, 0, 0],
+      html2canvas: {
+        scale: 612 / 816,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        letterRendering: true,
+        allowTaint: true
+      }
+    });
+  });
+
+  container.remove();
+  doc.save(filename);
+}
 async function downloadPDF(elementId, filename) {
   const source = document.getElementById(elementId);
   if (!source || !source.innerText.trim()) { alert("Please generate your resume first."); return; }
@@ -1894,320 +2210,14 @@ async function downloadPDF(elementId, filename) {
   // TEMPLATE 2: MINIMAL
   // Pure white · Large spaced name · Thin gold rule · Clean typography
   // ══════════════════════════════════════════
-          } else if (selectedTemplate === "modern") {
-    const SIDE_W = 182;
-    const SIDE_PAD_L = 30;
-    const SIDE_INNER_W = SIDE_W - SIDE_PAD_L;
-    const VERT_DIVIDER_X = 192;
-    const TIMELINE_X = 215;
-    const ICON_X = 215;
-    const BODY_L = 230;
-    const BODY_R = pageWidth - 30;
-    const BODY_W = BODY_R - BODY_L;
-    const TOP = 30;
-    const BOTTOM = 30;
-
-    const NAVY = [26, 31, 54];
-    const BODY_DARK = [51, 51, 51];
-    const BODY_MID = [85, 85, 85];
-    const BODY_MUTED = [136, 136, 136];
-    const RULE_HORIZ = [170, 170, 170];
-    const RULE_VERT = [204, 204, 204];
-
-    const drawRule = (x1, y, x2) => {
-      doc.setDrawColor(RULE_HORIZ[0], RULE_HORIZ[1], RULE_HORIZ[2]);
-      doc.setLineWidth(0.8);
-      doc.line(x1, y, x2, y);
-    };
-    const splitCommaList = (lines) => {
-      const out = [];
-      lines.forEach(l => {
-        const cleaned = l.replace(/^[-•]\s*/, "").trim();
-        if (!cleaned) return;
-        if (cleaned.includes(",")) {
-          cleaned.split(",").forEach(item => {
-            const t = item.trim();
-            if (t) out.push(t);
-          });
-        } else {
-          out.push(cleaned);
-        }
-      });
-      return out;
-    };
-
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, "F");
-
-    doc.setFont("helvetica", "bold");
-    let nSize = 20;
-    doc.setFontSize(nSize);
-    while (doc.getTextWidth(name.toUpperCase()) > SIDE_INNER_W && nSize > 12) {
-      nSize -= 0.5; doc.setFontSize(nSize);
-    }
-    doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-    const nameWrapped = doc.splitTextToSize(name.toUpperCase(), SIDE_INNER_W);
-    let nameY = 50;
-    nameWrapped.forEach(line => { doc.text(line, SIDE_PAD_L, nameY); nameY += nSize + 2; });
-
-    if (subtitle) {
-      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-      doc.setTextColor(BODY_MID[0], BODY_MID[1], BODY_MID[2]);
-      doc.text(subtitle, SIDE_PAD_L, nameY + 4);
-      nameY += 14;
-    }
-
-    const topRuleY = nameY + 8;
-    drawRule(SIDE_PAD_L, topRuleY, SIDE_W);
-
-    let sy = topRuleY + 14;
-
-    const sbHead = (label, yp) => {
-      doc.setFont("helvetica", "bold"); doc.setFontSize(9);
-      doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.text(label.toUpperCase(), SIDE_PAD_L, yp);
-      drawRule(SIDE_PAD_L, yp + 4, SIDE_W);
-      return yp + 14;
-    };
-
-    const sbBullet = (text, yp) => {
-      doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
-      doc.text("•", SIDE_PAD_L, yp);
-      const wrapped = doc.splitTextToSize(text, SIDE_INNER_W - 10);
-      let cy = yp;
-      wrapped.forEach(wl => {
-        if (cy > pageHeight - BOTTOM) return;
-        doc.text(wl, SIDE_PAD_L + 8, cy); cy += 11;
-      });
-      return cy;
-    };
-
-    if (contact.trim()) {
-      sy = sbHead("Contact", sy);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
-      doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-      const parts = contact.split("|").map(p => p.trim()).filter(Boolean);
-      parts.forEach(p => {
-        if (sy > pageHeight - BOTTOM) return;
-        const wrapped = doc.splitTextToSize(p, SIDE_INNER_W - 4);
-        wrapped.forEach((wl) => {
-          if (sy > pageHeight - BOTTOM) return;
-          doc.text(wl, SIDE_PAD_L + 4, sy); sy += 11;
-        });
-        sy += 4;
-      });
-      sy += 8;
-    }
-
-    const skillsKey = Object.keys(sections).find(k => k.includes("SKILL"));
-    if (skillsKey) {
-      sy = sbHead("Skills", sy);
-      const skills = splitCommaList(sections[skillsKey]);
-      skills.forEach(s => {
-        if (sy > pageHeight - BOTTOM) return;
-        sy = sbBullet(s, sy);
-        sy += 4;
-      });
-      sy += 8;
-    }
-
-    const langKey = Object.keys(sections).find(k => k.includes("LANGUAGE"));
-    if (langKey) {
-      sy = sbHead("Languages", sy);
-      const langs = splitCommaList(sections[langKey]);
-      langs.forEach(l => {
-        if (sy > pageHeight - BOTTOM) return;
-        sy = sbBullet(l, sy);
-        sy += 4;
-      });
-      sy += 8;
-    }
-
-    const refKey = Object.keys(sections).find(k => k.includes("REFERENCE"));
-    if (refKey) {
-      sy = sbHead("Reference", sy);
-      sections[refKey].forEach(line => {
-        const lt = line.replace(/^[-•]\s*/, "").trim();
-        if (!lt) { sy += 6; return; }
-        if (sy > pageHeight - BOTTOM) return;
-        const isEmail = lt.includes("@");
-        const isPhone = lt.match(/^\+?\d/);
-        const hasAt = lt.toLowerCase().includes(" at ") || lt.toLowerCase().includes("inc.") || lt.toLowerCase().includes("corp") || lt.toLowerCase().includes("ltd");
-        const isName = !isEmail && !isPhone && !hasAt && lt.length < 35;
-
-        if (isName) {
-          doc.setFont("helvetica", "bold"); doc.setFontSize(9);
-          doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-          const wrapped = doc.splitTextToSize(lt, SIDE_INNER_W);
-          wrapped.forEach(wl => { if (sy < pageHeight - BOTTOM) { doc.text(wl, SIDE_PAD_L, sy); sy += 11; } });
-        } else if (hasAt) {
-          doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
-          doc.setTextColor(BODY_MID[0], BODY_MID[1], BODY_MID[2]);
-          const wrapped = doc.splitTextToSize(lt, SIDE_INNER_W);
-          wrapped.forEach(wl => { if (sy < pageHeight - BOTTOM) { doc.text(wl, SIDE_PAD_L, sy); sy += 10; } });
-        } else if (isPhone) {
-          doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
-          doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-          const wrapped = doc.splitTextToSize("Phone: " + lt, SIDE_INNER_W);
-          wrapped.forEach(wl => { if (sy < pageHeight - BOTTOM) { doc.text(wl, SIDE_PAD_L, sy); sy += 10; } });
-        } else if (isEmail) {
-          doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
-          doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-          const wrapped = doc.splitTextToSize("Email: " + lt, SIDE_INNER_W);
-          wrapped.forEach(wl => { if (sy < pageHeight - BOTTOM) { doc.text(wl, SIDE_PAD_L, sy); sy += 10; } });
-        } else {
-          doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
-          doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-          const wrapped = doc.splitTextToSize(lt, SIDE_INNER_W);
-          wrapped.forEach(wl => { if (sy < pageHeight - BOTTOM) { doc.text(wl, SIDE_PAD_L, sy); sy += 10; } });
-        }
-        sy += 2;
-      });
-    }
-    const sidebarEndY = sy;
-
-    let by = 60;
-    const sectionMarkers = [];
-    const subDotYs = [];
-
-    const bodyHead = (label, yp, iconLetter) => {
-      sectionMarkers.push({ y: yp, letter: iconLetter });
-      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
-      doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.text(label.toUpperCase(), BODY_L, yp);
-      const labelW = doc.getTextWidth(label.toUpperCase());
-      drawRule(BODY_L + labelW + 8, yp - 2, BODY_R);
-      return yp + 14;
-    };
-
-    const summKey = Object.keys(sections).find(k => k.includes("SUMMARY") || k.includes("PROFILE") || k.includes("ABOUT"));
-    if (summKey) {
-      by = bodyHead("Profile", by, "P");
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-      doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-      sections[summKey].forEach(line => {
-        if (!line.trim() || by > pageHeight - BOTTOM) return;
-        const wrapped = doc.splitTextToSize(line, BODY_W - 4);
-        wrapped.forEach(wl => {
-          if (by > pageHeight - BOTTOM) return;
-          doc.text(wl, BODY_L, by); by += 13;
-        });
-        by += 4;
-      });
-      by += 8;
-    }
-
-    const expKey = Object.keys(sections).find(k => k.includes("EXPERIENCE") || k.includes("PROJECTS"));
-    if (expKey) {
-      by = bodyHead("Work Experience", by, "W");
-      let firstRole = true;
-      sections[expKey].forEach(line => {
-        if (by > pageHeight - BOTTOM) return;
-        if (line.includes("|")) {
-          if (!firstRole) by += 10;
-          firstRole = false;
-          const parts = line.split("|").map(p => p.trim());
-          subDotYs.push(by - 3);
-          doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-          doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-          doc.text(parts[0] || "", BODY_L, by);
-          if (parts.length > 1) {
-            doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-            doc.setTextColor(BODY_MUTED[0], BODY_MUTED[1], BODY_MUTED[2]);
-            const dW = doc.getTextWidth(parts[1]);
-            doc.text(parts[1], BODY_R - dW, by);
+            } else if (selectedTemplate === "modern") {
+          try {
+            await renderModernResumePDF({ name, subtitle, contact, sections }, filename);
+          } catch (err) {
+            console.error('Modern PDF render failed:', err);
+            alert('PDF render failed. Please try again.');
           }
-          by += 14;
-        } else if (isBullet(line)) {
-          const bt = line.replace(/^[-•▸◆]\s*/, "");
-          doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
-          doc.setTextColor(BODY_DARK[0], BODY_DARK[1], BODY_DARK[2]);
-          const wrapped = doc.splitTextToSize(bt, BODY_W - 12);
-          wrapped.forEach((wl, i) => {
-            if (by > pageHeight - BOTTOM) return;
-            if (i === 0) {
-              doc.text("•", BODY_L, by);
-              doc.text(wl, BODY_L + 10, by);
-            } else doc.text(wl, BODY_L + 10, by);
-            by += 12;
-          });
-          by += 2;
-        } else if (line.trim()) {
-          doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-          doc.setTextColor(BODY_MID[0], BODY_MID[1], BODY_MID[2]);
-          const wrapped = doc.splitTextToSize(line, BODY_W);
-          wrapped.forEach(wl => {
-            if (by > pageHeight - BOTTOM) return;
-            doc.text(wl, BODY_L, by); by += 12;
-          });
-          by += 4;
-        }
-      });
-      by += 8;
-    }
-
-    const eduKey = Object.keys(sections).find(k => k === "EDUCATION");
-    if (eduKey && by < pageHeight - BOTTOM - 30) {
-      by = bodyHead("Education", by, "E");
-      sections[eduKey].forEach(line => {
-        if (!line.trim() || by > pageHeight - BOTTOM) return;
-        if (line.includes("|")) {
-          const parts = line.split("|").map(p => p.trim());
-          doc.setFont("helvetica", "bold"); doc.setFontSize(9.5);
-          doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
-          doc.text(parts[0] || "", BODY_L, by);
-          if (parts.length > 1) {
-            doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-            doc.setTextColor(BODY_MUTED[0], BODY_MUTED[1], BODY_MUTED[2]);
-            const dW = doc.getTextWidth(parts[1]);
-            doc.text(parts[1], BODY_R - dW, by);
-          }
-          by += 13;
-        } else {
-          doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-          doc.setTextColor(BODY_MID[0], BODY_MID[1], BODY_MID[2]);
-          const wrapped = doc.splitTextToSize(line, BODY_W);
-          wrapped.forEach(wl => {
-            if (by > pageHeight - BOTTOM) return;
-            doc.text(wl, BODY_L, by); by += 12;
-          });
-          by += 3;
-        }
-      });
-    }
-    const bodyEndY = by;
-
-    const dividerEndY = Math.min(750, Math.max(sidebarEndY, bodyEndY) + 10);
-    doc.setDrawColor(RULE_VERT[0], RULE_VERT[1], RULE_VERT[2]);
-    doc.setLineWidth(0.8);
-    doc.line(VERT_DIVIDER_X, TOP, VERT_DIVIDER_X, dividerEndY);
-
-    doc.setDrawColor(RULE_VERT[0], RULE_VERT[1], RULE_VERT[2]);
-    doc.setLineWidth(1);
-    if (sectionMarkers.length > 0) {
-      const tStart = sectionMarkers[0].y - 12;
-      const tEnd = bodyEndY;
-      doc.line(TIMELINE_X, tStart, TIMELINE_X, tEnd);
-    }
-
-    subDotYs.forEach(yp => {
-      doc.setFillColor(255, 255, 255);
-      doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.setLineWidth(0.7);
-      doc.circle(TIMELINE_X, yp, 3, "FD");
-    });
-
-    sectionMarkers.forEach(marker => {
-      if (!marker || !marker.letter) return;
-      doc.setFillColor(NAVY[0], NAVY[1], NAVY[2]);
-      doc.circle(ICON_X, marker.y - 3, 9, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      const lW = doc.getTextWidth(marker.letter);
-      doc.text(marker.letter, ICON_X - lW/2, marker.y + 1);
-    });
+          return;
 
   } else if (selectedTemplate === "__modern_v3__") {
 
