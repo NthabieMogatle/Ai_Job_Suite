@@ -1916,7 +1916,7 @@ function buildModernResumeElement(parsed) {
                      font-size:10.5px;color:${INK_SOFT};line-height:1.45;">
             <span style="display:inline-block;width:4px;height:4px;background:${INK};
                          border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
-            <span>${modernEscapeHTML(c.text)}</span>
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${modernEscapeHTML(c.text)}</span>
           </li>`).join('')}
       </ul>
     </section>` : '';
@@ -1925,7 +1925,7 @@ function buildModernResumeElement(parsed) {
     <section style="margin-bottom:16px;">${sideHead('Skills')}
       <ul style="list-style:none;padding:0;margin:0;">
         ${skills.map(s => `
-          <li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;
+          <li style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;
                      font-size:10.5px;color:${INK_SOFT};line-height:1.45;">
             <span style="display:inline-block;width:4px;height:4px;background:${INK};
                          border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
