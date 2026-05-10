@@ -1803,14 +1803,12 @@ function modernParseExperience(lines) {
   (lines || []).forEach(line => {
     const t = (line || '').trim();
     if (!t) return;
-
     if (/^[-•▸◆]/.test(t)) {
       const bullet = t.replace(/^[-•▸◆]\s*/, '').trim();
       if (!current) current = { title: '', date: '', subtitle: '', bullets: [] };
       current.bullets.push(bullet);
       return;
     }
-
     if (t.includes('|')) {
       if (current) items.push(current);
       const parts = t.split('|').map(p => p.trim()).filter(Boolean);
@@ -1822,12 +1820,10 @@ function modernParseExperience(lines) {
       };
       return;
     }
-
     if (current && current.bullets.length === 0 && !current.subtitle) {
       current.subtitle = t;
       return;
     }
-
     if (current) items.push(current);
     current = { title: t, date: '', subtitle: '', bullets: [] };
   });
@@ -1835,14 +1831,27 @@ function modernParseExperience(lines) {
   return items;
 }
 
+// SVG icons render reliably in jsPDF.html() — no font loading required
+const MODERN_ICONS = {
+  phone:    '<svg viewBox="0 0 16 16" fill="currentColor" width="1em" height="1em" style="display:inline-block;vertical-align:middle;"><path d="M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122l-2.19.547a1.745 1.745 0 0 1-1.657-.459L5.482 8.062a1.745 1.745 0 0 1-.46-1.657l.548-2.19a.678.678 0 0 0-.122-.58L3.654 1.328z"/></svg>',
+  envelope: '<svg viewBox="0 0 16 16" fill="currentColor" width="1em" height="1em" style="display:inline-block;vertical-align:middle;"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2zm13 2.383-4.708 2.825L15 11.105V5.383zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741zM1 11.105l4.708-2.897L1 5.383v5.722z"/></svg>',
+  location: '<svg viewBox="0 0 16 16" fill="currentColor" width="1em" height="1em" style="display:inline-block;vertical-align:middle;"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>',
+  globe:    '<svg viewBox="0 0 16 16" fill="currentColor" width="1em" height="1em" style="display:inline-block;vertical-align:middle;"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm7.5-6.923c-.67.204-1.335.82-1.887 1.855A7.97 7.97 0 0 0 5.145 4H7.5V1.077zM4.09 4a9.267 9.267 0 0 1 .64-1.539 6.7 6.7 0 0 1 .597-.933A7.025 7.025 0 0 0 2.255 4H4.09zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a6.958 6.958 0 0 0-.656 2.5h2.49zM4.847 5a12.5 12.5 0 0 0-.338 2.5H7.5V5H4.847zM8.5 5v2.5h2.99a12.495 12.495 0 0 0-.337-2.5H8.5zM4.51 8.5a12.5 12.5 0 0 0 .337 2.5H7.5V8.5H4.51zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5H8.5zM5.145 12c.138.386.295.744.468 1.068.552 1.035 1.218 1.65 1.887 1.855V12H5.145zm.182 2.472a6.696 6.696 0 0 1-.597-.933A9.268 9.268 0 0 1 4.09 12H2.255a7.024 7.024 0 0 0 3.072 2.472zM3.82 11a13.652 13.652 0 0 1-.312-2.5h-2.49c.062.89.291 1.733.656 2.5H3.82zm6.853 3.472A7.024 7.024 0 0 0 13.745 12H11.91a9.27 9.27 0 0 1-.64 1.539 6.688 6.688 0 0 1-.597.933zM8.5 12v2.923c.67-.204 1.335-.82 1.887-1.855.173-.324.33-.682.468-1.068H8.5zm3.68-1h2.146c.365-.767.594-1.61.656-2.5h-2.49a13.65 13.65 0 0 1-.312 2.5zm2.802-3.5a6.959 6.959 0 0 0-.656-2.5H12.18c.174.782.282 1.623.312 2.5h2.49zM11.27 2.461c.247.464.462.98.64 1.539h1.835a7.024 7.024 0 0 0-3.072-2.472c.218.284.418.598.597.933zM10.855 4a7.966 7.966 0 0 0-.468-1.068C9.835 1.897 9.17 1.282 8.5 1.077V4h2.355z"/></svg>',
+  linkedin: '<svg viewBox="0 0 16 16" fill="currentColor" width="1em" height="1em" style="display:inline-block;vertical-align:middle;"><path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 0 1 .016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"/></svg>',
+  github:   '<svg viewBox="0 0 16 16" fill="currentColor" width="1em" height="1em" style="display:inline-block;vertical-align:middle;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>',
+  user:     '<svg viewBox="0 0 16 16" fill="currentColor" width="1em" height="1em" style="display:inline-block;vertical-align:middle;"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>',
+  briefcase:'<svg viewBox="0 0 16 16" fill="currentColor" width="1em" height="1em" style="display:inline-block;vertical-align:middle;"><path d="M6.5 1A1.5 1.5 0 0 0 5 2.5V3H1.5A1.5 1.5 0 0 0 0 4.5v8A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 14.5 3H11v-.5A1.5 1.5 0 0 0 9.5 1h-3zm0 1h3a.5.5 0 0 1 .5.5V3H6v-.5a.5.5 0 0 1 .5-.5z"/><path d="M0 12.5A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5V8.5a8.97 8.97 0 0 1-3 .5c-3.31 0-6-1.34-6-3 0 1.66-2.69 3-6 3a8.97 8.97 0 0 1-3-.5v4z"/></svg>',
+  gradCap:  '<svg viewBox="0 0 16 16" fill="currentColor" width="1em" height="1em" style="display:inline-block;vertical-align:middle;"><path d="M8.211 2.047a.5.5 0 0 0-.422 0l-7.5 3.5a.5.5 0 0 0 .025.917l7.5 3a.5.5 0 0 0 .372 0L14 7.14V13a1 1 0 0 0-1 1v2h3v-2a1 1 0 0 0-1-1V6.739l.686-.275a.5.5 0 0 0 .025-.917l-7.5-3.5zM8 8.46 1.758 5.965 8 3.052l6.242 2.913L8 8.46z"/><path d="M4.176 9.032a.5.5 0 0 0-.656.327l-.5 1.7a.5.5 0 0 0 .294.605l4.5 1.8a.5.5 0 0 0 .372 0l4.5-1.8a.5.5 0 0 0 .294-.605l-.5-1.7a.5.5 0 0 0-.656-.327L8 10.466 4.176 9.032z"/></svg>'
+};
+
 function modernContactIcon(token) {
   const v = (token || '').toLowerCase();
-  if (v.includes('@')) return 'fa-solid fa-envelope';
-  if (v.includes('linkedin')) return 'fa-brands fa-linkedin-in';
-  if (v.includes('github')) return 'fa-brands fa-github';
-  if (/^\+?\d|\(\d/.test(v) || /\d{3}.{0,2}\d{3}/.test(v)) return 'fa-solid fa-phone';
-  if (v.startsWith('http') || /\.(com|io|dev|net|org|co)\b/.test(v)) return 'fa-solid fa-globe';
-  return 'fa-solid fa-location-dot';
+  if (v.includes('@')) return MODERN_ICONS.envelope;
+  if (v.includes('linkedin')) return MODERN_ICONS.linkedin;
+  if (v.includes('github')) return MODERN_ICONS.github;
+  if (/^\+?\d|\(\d/.test(v) || /\d{3}.{0,2}\d{3}/.test(v)) return MODERN_ICONS.phone;
+  if (v.startsWith('http') || /\.(com|io|dev|net|org|co)\b/.test(v)) return MODERN_ICONS.globe;
+  return MODERN_ICONS.location;
 }
 
 function buildModernResumeElement(parsed) {
@@ -1883,101 +1892,101 @@ function buildModernResumeElement(parsed) {
   const BG       = '#ffffff';
 
   const sideHead = (label) => `
-    <h3 style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:800;color:${INK};
-               text-transform:uppercase;letter-spacing:2.5px;margin:0 0 12px 0;
-               padding-bottom:6px;border-bottom:1.5px solid ${INK};">${label}</h3>`;
+    <h3 style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:800;color:${INK};
+               text-transform:uppercase;letter-spacing:2.5px;margin:0 0 9px 0;
+               padding-bottom:5px;border-bottom:1.5px solid ${INK};">${label}</h3>`;
 
-  const mainHead = (icon, label) => `
-    <div style="position:relative;margin:0 0 14px 0;padding-bottom:8px;border-bottom:1.5px solid ${INK};">
-      <div style="position:absolute;left:-50px;top:-6px;width:34px;height:34px;border-radius:50%;
+  const mainHead = (svgIcon, label) => `
+    <div style="position:relative;margin:0 0 10px 0;padding-bottom:6px;border-bottom:1.5px solid ${INK};">
+      <div style="position:absolute;left:-50px;top:-7px;width:32px;height:32px;border-radius:50%;
                   background:${INK};color:${BG};display:flex;align-items:center;justify-content:center;
-                  font-size:14px;box-shadow:0 0 0 4px ${BG};"><i class="${icon}"></i></div>
-      <h2 style="font-family:'DM Sans',sans-serif;font-size:18px;font-weight:800;color:${INK};
+                  font-size:14px;line-height:0;">${svgIcon}</div>
+      <h2 style="font-family:'DM Sans',sans-serif;font-size:17px;font-weight:800;color:${INK};
                  text-transform:uppercase;letter-spacing:3px;margin:0;line-height:1.1;">${label}</h2>
     </div>`;
 
-  const timelineDot = `<div style="position:absolute;left:-44px;top:6px;width:10px;height:10px;
-    border-radius:50%;background:${BG};border:2px solid ${INK};box-shadow:0 0 0 3px ${BG};"></div>`;
+  const timelineDot = `<div style="position:absolute;left:-44px;top:5px;width:9px;height:9px;
+    border-radius:50%;background:${BG};border:2px solid ${INK};"></div>`;
 
   const contactHTML = contactItems.length ? `
-    <section style="margin-bottom:26px;">${sideHead('Contact')}
+    <section style="margin-bottom:16px;">${sideHead('Contact')}
       <ul style="list-style:none;padding:0;margin:0;">
         ${contactItems.map(c => `
-          <li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;
-                     font-size:11px;color:${INK_SOFT};line-height:1.5;word-break:break-word;">
-            <i class="${c.icon}" style="color:${INK};margin-top:3px;width:13px;
-                                        flex-shrink:0;font-size:11px;text-align:center;"></i>
+          <li style="display:flex;align-items:flex-start;gap:9px;margin-bottom:6px;
+                     font-size:10.5px;color:${INK_SOFT};line-height:1.45;word-break:break-word;">
+            <span style="color:${INK};margin-top:1px;width:13px;flex-shrink:0;
+                         font-size:11px;display:inline-flex;align-items:center;justify-content:center;">${c.icon}</span>
             <span>${modernEscapeHTML(c.text)}</span>
           </li>`).join('')}
       </ul>
     </section>` : '';
 
   const skillsHTML = skills.length ? `
-    <section style="margin-bottom:26px;">${sideHead('Skills')}
+    <section style="margin-bottom:16px;">${sideHead('Skills')}
       <ul style="list-style:none;padding:0;margin:0;">
         ${skills.map(s => `
-          <li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:7px;
-                     font-size:11px;color:${INK_SOFT};line-height:1.5;">
-            <span style="display:inline-block;width:5px;height:5px;background:${INK};
-                         border-radius:50%;margin-top:7px;flex-shrink:0;"></span>
+          <li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;
+                     font-size:10.5px;color:${INK_SOFT};line-height:1.45;">
+            <span style="display:inline-block;width:4px;height:4px;background:${INK};
+                         border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
             <span>${modernEscapeHTML(s)}</span>
           </li>`).join('')}
       </ul>
     </section>` : '';
 
   const languagesHTML = languages.length ? `
-    <section style="margin-bottom:26px;">${sideHead('Languages')}
+    <section style="margin-bottom:16px;">${sideHead('Languages')}
       <ul style="list-style:none;padding:0;margin:0;">
         ${languages.map(l => `
-          <li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:7px;
-                     font-size:11px;color:${INK_SOFT};line-height:1.5;">
-            <span style="display:inline-block;width:5px;height:5px;background:${INK};
-                         border-radius:50%;margin-top:7px;flex-shrink:0;"></span>
+          <li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;
+                     font-size:10.5px;color:${INK_SOFT};line-height:1.45;">
+            <span style="display:inline-block;width:4px;height:4px;background:${INK};
+                         border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
             <span>${modernEscapeHTML(l)}</span>
           </li>`).join('')}
       </ul>
     </section>` : '';
 
   const referencesHTML = references.length ? `
-    <section style="margin-bottom:18px;">${sideHead('Reference')}
-      <div style="font-size:11px;color:${INK_SOFT};line-height:1.6;">
+    <section style="margin-bottom:0;">${sideHead('Reference')}
+      <div style="font-size:10.5px;color:${INK_SOFT};line-height:1.5;">
         ${references.map((r, i) => {
           if (i === 0 || /^[A-Z][a-z]+ [A-Z]/.test(r)) {
-            return `<div style="font-weight:700;color:${INK};margin-bottom:2px;">${modernEscapeHTML(r)}</div>`;
+            return `<div style="font-weight:700;color:${INK};margin-bottom:1px;">${modernEscapeHTML(r)}</div>`;
           }
-          return `<div style="margin-bottom:3px;">${modernEscapeHTML(r)}</div>`;
+          return `<div style="margin-bottom:2px;">${modernEscapeHTML(r)}</div>`;
         }).join('')}
       </div>
     </section>` : '';
 
   const profileHTML = profile ? `
-    <section style="margin-bottom:30px;position:relative;">
-      ${mainHead('fa-solid fa-user', 'Profile')}
-      <p style="margin:0;font-size:11.5px;line-height:1.7;color:${INK_SOFT};text-align:justify;">
+    <section style="margin-bottom:16px;position:relative;">
+      ${mainHead(MODERN_ICONS.user, 'Profile')}
+      <p style="margin:0;font-size:11px;line-height:1.55;color:${INK_SOFT};text-align:justify;">
         ${modernEscapeHTML(profile)}
       </p>
     </section>` : '';
 
   const experienceHTML = experiences.length ? `
-    <section style="margin-bottom:30px;position:relative;">
-      ${mainHead('fa-solid fa-briefcase', 'Work Experience')}
+    <section style="margin-bottom:16px;position:relative;">
+      ${mainHead(MODERN_ICONS.briefcase, 'Work Experience')}
       <div>
         ${experiences.map(exp => `
-          <div style="position:relative;margin-bottom:18px;page-break-inside:avoid;">
+          <div style="position:relative;margin-bottom:10px;page-break-inside:avoid;">
             ${timelineDot}
-            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px;">
-              <h3 style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:1px;">
+              <h3 style="font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:700;
                          color:${INK};margin:0;line-height:1.3;">${modernEscapeHTML(exp.title)}</h3>
-              ${exp.date ? `<span style="font-size:10.5px;color:${MUTED};white-space:nowrap;
+              ${exp.date ? `<span style="font-size:10px;color:${MUTED};white-space:nowrap;
                                          font-weight:500;letter-spacing:0.3px;">${modernEscapeHTML(exp.date)}</span>` : ''}
             </div>
-            ${exp.subtitle ? `<p style="font-size:11px;color:${INK_SOFT};margin:0 0 8px 0;
+            ${exp.subtitle ? `<p style="font-size:10.5px;color:${INK_SOFT};margin:0 0 4px 0;
                                         font-weight:500;">${modernEscapeHTML(exp.subtitle)}</p>` : ''}
             ${exp.bullets.length ? `<ul style="margin:0;padding:0;list-style:none;">
               ${exp.bullets.map(b => `
-                <li style="position:relative;padding-left:14px;margin-bottom:5px;
-                           font-size:11px;line-height:1.6;color:${INK_SOFT};">
-                  <span style="position:absolute;left:0;top:8px;width:5px;height:5px;
+                <li style="position:relative;padding-left:12px;margin-bottom:3px;
+                           font-size:10.5px;line-height:1.5;color:${INK_SOFT};">
+                  <span style="position:absolute;left:0;top:7px;width:4px;height:4px;
                                background:${INK};border-radius:50%;"></span>
                   ${modernEscapeHTML(b)}
                 </li>`).join('')}
@@ -1987,25 +1996,25 @@ function buildModernResumeElement(parsed) {
     </section>` : '';
 
   const educationHTML = education.length ? `
-    <section style="margin-bottom:18px;position:relative;">
-      ${mainHead('fa-solid fa-graduation-cap', 'Education')}
+    <section style="margin-bottom:0;position:relative;">
+      ${mainHead(MODERN_ICONS.gradCap, 'Education')}
       <div>
         ${education.map(ed => `
-          <div style="position:relative;margin-bottom:14px;page-break-inside:avoid;">
+          <div style="position:relative;margin-bottom:7px;page-break-inside:avoid;">
             ${timelineDot}
-            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px;">
-              <h3 style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:1px;">
+              <h3 style="font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:700;
                          color:${INK};margin:0;line-height:1.3;">${modernEscapeHTML(ed.title)}</h3>
-              ${ed.date ? `<span style="font-size:10.5px;color:${MUTED};white-space:nowrap;
+              ${ed.date ? `<span style="font-size:10px;color:${MUTED};white-space:nowrap;
                                         font-weight:500;letter-spacing:0.3px;">${modernEscapeHTML(ed.date)}</span>` : ''}
             </div>
-            ${ed.subtitle ? `<p style="font-size:11px;color:${INK_SOFT};margin:0 0 4px 0;">
+            ${ed.subtitle ? `<p style="font-size:10.5px;color:${INK_SOFT};margin:0 0 3px 0;">
               ${modernEscapeHTML(ed.subtitle)}</p>` : ''}
             ${ed.bullets.length ? `<ul style="margin:0;padding:0;list-style:none;">
               ${ed.bullets.map(b => `
-                <li style="position:relative;padding-left:14px;margin-bottom:4px;
-                           font-size:11px;line-height:1.6;color:${INK_SOFT};">
-                  <span style="position:absolute;left:0;top:8px;width:5px;height:5px;
+                <li style="position:relative;padding-left:12px;margin-bottom:2px;
+                           font-size:10.5px;line-height:1.5;color:${INK_SOFT};">
+                  <span style="position:absolute;left:0;top:7px;width:4px;height:4px;
                                background:${INK};border-radius:50%;"></span>
                   ${modernEscapeHTML(b)}
                 </li>`).join('')}
@@ -2021,21 +2030,21 @@ function buildModernResumeElement(parsed) {
   container.innerHTML = `
     <div style="width:816px;min-height:1056px;background:${BG};
                 font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
-                color:${INK_SOFT};font-size:11px;line-height:1.55;
+                color:${INK_SOFT};font-size:11px;line-height:1.5;
                 -webkit-font-smoothing:antialiased;box-sizing:border-box;">
-      <header style="padding:50px 56px 22px 56px;">
-        <h1 style="font-family:'DM Sans',sans-serif;font-size:46px;font-weight:800;color:${INK};
-                   text-transform:uppercase;letter-spacing:1px;margin:0 0 6px 0;line-height:1;">
+      <header style="padding:32px 56px 14px 56px;">
+        <h1 style="font-family:'DM Sans',sans-serif;font-size:40px;font-weight:800;color:${INK};
+                   text-transform:uppercase;letter-spacing:1px;margin:0 0 4px 0;line-height:1;">
           ${modernEscapeHTML(name || '')}</h1>
-        ${subtitle ? `<p style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;
+        ${subtitle ? `<p style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
                                 color:${INK_SOFT};text-transform:uppercase;letter-spacing:5px;
-                                margin:0 0 14px 0;">${modernEscapeHTML(subtitle)}</p>`
-                   : '<div style="height:14px;"></div>'}
+                                margin:0 0 10px 0;">${modernEscapeHTML(subtitle)}</p>`
+                   : '<div style="height:10px;"></div>'}
         <div style="height:2px;background:${INK};width:100%;"></div>
       </header>
 
-      <div style="position:relative;padding:30px 56px 50px 56px;">
-        <div style="position:absolute;left:298px;top:18px;bottom:18px;
+      <div style="position:relative;padding:18px 56px 24px 56px;">
+        <div style="position:absolute;left:298px;top:6px;bottom:6px;
                     border-left:2px dotted ${LINE};"></div>
         <div style="display:flex;align-items:flex-start;">
           <aside style="width:230px;flex-shrink:0;padding-right:18px;box-sizing:border-box;">
