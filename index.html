@@ -2338,7 +2338,7 @@ async function renderMinimalResumePDF(data, filename) {
       windowWidth: 816,
       autoPaging: 'text',
       margin: 0,
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' }
+      html2canvas: { scale: 612 / 816, useCORS: true, letterRendering: true, backgroundColor: '#ffffff', logging: false, allowTaint: true }
     });
   } finally {
     if (hider.parentNode) hider.parentNode.removeChild(hider);
