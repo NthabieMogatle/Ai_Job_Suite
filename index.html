@@ -2327,27 +2327,29 @@ async function renderMinimalResumePDF(data, filename) {
   const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
 
   const element = buildMinimalResumeElement(data);
-  // Mount in normal flow but far off-screen so layout resolves and html2canvas can read it
-  element.style.position = 'absolute';
-  element.style.left = '-99999px';
-  element.style.top = '0';
   element.style.width = '816px';
   element.style.background = '#ffffff';
-  document.body.appendChild(element);
+
+  // Wrap in a 0x0 overflow:hidden container so the user doesn't see it,
+  // but the element itself stays in normal flow so html2canvas can capture it.
+  const hider = document.createElement('div');
+  hider.style.cssText = 'position: fixed; top: 0; left: 0; width: 0; height: 0; overflow: hidden; pointer-events: none; z-index: -1;';
+  hider.appendChild(element);
+  document.body.appendChild(hider);
 
   try {
     await pdf.html(element, {
       callback: (doc) => doc.save(filename),
       x: 0,
       y: 0,
-      width: 612,        // letter width in pt
-      windowWidth: 816,  // matches .m2-page width → 0.75x scale
+      width: 612,
+      windowWidth: 816,
       autoPaging: 'text',
       margin: 0,
       html2canvas: { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' }
     });
   } finally {
-    if (element.parentNode) element.parentNode.removeChild(element);
+    if (hider.parentNode) hider.parentNode.removeChild(hider);
   }
 }
 async function downloadPDF(elementId, filename) {
