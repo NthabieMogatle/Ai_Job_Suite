@@ -2076,21 +2076,13 @@ async function renderModernResumePDF(parsed, filename) {
     doc.html(container, {
       callback: () => resolve(),
       x: 0, y: 0,
-      width: 612,
-      windowWidth: 816,
-      autoPaging: 'text',
-      margin: [0, 0, 0, 0],
-      html2canvas: {
-        scale: 612 / 816,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        letterRendering: true,
-        allowTaint: true
-      }
+            width: 612,
+    windowWidth: 816,
+    autoPaging: 'text',
+    margin: 0,
+            html2canvas: { scale: 612 / 816, useCORS: true, letterRendering: true, backgroundColor: '#ffffff', logging: false, allowTaint: true }
     });
-  });
-
+  
   container.remove();
   doc.save(filename);
 }
@@ -2290,7 +2282,7 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
 
       /* ----- MAIN COLUMN ----- */
       .m2-main-section { padding-top: 2px; }
-      .m2-main-marker { position: absolute; left: -7px; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: #1a2740; }
+      .m2-main-marker { position: absolute; left: -33px; top: 5px; width: 14px; height: 14px; border-radius: 50%; background: #1a2740; }
       .m2-main-title-row { padding-bottom: 4px; border-bottom: 1px solid #1a2740; margin-bottom: 10px; }
       .m2-main-title { font-size: 11.5px; font-weight: 700; color: #1a2740; letter-spacing: 3px; }
 
