@@ -2315,36 +2315,132 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   return wrapper;
 }
 
-async function renderMinimalResumePDF(data, filename) {
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
+// ===== MINIMAL TEMPLATE — Franklin Briggs design =====
+function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
+  const NAVY = '#1a3a6b', MUTED = '#6b7280', RULE = '#c7d2de', INK = '#1f2937';
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const md = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  const strip = s => String(s).trim().replace(/^[-•*·]\s*/, '');
 
-  const element = buildMinimalResumeElement(data);
-  element.style.width = '816px';
-  element.style.background = '#ffffff';
+  const ICONS = {
+    brief: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>',
+    cap:   '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 3 3 6 3s6-2 6-3v-5"/></svg>',
+    bulb:  '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c1 1 1.5 2 1.5 3.5h5c0-1.5.5-2.5 1.5-3.5A6 6 0 0 0 12 3z"/></svg>',
+    user:  '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="12" cy="12" r="9.5"/></svg>',
+    key:   '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9"/><path d="m16 7 3 3"/><path d="m18 5 3 3"/></svg>',
+    mon:   '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="1.5"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>',
+    flag:  '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4"/><path d="M4 4h11l-2 4 2 4H4"/></svg>'
+  };
 
-  // Wrap in a 0x0 overflow:hidden container so the user doesn't see it,
-  // but the element itself stays in normal flow so html2canvas can capture it.
-  const hider = document.createElement('div');
-  hider.style.cssText = 'position: fixed; top: 0; left: 0; width: 0; height: 0; overflow: hidden; pointer-events: none; z-index: -1;';
-  hider.appendChild(element);
-  document.body.appendChild(hider);
+  function parseEntries(lines) {
+    const out = []; let cur = null;
+    for (const raw of lines || []) {
+      const ln = String(raw).trim(); if (!ln) continue;
+      if (/^[-•*·]\s/.test(ln)) {
+        if (!cur) cur = { title:'', loc:'', date:'', items:[] };
+        cur.items.push(strip(ln));
+      } else {
+        if (cur) out.push(cur);
+        cur = { title:'', loc:'', date:'', items:[] };
+        const p = ln.split(/\s*\|\s*/);
+        if (p.length >= 3) { cur.title = p[0]; cur.loc = p.slice(1,-1).join(' / '); cur.date = p[p.length-1]; }
+        else if (p.length === 2) { cur.title = p[0]; if (/\d{4}|present|now/i.test(p[1])) cur.date = p[1]; else cur.loc = p[1]; }
+        else { const m = ln.match(/^(.*?)\s+((?:\d{4}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[^|]*)$/i); if (m) { cur.title = m[1].trim(); cur.date = m[2].trim(); } else cur.title = ln; }
+      }
+    }
+    if (cur) out.push(cur);
+    return out;
+  }
 
-  try {
-    await pdf.html(element, {
-      callback: (doc) => doc.save(filename),
-      x: 0,
-      y: 0,
-      width: 612,
-      windowWidth: 816,
-      autoPaging: 'text',
-      margin: 0,
-      html2canvas: { scale: 612 / 816, useCORS: true, letterRendering: true, backgroundColor: '#ffffff', logging: false, allowTaint: true }
+  const parsePairs = lines => (lines || []).map(raw => { const s = strip(raw); const m = s.match(/^([^:]+):\s*(.+)$/); return m ? { k: m[1].trim(), v: m[2].trim() } : { k: '', v: s }; }).filter(p => p.v);
+
+  function parseLangs(lines) {
+    return (lines || []).map(l => {
+      const s = strip(l); let nm = s, lbl = '';
+      const m = s.match(/^(.+?)\s*[—\-–(:]\s*(.+?)\)?$/);
+      if (m) { nm = m[1].trim(); lbl = m[2].trim(); }
+      return { name: nm, label: lbl };
     });
+  }
+
+  const list = ls => (ls || []).map(strip).filter(Boolean);
+
+  const formatDate = d => { const s = String(d || '').trim(); const m = s.match(/^(.+?)\s*[-–—]\s*(.+)$/); return m ? `${esc(m[1].trim())} -<br>${esc(m[2].trim())}` : esc(s); };
+
+  const mainSecs = [], sideSecs = [];
+  let profileLines = [];
+  for (const key of Object.keys(sections || {})) {
+    const lns = sections[key];
+    if (/profile|summary|about/i.test(key)) { profileLines = lns; continue; }
+    if (/languages?/i.test(key)) sideSecs.push({ title: key, kind: 'langs', data: parseLangs(lns), icon: 'flag' });
+    else if (/technical|tools|software/i.test(key)) sideSecs.push({ title: key, kind: 'list', data: list(lns), icon: 'mon' });
+    else if (/skills?/i.test(key)) sideSecs.push({ title: key, kind: 'list', data: list(lns), icon: 'key' });
+    else if (/personal\s*info|info|details/i.test(key)) sideSecs.push({ title: key, kind: 'pairs', data: parsePairs(lns), icon: 'user' });
+    else if (/education/i.test(key)) mainSecs.push({ title: key, kind: 'entries', data: parseEntries(lns), icon: 'cap', mode: 'edu' });
+    else if (/courses?|certifications?/i.test(key)) mainSecs.push({ title: key, kind: 'entries', data: parseEntries(lns), icon: 'bulb', mode: 'course' });
+    else mainSecs.push({ title: key, kind: 'entries', data: parseEntries(lns), icon: 'brief', mode: 'exp' });
+  }
+
+  if (contact && !sideSecs.some(s => s.kind === 'pairs')) {
+    const parts = String(contact).split(/\s*[|•·]\s*|\n+/).map(s => s.trim()).filter(Boolean);
+    const pairs = parts.map(p => {
+      if (/@/.test(p)) return { k: 'E-mail', v: p };
+      if (/^\+?[\d\s().-]{7,}$/.test(p)) return { k: 'Phone', v: p };
+      if (/linkedin\.com/i.test(p)) return { k: 'LinkedIn', v: p.replace(/^https?:\/\//, '') };
+      if (/github\.com|https?:\/\//i.test(p)) return { k: 'Web', v: p.replace(/^https?:\/\//, '') };
+      return { k: 'Location', v: p };
+    });
+    if (pairs.length) sideSecs.unshift({ title: 'Personal Info', kind: 'pairs', data: pairs, icon: 'user' });
+  }
+
+  const head = (title, ic) => `<div style="display:flex;align-items:center;gap:10px;margin:18px 0 0;"><div style="width:26px;height:26px;background:${NAVY};display:flex;align-items:center;justify-content:center;border-radius:2px;flex:0 0 26px;">${ICONS[ic] || ICONS.brief}</div><div style="font-size:17px;font-weight:700;color:${NAVY};flex:0 0 auto;">${esc(title)}</div><div style="flex:1;height:1px;background:${RULE};margin-left:4px;"></div></div>`;
+
+  function renderBullets(items) {
+    return items.map(it => {
+      const m = it.match(/^\*\*([^*]+)\*\*\s*:\s*(.*)$/);
+      if (m) return `<div style="font-weight:700;color:${INK};margin-top:6px;font-size:10px;">${esc(m[1])}:</div>${m[2] ? `<div style="margin-top:2px;">• ${md(m[2])}</div>` : ''}`;
+      const m2 = it.match(/^([A-Z][A-Za-z0-9 &/]{2,40}):\s*$/);
+      if (m2) return `<div style="font-weight:700;color:${INK};margin-top:6px;font-size:10px;">${esc(m2[1])}:</div>`;
+      return `<div style="margin-top:2px;">• ${md(it)}</div>`;
+    }).join('');
+  }
+
+  function renderEntry(e, mode) {
+    if (mode === 'course') return `<div style="display:flex;gap:14px;margin-top:8px;"><div style="width:70px;flex:0 0 70px;font-size:9.5px;color:${INK};font-weight:700;line-height:1.5;padding-top:1px;">${formatDate(e.date)}</div><div style="flex:1;font-size:10px;color:${INK};padding-top:1px;">${esc(e.title)}</div></div>`;
+    return `<div style="display:flex;gap:14px;margin-top:11px;"><div style="width:70px;flex:0 0 70px;font-size:9.5px;color:${INK};font-weight:700;line-height:1.5;padding-top:1px;">${formatDate(e.date)}</div><div style="flex:1;min-width:0;font-size:10px;color:${INK};line-height:1.55;"><div style="font-weight:700;color:${INK};font-size:11px;line-height:1.35;">${esc(e.title)}</div>${e.loc ? `<div style="font-style:italic;color:${MUTED};font-size:9.5px;margin:2px 0 5px;">${esc(e.loc)}</div>` : ''}${e.items.length ? renderBullets(e.items) : ''}</div></div>`;
+  }
+
+  const renderPairs = ps => ps.map(p => `<div style="margin-top:9px;line-height:1.45;"><div style="color:${INK};font-weight:700;font-size:10px;">${esc(p.k)}</div><div style="color:${INK};font-size:9.5px;margin-top:2px;word-break:break-word;">${esc(p.v)}</div></div>`).join('');
+  const renderList = items => items.map(i => `<div style="font-size:10px;color:${INK};margin-top:7px;">${md(i)}</div>`).join('');
+  const renderLangs = ls => ls.map(l => `<div style="margin-top:9px;"><div style="font-size:10px;color:${INK};margin-bottom:4px;">${esc(l.name)}</div><div style="height:4px;background:${NAVY};width:100%;"></div><div style="text-align:right;font-size:9.5px;color:${INK};margin-top:3px;">${esc(l.label)}</div></div>`).join('');
+
+  const renderSec = s => head(s.title, s.icon) + (s.kind === 'entries' ? s.data.map(e => renderEntry(e, s.mode)).join('') : s.kind === 'pairs' ? renderPairs(s.data) : s.kind === 'langs' ? renderLangs(s.data) : renderList(s.data));
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = `width:816px;min-height:1056px;background:#fff;padding:42px 50px 50px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:${INK};`;
+  wrap.innerHTML = `<div style="font-size:34px;font-weight:800;color:${NAVY};line-height:1.05;letter-spacing:-0.3px;">${esc(name || 'Your Name')}</div>${subtitle ? `<div style="font-size:15px;color:${NAVY};margin-top:6px;font-weight:400;">${esc(subtitle)}</div>` : ''}${profileLines.length ? `<div style="font-size:10.5px;line-height:1.55;color:${INK};margin-top:14px;text-align:left;">${profileLines.map(l => md(l)).join(' ')}</div>` : ''}<div style="display:flex;gap:30px;margin-top:6px;"><div style="flex:1.7;min-width:0;">${mainSecs.map(renderSec).join('')}</div><div style="flex:1;min-width:0;">${sideSecs.map(renderSec).join('')}</div></div>`;
+  return wrap;
+}
+
+async function renderMinimalResumePDF({ name, subtitle, contact, sections, filename }) {
+  const el = buildMinimalResumeElement({ name, subtitle, contact, sections });
+  const hider = document.createElement('div');
+  hider.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;z-index:-1;';
+  hider.appendChild(el);
+  document.body.appendChild(hider);
+  try {
+    const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
+    await pdf.html(el, {
+      html2canvas: { scale: 612 / 816, useCORS: true, backgroundColor: '#ffffff', letterRendering: true },
+      x: 0, y: 0, width: 612, windowWidth: 816,
+      autoPaging: 'slice'
+    });
+    pdf.save((filename || 'resume-minimal') + '.pdf');
   } finally {
-    if (hider.parentNode) hider.parentNode.removeChild(hider);
+    hider.remove();
   }
 }
+
 async function downloadPDF(elementId, filename) {
   const source = document.getElementById(elementId);
   if (!source || !source.innerText.trim()) { alert("Please generate your resume first."); return; }
