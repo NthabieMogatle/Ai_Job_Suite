@@ -2484,7 +2484,7 @@ async function downloadPDF(elementId, filename) {
           }
           return;
 
-  } else if (selectedTemplate === 'minimal') {
+  } else if (String(selectedTemplate || '').toLowerCase().trim() === 'minimal') {
     try {
       await renderMinimalResumePDF({ name, subtitle, contact, sections }, filename);
     } catch (err) {
