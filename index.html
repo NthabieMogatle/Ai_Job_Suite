@@ -716,7 +716,6 @@ body::before {
       </div>
     </div>
 
-```
 <!-- Interview Prep for Cover Letter -->
 <div class="interview-card" id="cl-interview-card">
   <div class="interview-header">
@@ -729,7 +728,6 @@ body::before {
     <button class="btn-action" onclick="copyInterviewQuestions('cl')">Copy Questions & Answers</button>
   </div>
 </div>
-```
 
   </div>
 
@@ -841,7 +839,6 @@ body::before {
       </div>
     </div>
 
-```
 <button class="btn-generate" id="rv-btn" onclick="generate('rv')">Generate Resume</button>
 <div class="error-msg" id="rv-error"></div>
 <div class="loading" id="rv-loading"><div class="spinner"></div>Building your resume...</div>
@@ -906,7 +903,6 @@ body::before {
     <button class="btn-action" onclick="copyInterviewQuestions('rv')">Copy Questions & Answers</button>
   </div>
 </div>
-```
 
   </div>
 
@@ -1763,6 +1759,17 @@ function copyOutput(id, btn) {
   });
 }
 
+function copyInterviewQuestions(prefix) {
+  const items = document.querySelectorAll('#' + prefix + '-questions .question-item');
+  const text = Array.from(items).map((item, i) => {
+    const q = item.querySelector('.q-text')?.textContent || '';
+    const framework = item.querySelector('.q-answer-framework')?.textContent || '';
+    const example = item.querySelector('.q-answer-example')?.textContent || '';
+    return (i+1) + '. ' + q + '\n   How to answer: ' + framework + '\n   Sample: ' + example;
+  }).join('\n\n');
+  navigator.clipboard.writeText(text).then(() => alert('Interview questions & answers copied!'));
+}
+
 function downloadOutput(id, filename) {
   const text = document.getElementById(id).textContent;
   const a = document.createElement('a');
@@ -1883,51 +1890,62 @@ function buildModernResumeElement(parsed) {
   const experiences = expKey ? modernParseExperience(sections[expKey]) : [];
 
   const refKey = Object.keys(sections).find(k => k.includes('REFERENCE'));
-  const references = refKey ? sections[refKey].filter(l => l.trim()) : [];
+  const refRawLines = refKey ? (sections[refKey] || []).map(l => (l == null ? '' : String(l)).trimEnd()) : [];
+  const refBlocks = [];
+  {
+    let cur = [];
+    for (const line of refRawLines) {
+      if (line.trim() === '') {
+        if (cur.length) { refBlocks.push(cur); cur = []; }
+      } else {
+        cur.push(line);
+      }
+    }
+    if (cur.length) refBlocks.push(cur);
+  }
 
-  const INK      = '#1f2a44';
+  const NAVY     = '#1c2e4a';
   const INK_SOFT = '#334155';
   const MUTED    = '#64748b';
-  const LINE     = '#1f2a44';
-  const BG       = '#ffffff';
+  const WHITE    = '#ffffff';
 
   const sideHead = (label) => `
-    <h3 style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:800;color:${INK};
-               text-transform:uppercase;letter-spacing:2.5px;margin:0 0 9px 0;
-               padding-bottom:5px;border-bottom:1.5px solid ${INK};">${label}</h3>`;
+    <h3 style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:800;color:${NAVY};
+               text-transform:uppercase;letter-spacing:2.5px;margin:0 0 11px 0;
+               padding-bottom:6px;border-bottom:1.5px solid ${NAVY};">${label}</h3>`;
 
   const mainHead = (svgIcon, label) => `
-    <div style="position:relative;margin:0 0 10px 0;padding-bottom:6px;border-bottom:1.5px solid ${INK};">
-      <div style="position:absolute;left:-50px;top:-7px;width:32px;height:32px;border-radius:50%;
-                  background:${INK};color:${BG};display:flex;align-items:center;justify-content:center;
-                  font-size:14px;line-height:0;">${svgIcon}</div>
-      <h2 style="font-family:'DM Sans',sans-serif;font-size:17px;font-weight:800;color:${INK};
+    <div style="position:relative;margin:0 0 12px 0;padding-bottom:7px;border-bottom:1.5px solid ${NAVY};">
+      <div style="position:absolute;left:-57px;top:-7px;width:28px;height:28px;border-radius:50%;
+                  background:${NAVY};color:${WHITE};display:flex;align-items:center;justify-content:center;
+                  font-size:13px;line-height:0;">${svgIcon}</div>
+      <h2 style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:800;color:${NAVY};
                  text-transform:uppercase;letter-spacing:3px;margin:0;line-height:1.1;">${label}</h2>
     </div>`;
 
-     const timelineDot = `<div style="position:absolute;left:-44px;top:5px;width:9px;height:9px;
-    border-radius:50%;background:${BG};border:2px solid ${INK};"></div>`;
+  const timelineRing = `<div style="position:absolute;left:-48px;top:5px;width:10px;height:10px;
+    border-radius:50%;background:${WHITE};border:2px solid ${NAVY};box-sizing:border-box;"></div>`;
 
- const contactHTML = contactItems.length ? `
-    <section style="margin-bottom:16px;">${sideHead('Contact')}
+  const contactHTML = contactItems.length ? `
+    <section style="margin-bottom:20px;">${sideHead('Contact')}
       <ul style="list-style:none;padding:0;margin:0;">
         ${contactItems.map(c => `
-          <li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;
+          <li style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;
                      font-size:10.5px;color:${INK_SOFT};line-height:1.45;">
-            <span style="display:inline-block;width:4px;height:4px;background:${INK};
-                         border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
-            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${modernEscapeHTML(c.text)}</span>
+            <span style="color:${NAVY};font-size:11px;flex-shrink:0;margin-top:1px;
+                         display:inline-flex;align-items:center;">${c.icon}</span>
+            <span style="word-break:break-word;">${modernEscapeHTML(c.text)}</span>
           </li>`).join('')}
       </ul>
     </section>` : '';
 
   const skillsHTML = skills.length ? `
-    <section style="margin-bottom:16px;">${sideHead('Skills')}
+    <section style="margin-bottom:20px;">${sideHead('Skills')}
       <ul style="list-style:none;padding:0;margin:0;">
         ${skills.map(s => `
-          <li style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;
+          <li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;
                      font-size:10.5px;color:${INK_SOFT};line-height:1.45;">
-            <span style="display:inline-block;width:4px;height:4px;background:${INK};
+            <span style="display:inline-block;width:4px;height:4px;background:${NAVY};
                          border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
             <span>${modernEscapeHTML(s)}</span>
           </li>`).join('')}
@@ -1935,59 +1953,70 @@ function buildModernResumeElement(parsed) {
     </section>` : '';
 
   const languagesHTML = languages.length ? `
-    <section style="margin-bottom:16px;">${sideHead('Languages')}
+    <section style="margin-bottom:20px;">${sideHead('Languages')}
       <ul style="list-style:none;padding:0;margin:0;">
         ${languages.map(l => `
-          <li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;
+          <li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;
                      font-size:10.5px;color:${INK_SOFT};line-height:1.45;">
-            <span style="display:inline-block;width:4px;height:4px;background:${INK};
+            <span style="display:inline-block;width:4px;height:4px;background:${NAVY};
                          border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
             <span>${modernEscapeHTML(l)}</span>
           </li>`).join('')}
       </ul>
     </section>` : '';
 
-  const referencesHTML = references.length ? `
+  const REF_LABEL_RE = /^(Phone|Email|Mobile|Tel|LinkedIn|Website):\s/i;
+  const referencesHTML = refBlocks.length ? `
     <section style="margin-bottom:0;">${sideHead('Reference')}
       <div style="font-size:10.5px;color:${INK_SOFT};line-height:1.5;">
-        ${references.map((r, i) => {
-          if (i === 0 || /^[A-Z][a-z]+ [A-Z]/.test(r)) {
-            return `<div style="font-weight:700;color:${INK};margin-bottom:1px;">${modernEscapeHTML(r)}</div>`;
-          }
-          return `<div style="margin-bottom:2px;">${modernEscapeHTML(r)}</div>`;
+        ${refBlocks.map((block, bi) => {
+          const blockHTML = block.map((line, li) => {
+            if (li === 0) {
+              return `<div style="font-weight:700;color:${NAVY};margin-bottom:2px;">${modernEscapeHTML(line)}</div>`;
+            }
+            const m = line.match(REF_LABEL_RE);
+            if (m) {
+              const label = m[0];
+              const rest = line.slice(label.length);
+              return `<div style="margin-bottom:2px;"><span style="font-weight:700;color:${NAVY};">${modernEscapeHTML(label)}</span>${modernEscapeHTML(rest)}</div>`;
+            }
+            return `<div style="margin-bottom:2px;">${modernEscapeHTML(line)}</div>`;
+          }).join('');
+          const spacer = bi < refBlocks.length - 1 ? '<div style="height:8px;"></div>' : '';
+          return blockHTML + spacer;
         }).join('')}
       </div>
     </section>` : '';
 
   const profileHTML = profile ? `
-    <section style="margin-bottom:16px;position:relative;">
+    <section style="margin-bottom:20px;position:relative;">
       ${mainHead(MODERN_ICONS.user, 'Profile')}
-      <p style="margin:0;font-size:11px;line-height:1.55;color:${INK_SOFT};text-align:justify;">
+      <p style="margin:0;font-size:11px;line-height:1.6;color:${INK_SOFT};text-align:justify;">
         ${modernEscapeHTML(profile)}
       </p>
     </section>` : '';
 
   const experienceHTML = experiences.length ? `
-    <section style="margin-bottom:16px;position:relative;">
+    <section style="margin-bottom:20px;position:relative;">
       ${mainHead(MODERN_ICONS.briefcase, 'Work Experience')}
       <div>
         ${experiences.map(exp => `
-          <div style="position:relative;margin-bottom:10px;page-break-inside:avoid;">
-            ${timelineDot}
-            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:1px;">
+          <div style="position:relative;margin-bottom:14px;page-break-inside:avoid;">
+            ${timelineRing}
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px;">
               <h3 style="font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:700;
-                         color:${INK};margin:0;line-height:1.3;">${modernEscapeHTML(exp.title)}</h3>
+                         color:${NAVY};margin:0;line-height:1.3;">${modernEscapeHTML(exp.title)}</h3>
               ${exp.date ? `<span style="font-size:10px;color:${MUTED};white-space:nowrap;
                                          font-weight:500;letter-spacing:0.3px;">${modernEscapeHTML(exp.date)}</span>` : ''}
             </div>
-            ${exp.subtitle ? `<p style="font-size:10.5px;color:${INK_SOFT};margin:0 0 4px 0;
+            ${exp.subtitle ? `<p style="font-size:10.5px;color:${INK_SOFT};margin:0 0 5px 0;
                                         font-weight:500;">${modernEscapeHTML(exp.subtitle)}</p>` : ''}
             ${exp.bullets.length ? `<ul style="margin:0;padding:0;list-style:none;">
               ${exp.bullets.map(b => `
-                <li style="position:relative;padding-left:12px;margin-bottom:3px;
-                           font-size:10.5px;line-height:1.5;color:${INK_SOFT};">
+                <li style="position:relative;padding-left:13px;margin-bottom:3px;
+                           font-size:10.5px;line-height:1.55;color:${INK_SOFT};">
                   <span style="position:absolute;left:0;top:7px;width:4px;height:4px;
-                               background:${INK};border-radius:50%;"></span>
+                               background:${NAVY};border-radius:50%;"></span>
                   ${modernEscapeHTML(b)}
                 </li>`).join('')}
             </ul>` : ''}
@@ -2000,22 +2029,22 @@ function buildModernResumeElement(parsed) {
       ${mainHead(MODERN_ICONS.gradCap, 'Education')}
       <div>
         ${education.map(ed => `
-          <div style="position:relative;margin-bottom:7px;page-break-inside:avoid;">
-            ${timelineDot}
-            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:1px;">
+          <div style="position:relative;margin-bottom:10px;page-break-inside:avoid;">
+            ${timelineRing}
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px;">
               <h3 style="font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:700;
-                         color:${INK};margin:0;line-height:1.3;">${modernEscapeHTML(ed.title)}</h3>
+                         color:${NAVY};margin:0;line-height:1.3;">${modernEscapeHTML(ed.title)}</h3>
               ${ed.date ? `<span style="font-size:10px;color:${MUTED};white-space:nowrap;
                                         font-weight:500;letter-spacing:0.3px;">${modernEscapeHTML(ed.date)}</span>` : ''}
             </div>
-            ${ed.subtitle ? `<p style="font-size:10.5px;color:${INK_SOFT};margin:0 0 3px 0;">
+            ${ed.subtitle ? `<p style="font-size:10.5px;color:${INK_SOFT};margin:0 0 4px 0;">
               ${modernEscapeHTML(ed.subtitle)}</p>` : ''}
             ${ed.bullets.length ? `<ul style="margin:0;padding:0;list-style:none;">
               ${ed.bullets.map(b => `
-                <li style="position:relative;padding-left:12px;margin-bottom:2px;
-                           font-size:10.5px;line-height:1.5;color:${INK_SOFT};">
+                <li style="position:relative;padding-left:13px;margin-bottom:2px;
+                           font-size:10.5px;line-height:1.55;color:${INK_SOFT};">
                   <span style="position:absolute;left:0;top:7px;width:4px;height:4px;
-                               background:${INK};border-radius:50%;"></span>
+                               background:${NAVY};border-radius:50%;"></span>
                   ${modernEscapeHTML(b)}
                 </li>`).join('')}
             </ul>` : ''}
@@ -2028,29 +2057,29 @@ function buildModernResumeElement(parsed) {
   container.style.cssText = 'position:fixed;left:0;top:0;width:816px;background:#ffffff;z-index:-9999;opacity:0.001;pointer-events:none;';
 
   container.innerHTML = `
-    <div style="width:816px;min-height:1056px;background:${BG};
+    <div style="width:816px;min-height:1056px;background:${WHITE};
                 font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
                 color:${INK_SOFT};font-size:11px;line-height:1.5;
                 -webkit-font-smoothing:antialiased;box-sizing:border-box;">
-      <header style="padding:32px 56px 14px 56px;">
-        <h1 style="font-family:'DM Sans',sans-serif;font-size:40px;font-weight:800;color:${INK};
-                   text-transform:uppercase;letter-spacing:1px;margin:0 0 4px 0;line-height:1;">
+      <header style="padding:38px 56px 14px 56px;">
+        <h1 style="font-family:'DM Sans',sans-serif;font-size:40px;font-weight:800;color:${NAVY};
+                   text-transform:uppercase;letter-spacing:1px;margin:0 0 6px 0;line-height:1;">
           ${modernEscapeHTML(name || '')}</h1>
         ${subtitle ? `<p style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
-                                color:${INK_SOFT};text-transform:uppercase;letter-spacing:5px;
-                                margin:0 0 10px 0;">${modernEscapeHTML(subtitle)}</p>`
-                   : '<div style="height:10px;"></div>'}
-        <div style="height:2px;background:${INK};width:100%;"></div>
+                                color:${NAVY};text-transform:uppercase;letter-spacing:5px;
+                                margin:0 0 14px 0;">${modernEscapeHTML(subtitle)}</p>`
+                   : '<div style="height:14px;"></div>'}
+        <div style="height:1.5px;background:${NAVY};width:100%;"></div>
       </header>
 
-      <div style="position:relative;padding:18px 56px 24px 56px;">
-        <div style="position:absolute;left:298px;top:6px;bottom:6px;
-              border-left:2px dotted ${LINE};"></div>
-        <div style="display:flex;align-items:flex-start;">
-          <aside style="width:230px;flex-shrink:0;padding-right:18px;box-sizing:border-box;">
+      <div style="padding:22px 56px 30px 56px;">
+        <div style="display:flex;align-items:flex-start;position:relative;">
+          <div style="position:absolute;left:249px;top:6px;bottom:0;
+                      border-left:2px dotted ${NAVY};"></div>
+          <aside style="width:230px;flex-shrink:0;padding-right:24px;box-sizing:border-box;">
             ${contactHTML}${skillsHTML}${languagesHTML}${referencesHTML}
           </aside>
-          <main style="flex:1;padding-left:60px;box-sizing:border-box;min-width:0;">
+          <main style="flex:1;padding-left:64px;box-sizing:border-box;min-width:0;">
             ${profileHTML}${experienceHTML}${educationHTML}
           </main>
         </div>
@@ -2171,156 +2200,25 @@ function minimalParseMainItems(lines) {
   return items;
 }
 
-function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
-  const E = minimalEscapeHTML;
-  const sec = (sections && typeof sections === 'object' && !Array.isArray(sections)) ? sections : {};
-
-  // 1. Extract PROFILE/SUMMARY for the main column top
-  const summaryKey = Object.keys(sec).find(k => minimalIsSummary(k));
-  let summaryText = '';
-  if (summaryKey) {
-    const lines = (sec[summaryKey] || []).map(l => String(l || '').trim()).filter(Boolean);
-    summaryText = lines.join(' ');
-  }
-
-  // 2. Route remaining sections
-  const mainEntries = [];
-  const sideEntries = [];
-  for (const key of Object.keys(sec)) {
-    if (key === summaryKey) continue;
-    const lines = sec[key];
-    if (!lines || !lines.length) continue;
-    const target = minimalRouteSection(key) === 'side' ? sideEntries : mainEntries;
-    target.push({ title: key, lines });
-  }
-
-  // 3. SIDEBAR: synthesize CONTACT from the contact string, then render side sections
-  const contactList = minimalSplitContact(contact);
-  const contactHTML = contactList.length ? `
-    <div class="m2-section m2-side-section">
-      <div class="m2-side-title-row">
-        <div class="m2-side-title">CONTACT</div>
-      </div>
-      <ul class="m2-side-list">
-        ${contactList.map(c => `<li>${E(c)}</li>`).join('')}
-      </ul>
-    </div>
-  ` : '';
-
-  const sideHTML = contactHTML + sideEntries.map(s => {
-    // Each side section renders its lines as a bulleted list
-    const items = (s.lines || []).map(l => minimalStripBullet(l)).filter(Boolean);
-    return `
-      <div class="m2-section m2-side-section">
-        <div class="m2-side-title-row">
-          <div class="m2-side-title">${E(s.title)}</div>
-        </div>
-        <ul class="m2-side-list">
-          ${items.map(i => `<li>${E(i)}</li>`).join('')}
-        </ul>
-      </div>
-    `;
-  }).join('');
-
-  // 4. MAIN: PROFILE section then experience-style sections
-  const summarySectionHTML = summaryText ? `
-    <div class="m2-section m2-main-section">
-      <div class="m2-main-marker"></div>
-      <div class="m2-main-title-row">
-        <div class="m2-main-title">PROFILE</div>
-      </div>
-      <p class="m2-summary">${E(summaryText)}</p>
-    </div>
-  ` : '';
-
-  const mainSectionsHTML = mainEntries.map(s => {
-    const items = minimalParseMainItems(s.lines);
-    const itemsHTML = items.map(it => `
-      <div class="m2-item">
-        <div class="m2-item-marker"></div>
-        <div class="m2-item-head">
-          <div class="m2-item-title">${E(it.title)}</div>
-          ${it.dates ? `<div class="m2-item-dates">${E(it.dates)}</div>` : ''}
-        </div>
-        ${it.meta ? `<div class="m2-item-meta">${E(it.meta)}</div>` : ''}
-        ${it.bullets.length ? `<ul class="m2-bullets">${it.bullets.map(b => `<li>${E(b)}</li>`).join('')}</ul>` : ''}
-      </div>
-    `).join('');
-    return `
-      <div class="m2-section m2-main-section">
-        <div class="m2-main-marker"></div>
-        <div class="m2-main-title-row">
-          <div class="m2-main-title">${E(s.title)}</div>
-        </div>
-        ${itemsHTML}
-      </div>
-    `;
-  }).join('');
-
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = `
-    <style>
-      .m2-page { width: 816px; min-height: 1056px; padding: 44px 52px; background: #ffffff; color: #2b2b2b; font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 1.42; box-sizing: border-box; }
-      .m2-header { padding-bottom: 14px; border-bottom: 1.5px solid #1a2740; margin-bottom: 22px; }
-      .m2-name { font-size: 30px; font-weight: 800; color: #1a2740; letter-spacing: 1.5px; margin: 0; line-height: 1; text-transform: uppercase; }
-      .m2-subtitle { font-size: 12px; color: #1a2740; letter-spacing: 5px; margin: 8px 0 0 0; font-weight: 400; text-transform: uppercase; }
-
-      .m2-cols { display: flex; gap: 26px; align-items: flex-start; }
-      .m2-side { flex: 0 0 28%; }
-      .m2-main { flex: 1 1 auto; position: relative; padding-left: 26px; min-width: 0; }
-      .m2-main::before { content:''; position: absolute; left: 0; top: 0; bottom: 0; border-left: 1.2px dotted #1a2740; }
-
-      .m2-section { margin-bottom: 14px; position: relative; }
-      .m2-section:last-child { margin-bottom: 0; }
-
-      /* ----- SIDEBAR ----- */
-      .m2-side-section { margin-bottom: 16px; }
-      .m2-side-title-row { padding-bottom: 4px; border-bottom: 1px solid #1a2740; margin-bottom: 8px; }
-      .m2-side-title { font-size: 11.5px; font-weight: 700; color: #1a2740; letter-spacing: 3px; }
-      .m2-side-list { list-style: none; padding: 0; margin: 0; }
-      .m2-side-list li { padding-left: 11px; position: relative; margin-bottom: 3px; font-size: 10.5px; line-height: 1.4; color: #2b2b2b; }
-      .m2-side-list li::before { content: '•'; position: absolute; left: 1px; color: #2b2b2b; }
-
-      /* ----- MAIN COLUMN ----- */
-      .m2-main-section { padding-top: 2px; }
-      .m2-main-marker { position: absolute; left: -33px; top: 5px; width: 14px; height: 14px; border-radius: 50%; background: #1a2740; }
-      .m2-main-title-row { padding-bottom: 4px; border-bottom: 1px solid #1a2740; margin-bottom: 10px; }
-      .m2-main-title { font-size: 11.5px; font-weight: 700; color: #1a2740; letter-spacing: 3px; }
-
-      .m2-summary { font-size: 10.5px; line-height: 1.5; color: #2b2b2b; margin: 0; text-align: justify; }
-
-      .m2-item { position: relative; margin-bottom: 11px; }
-      .m2-item:last-child { margin-bottom: 0; }
-      .m2-item-marker { position: absolute; left: -30px; top: 3px; width: 7px; height: 7px; border-radius: 50%; background: #ffffff; border: 1.5px solid #1a2740; box-sizing: border-box; }
-      .m2-item-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-      .m2-item-title { font-size: 11.5px; font-weight: 700; color: #1a2740; line-height: 1.25; }
-      .m2-item-dates { font-size: 9.5px; color: #6b6b6b; white-space: nowrap; font-weight: 400; }
-      .m2-item-meta { font-size: 10px; color: #6b6b6b; margin: 1px 0 3px 0; }
-
-      .m2-bullets { margin: 3px 0 0 0; padding: 0; list-style: none; }
-      .m2-bullets li { padding-left: 11px; position: relative; margin-bottom: 1px; font-size: 10px; line-height: 1.42; color: #2b2b2b; }
-      .m2-bullets li::before { content: '•'; position: absolute; left: 1px; color: #1a2740; }
-    </style>
-    <div class="m2-page">
-      <div class="m2-header">
-        <h1 class="m2-name">${E(name || '')}</h1>
-        ${subtitle ? `<div class="m2-subtitle">${E(subtitle)}</div>` : ''}
-      </div>
-      <div class="m2-cols">
-        <div class="m2-side">${sideHTML}</div>
-        <div class="m2-main">${summarySectionHTML}${mainSectionsHTML}</div>
-      </div>
-    </div>
-  `;
-  return wrapper;
-}
-
 // ===== MINIMAL TEMPLATE — Franklin Briggs design =====
 function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
-  const NAVY = '#1a3a6b', MUTED = '#6b7280', RULE = '#c7d2de', INK = '#1f2937';
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const md = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  const strip = s => String(s).trim().replace(/^[-•*·]\s*/, '');
+  const NAVY  = '#16365c';
+  const INK   = '#333';
+  const MUTED = '#6b6b6b';
+  const RULE  = '#c7d2de';
+  const FONT  = "'Lato','Source Sans 3','Source Sans Pro','Open Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+
+  const esc   = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const md    = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  const strip = s => String(s == null ? '' : s).trim().replace(/^[-•*·▪▸◆]\s*/, '');
+
+  const formatDate = d => {
+    const s = String(d || '').trim();
+    if (!s) return '';
+    let m = s.match(/^(.+?)\s+[-–—]\s+(.+)$/);     // spaced dash wins  ("2014-12 - present")
+    if (!m) m = s.match(/^([^-–—]+)[-–—](.+)$/);   // bare dash fallback ("2022-Present", "2020-2022")
+    return m ? `${esc(m[1].trim())} -<br>${esc(m[2].trim())}` : esc(s);
+  };
 
   const ICONS = {
     brief: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>',
@@ -2333,9 +2231,12 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   };
 
   function parseEntries(lines) {
-    const out = []; let cur = null;
-    for (const raw of lines || []) {
-      const ln = String(raw).trim(); if (!ln) continue;
+    const out = [];
+    let cur = null;
+    const clean = s => String(s || '').trim().replace(/[,;:\s]+$/, '').trim();
+    for (const raw of (lines || [])) {
+      const ln = String(raw || '').trim();
+      if (!ln) continue;
       if (/^[-•*·]\s/.test(ln)) {
         if (!cur) cur = { title:'', loc:'', date:'', items:[] };
         cur.items.push(strip(ln));
@@ -2343,57 +2244,134 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
         if (cur) out.push(cur);
         cur = { title:'', loc:'', date:'', items:[] };
         const p = ln.split(/\s*\|\s*/);
-        if (p.length >= 3) { cur.title = p[0]; cur.loc = p.slice(1,-1).join(' / '); cur.date = p[p.length-1]; }
-        else if (p.length === 2) { cur.title = p[0]; if (/\d{4}|present|now/i.test(p[1])) cur.date = p[1]; else cur.loc = p[1]; }
-        else { const m = ln.match(/^(.*?)\s+((?:\d{4}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[^|]*)$/i); if (m) { cur.title = m[1].trim(); cur.date = m[2].trim(); } else cur.title = ln; }
+        if (p.length >= 3) {
+          // "Company | Role | Dates"  →  title=Role (bold), loc=Company (italic), date=Dates
+          cur.loc   = p[0].trim();
+          cur.title = p.slice(1, -1).join(' / ').trim();
+          cur.date  = p[p.length - 1].trim();
+        } else if (p.length === 2) {
+          cur.title = p[0].trim();
+          if (/\d{4}|present|now/i.test(p[1])) cur.date = p[1].trim();
+          else cur.loc = p[1].trim();
+        } else {
+          const m = ln.match(/^(.*?)\s+((?:\d{4}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[^|]*)$/i);
+          if (m) { cur.title = m[1].trim(); cur.date = m[2].trim(); }
+          else cur.title = ln;
+        }
+        cur.title = clean(cur.title);
+        cur.loc   = clean(cur.loc);
+        cur.date  = clean(cur.date);
       }
     }
     if (cur) out.push(cur);
     return out;
   }
 
-  const parsePairs = lines => (lines || []).map(raw => { const s = strip(raw); const m = s.match(/^([^:]+):\s*(.+)$/); return m ? { k: m[1].trim(), v: m[2].trim() } : { k: '', v: s }; }).filter(p => p.v);
-
   function parseLangs(lines) {
-    return (lines || []).map(l => {
-      const s = strip(l); let nm = s, lbl = '';
-      const m = s.match(/^(.+?)\s*[—\-–(:]\s*(.+?)\)?$/);
-      if (m) { nm = m[1].trim(); lbl = m[2].trim(); }
-      return { name: nm, label: lbl };
-    });
+    const out = [];
+    for (const raw of (lines || [])) {
+      const s = strip(raw);
+      if (!s) continue;
+      const items = s.includes(',') ? s.split(',').map(x => x.trim()).filter(Boolean) : [s];
+      for (const it of items) {
+        let nm = it, lbl = '';
+        const m = it.match(/^(.+?)\s*[—–\-(:]\s*(.+?)\)?$/);
+        if (m) { nm = m[1].trim(); lbl = m[2].trim(); }
+        out.push({ name: nm, label: lbl });
+      }
+    }
+    return out;
   }
 
-  const list = ls => (ls || []).map(strip).filter(Boolean);
+  function splitSkills(lines) {
+    const out = [];
+    (lines || []).forEach(l => {
+      const cleaned = strip(l);
+      if (!cleaned) return;
+      if (cleaned.includes(',')) cleaned.split(',').forEach(item => { const t = item.trim(); if (t) out.push(t); });
+      else out.push(cleaned);
+    });
+    return out;
+  }
 
-  const formatDate = d => { const s = String(d || '').trim(); const m = s.match(/^(.+?)\s*[-–—]\s*(.+)$/); return m ? `${esc(m[1].trim())} -<br>${esc(m[2].trim())}` : esc(s); };
+  const parsePairs = lines => (lines || []).map(raw => {
+    const s = strip(raw);
+    const m = s.match(/^([^:]+):\s*(.+)$/);
+    return m ? { k: m[1].trim(), v: m[2].trim() } : { k: '', v: s };
+  }).filter(p => p.v);
 
-  const mainSecs = [], sideSecs = [];
+  // === Route sections ===
+  const mainSecs = [];
+  const sideSecs = [];
   let profileLines = [];
+  let refLines = null;
+
   for (const key of Object.keys(sections || {})) {
     const lns = sections[key];
-    if (/profile|summary|about/i.test(key)) { profileLines = lns; continue; }
-    if (/languages?/i.test(key)) sideSecs.push({ title: key, kind: 'langs', data: parseLangs(lns), icon: 'flag' });
-    else if (/technical|tools|software/i.test(key)) sideSecs.push({ title: key, kind: 'list', data: list(lns), icon: 'mon' });
-    else if (/skills?/i.test(key)) sideSecs.push({ title: key, kind: 'list', data: list(lns), icon: 'key' });
-    else if (/personal\s*info|info|details/i.test(key)) sideSecs.push({ title: key, kind: 'pairs', data: parsePairs(lns), icon: 'user' });
-    else if (/education/i.test(key)) mainSecs.push({ title: key, kind: 'entries', data: parseEntries(lns), icon: 'cap', mode: 'edu' });
-    else if (/courses?|certifications?/i.test(key)) mainSecs.push({ title: key, kind: 'entries', data: parseEntries(lns), icon: 'bulb', mode: 'course' });
-    else mainSecs.push({ title: key, kind: 'entries', data: parseEntries(lns), icon: 'brief', mode: 'exp' });
+    if (!lns || !lns.length) continue;
+    if (/profile|summary|about/i.test(key))         { profileLines = lns; continue; }
+    if (/references?/i.test(key))                   { refLines = lns; continue; }
+    if (/languages?/i.test(key)) {
+      const d = parseLangs(lns);
+      if (d.length) sideSecs.push({ title:'Languages', kind:'langs', data:d, icon:'flag' });
+    } else if (/skills?|technical|tools|software/i.test(key)) {
+      const d = splitSkills(lns);
+      if (d.length) {
+        const existing = sideSecs.find(s => s.icon === 'key' && s.kind === 'list');
+        if (existing) existing.data = existing.data.concat(d);
+        else sideSecs.push({ title:'Skills', kind:'list', data:d, icon:'key' });
+      }
+    } else if (/personal\s*info|info|details/i.test(key)) {
+      const d = parsePairs(lns);
+      if (d.length) sideSecs.push({ title:'Personal Info', kind:'pairs', data:d, icon:'user' });
+    } else if (/education/i.test(key)) {
+      const d = parseEntries(lns);
+      if (d.length) mainSecs.push({ title:'Education', kind:'entries', data:d, icon:'cap', mode:'edu' });
+    } else if (/courses?|certifications?/i.test(key)) {
+      const d = parseEntries(lns);
+      const niceTitle = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+      if (d.length) mainSecs.push({ title:niceTitle, kind:'entries', data:d, icon:'bulb', mode:'course' });
+    } else {
+      const d = parseEntries(lns);
+      if (d.length) mainSecs.push({ title:'Experience', kind:'entries', data:d, icon:'brief', mode:'exp' });
+    }
   }
 
+  // Auto-synthesize Personal Info from `contact` string when no explicit Personal Info section is provided.
+  // Skips LinkedIn label entirely when there is no LinkedIn data in `contact`.
   if (contact && !sideSecs.some(s => s.kind === 'pairs')) {
     const parts = String(contact).split(/\s*[|•·]\s*|\n+/).map(s => s.trim()).filter(Boolean);
-    const pairs = parts.map(p => {
-      if (/@/.test(p)) return { k: 'E-mail', v: p };
-      if (/^\+?[\d\s().-]{7,}$/.test(p)) return { k: 'Phone', v: p };
-      if (/linkedin\.com/i.test(p)) return { k: 'LinkedIn', v: p.replace(/^https?:\/\//, '') };
-      if (/github\.com|https?:\/\//i.test(p)) return { k: 'Web', v: p.replace(/^https?:\/\//, '') };
-      return { k: 'Location', v: p };
-    });
-    if (pairs.length) sideSecs.unshift({ title: 'Personal Info', kind: 'pairs', data: pairs, icon: 'user' });
+    const pairs = [];
+    for (const p of parts) {
+      if (/@/.test(p))                          pairs.push({ k:'E-mail',   v:p });
+      else if (/linkedin\.com/i.test(p))        pairs.push({ k:'LinkedIn', v:p.replace(/^https?:\/\//, '') });
+      else if (/^\+?[\d\s().-]{7,}$/.test(p))   pairs.push({ k:'Phone',    v:p });
+      else if (/github\.com|https?:\/\//i.test(p)) pairs.push({ k:'Web',   v:p.replace(/^https?:\/\//, '') });
+      else                                      pairs.push({ k:'Location', v:p });
+    }
+    if (pairs.length) sideSecs.unshift({ title:'Personal Info', kind:'pairs', data:pairs, icon:'user' });
   }
 
-  const head = (title, ic) => `<div style="display:flex;align-items:center;gap:10px;margin:18px 0 0;"><div style="width:26px;height:26px;background:${NAVY};display:flex;align-items:center;justify-content:center;border-radius:2px;flex:0 0 26px;">${ICONS[ic] || ICONS.brief}</div><div style="font-size:17px;font-weight:700;color:${NAVY};flex:0 0 auto;">${esc(title)}</div><div style="flex:1;height:1px;background:${RULE};margin-left:4px;"></div></div>`;
+  // References → structural blocks (line 1 bold, label:-prefix bold, else regular)
+  const refBlocks = [];
+  if (refLines && refLines.length) {
+    const trimmed = refLines.map(l => (l == null ? '' : String(l)).trimEnd());
+    let cur = [];
+    for (const ln of trimmed) {
+      if (ln.trim() === '') { if (cur.length) { refBlocks.push(cur); cur = []; } }
+      else cur.push(ln);
+    }
+    if (cur.length) refBlocks.push(cur);
+    if (refBlocks.length) sideSecs.push({ title:'Reference', kind:'refs', data:refBlocks, icon:'user' });
+  }
+
+  // === Render helpers ===
+  const head = (title, ic) => `
+    <div style="display:flex;align-items:center;gap:10px;margin:18px 0 0;">
+      <div style="width:24px;height:24px;background:${NAVY};display:flex;align-items:center;justify-content:center;border-radius:3px;flex:0 0 24px;">${ICONS[ic] || ICONS.brief}</div>
+      <div style="font-size:16px;font-weight:700;color:${NAVY};flex:0 0 auto;">${esc(title)}</div>
+      <div style="flex:1;height:1px;background:${RULE};margin-left:4px;"></div>
+    </div>`;
 
   function renderBullets(items) {
     return items.map(it => {
@@ -2401,24 +2379,55 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
       if (m) return `<div style="font-weight:700;color:${INK};margin-top:6px;font-size:10px;">${esc(m[1])}:</div>${m[2] ? `<div style="margin-top:2px;">• ${md(m[2])}</div>` : ''}`;
       const m2 = it.match(/^([A-Z][A-Za-z0-9 &/]{2,40}):\s*$/);
       if (m2) return `<div style="font-weight:700;color:${INK};margin-top:6px;font-size:10px;">${esc(m2[1])}:</div>`;
-      return `<div style="margin-top:2px;">• ${md(it)}</div>`;
+      return `<div style="margin-top:3px;">• ${md(it)}</div>`;
     }).join('');
   }
 
   function renderEntry(e, mode) {
-    if (mode === 'course') return `<div style="display:flex;gap:14px;margin-top:8px;"><div style="width:70px;flex:0 0 70px;font-size:9.5px;color:${INK};font-weight:700;line-height:1.5;padding-top:1px;">${formatDate(e.date)}</div><div style="flex:1;font-size:10px;color:${INK};padding-top:1px;">${esc(e.title)}</div></div>`;
-    return `<div style="display:flex;gap:14px;margin-top:11px;"><div style="width:70px;flex:0 0 70px;font-size:9.5px;color:${INK};font-weight:700;line-height:1.5;padding-top:1px;">${formatDate(e.date)}</div><div style="flex:1;min-width:0;font-size:10px;color:${INK};line-height:1.55;"><div style="font-weight:700;color:${INK};font-size:11px;line-height:1.35;">${esc(e.title)}</div>${e.loc ? `<div style="font-style:italic;color:${MUTED};font-size:9.5px;margin:2px 0 5px;">${esc(e.loc)}</div>` : ''}${e.items.length ? renderBullets(e.items) : ''}</div></div>`;
+    const dateCell = `<div style="width:70px;flex:0 0 70px;font-size:9.5px;color:${INK};font-weight:700;line-height:1.5;padding-top:1px;">${formatDate(e.date)}</div>`;
+    if (mode === 'course') {
+      return `<div style="display:flex;gap:14px;margin-top:9px;page-break-inside:avoid;break-inside:avoid;">${dateCell}<div style="flex:1;font-size:10px;color:${INK};padding-top:1px;">${esc(e.title)}</div></div>`;
+    }
+    return `<div style="display:flex;gap:14px;margin-top:12px;page-break-inside:avoid;break-inside:avoid;">${dateCell}<div style="flex:1;min-width:0;font-size:10px;color:${INK};line-height:1.55;"><div style="font-weight:700;color:${INK};font-size:11.5px;line-height:1.35;">${esc(e.title)}</div>${e.loc ? `<div style="font-style:italic;color:${MUTED};font-size:9.5px;margin:2px 0 5px;">${esc(e.loc)}</div>` : ''}${e.items.length ? renderBullets(e.items) : ''}</div></div>`;
   }
 
-  const renderPairs = ps => ps.map(p => `<div style="margin-top:9px;line-height:1.45;"><div style="color:${INK};font-weight:700;font-size:10px;">${esc(p.k)}</div><div style="color:${INK};font-size:9.5px;margin-top:2px;word-break:break-word;">${esc(p.v)}</div></div>`).join('');
-  const renderList = items => items.map(i => `<div style="font-size:10px;color:${INK};margin-top:7px;">${md(i)}</div>`).join('');
-  const renderLangs = ls => ls.map(l => `<div style="margin-top:9px;"><div style="font-size:10px;color:${INK};margin-bottom:4px;">${esc(l.name)}</div><div style="height:4px;background:${NAVY};width:100%;"></div><div style="text-align:right;font-size:9.5px;color:${INK};margin-top:3px;">${esc(l.label)}</div></div>`).join('');
+  const REF_LABEL_RE = /^(Phone|Email|Mobile|Tel|LinkedIn|Website):\s/i;
+  function renderRefs(blocks) {
+    return blocks.map((block, bi) => {
+      const inner = block.map((line, li) => {
+        if (li === 0) return `<div style="font-weight:700;color:${NAVY};margin-top:${bi === 0 ? 9 : 0}px;font-size:10.5px;">${esc(line)}</div>`;
+        const m = line.match(REF_LABEL_RE);
+        if (m) return `<div style="margin-top:3px;font-size:10px;color:${INK};"><span style="font-weight:700;color:${NAVY};">${esc(m[0])}</span>${esc(line.slice(m[0].length))}</div>`;
+        return `<div style="margin-top:3px;font-size:10px;color:${INK};">${esc(line)}</div>`;
+      }).join('');
+      const spacer = bi < blocks.length - 1 ? '<div style="height:10px;"></div>' : '';
+      return inner + spacer;
+    }).join('');
+  }
 
-  const renderSec = s => head(s.title, s.icon) + (s.kind === 'entries' ? s.data.map(e => renderEntry(e, s.mode)).join('') : s.kind === 'pairs' ? renderPairs(s.data) : s.kind === 'langs' ? renderLangs(s.data) : renderList(s.data));
+  const renderPairs = ps => ps.map(p => `<div style="margin-top:9px;line-height:1.45;">${p.k ? `<div style="color:${NAVY};font-weight:700;font-size:10px;">${esc(p.k)}</div>` : ''}<div style="color:${INK};font-size:9.5px;margin-top:2px;word-break:break-word;">${esc(p.v)}</div></div>`).join('');
+  const renderList  = items => items.map(i => `<div style="font-size:10px;color:${INK};margin-top:7px;">${md(i)}</div>`).join('');
+  const renderLangs = ls => ls.map(l => `<div style="margin-top:9px;"><div style="font-size:10px;color:${INK};margin-bottom:4px;">${esc(l.name)}</div><div style="height:4px;background:${NAVY};width:100%;"></div>${l.label ? `<div style="text-align:right;font-size:9.5px;color:${INK};margin-top:3px;">${esc(l.label)}</div>` : ''}</div>`).join('');
+
+  function renderSec(s) {
+    if (!s.data || !s.data.length) return '';
+    const body =
+      s.kind === 'entries' ? s.data.map(e => renderEntry(e, s.mode)).join('')
+      : s.kind === 'pairs' ? renderPairs(s.data)
+      : s.kind === 'langs' ? renderLangs(s.data)
+      : s.kind === 'refs'  ? renderRefs(s.data)
+      : renderList(s.data);
+    return head(s.title, s.icon) + body;
+  }
 
   const wrap = document.createElement('div');
-  wrap.style.cssText = `width:816px;min-height:1056px;background:#fff;padding:42px 50px 50px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:${INK};`;
-  wrap.innerHTML = `<div style="font-size:34px;font-weight:800;color:${NAVY};line-height:1.05;letter-spacing:-0.3px;">${esc(name || 'Your Name')}</div>${subtitle ? `<div style="font-size:15px;color:${NAVY};margin-top:6px;font-weight:400;">${esc(subtitle)}</div>` : ''}${profileLines.length ? `<div style="font-size:10.5px;line-height:1.55;color:${INK};margin-top:14px;text-align:left;">${profileLines.map(l => md(l)).join(' ')}</div>` : ''}<div style="display:flex;gap:30px;margin-top:6px;"><div style="flex:1.7;min-width:0;">${mainSecs.map(renderSec).join('')}</div><div style="flex:1;min-width:0;">${sideSecs.map(renderSec).join('')}</div></div>`;
+  wrap.style.cssText = `width:816px;min-height:1056px;background:#fff;padding:42px 50px 50px;box-sizing:border-box;font-family:${FONT};color:${INK};`;
+
+  const headerName     = `<div style="font-size:34px;font-weight:800;color:${NAVY};line-height:1.05;letter-spacing:-0.3px;">${esc(name || 'Your Name')}</div>`;
+  const headerSubtitle = subtitle ? `<div style="font-size:15px;color:${NAVY};margin-top:6px;font-weight:400;">${esc(subtitle)}</div>` : '';
+  const summaryHTML    = profileLines.length ? `<div style="font-size:10.5px;line-height:1.6;color:${INK};margin-top:14px;text-align:left;">${profileLines.map(l => md(l)).join(' ')}</div>` : '';
+
+  wrap.innerHTML = `${headerName}${headerSubtitle}${summaryHTML}<div style="display:flex;gap:28px;margin-top:6px;align-items:flex-start;"><div style="flex:1.7;min-width:0;">${mainSecs.map(renderSec).join('')}</div><div style="flex:1;min-width:0;">${sideSecs.map(renderSec).join('')}</div></div>`;
   return wrap;
 }
 
@@ -3310,7 +3319,6 @@ function unlockPremium() {
       <p style="font-size:14px; color:#888580; line-height:1.6;" id="verifySubtitle">We sent a 6-digit code to <strong id="verifyEmailDisplay" style="color:#c9a84c;"></strong></p>
     </div>
 
-```
 <div style="display:flex; gap:8px; justify-content:center; margin-bottom:1.25rem;" id="codeInputs">
   <input type="text" maxlength="1" class="code-digit" style="width:44px; height:52px; text-align:center; font-size:22px; font-weight:600; background:#1e1e21; border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#f0ede6; font-family:'DM Sans',sans-serif;" />
   <input type="text" maxlength="1" class="code-digit" style="width:44px; height:52px; text-align:center; font-size:22px; font-weight:600; background:#1e1e21; border:1px solid rgba(255,255,255,0.12); border-radius:10px; color:#f0ede6; font-family:'DM Sans',sans-serif;" />
@@ -3327,7 +3335,6 @@ function unlockPremium() {
 <div style="text-align:center;">
   <button onclick="resendVerificationCode()" id="resendBtn" style="background:none; border:none; color:#888580; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif;">Didn't get the code? <span style="color:#c9a84c;">Resend</span></button>
 </div>
-```
 
   </div>
 </div>
