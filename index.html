@@ -2437,6 +2437,7 @@ async function renderMinimalResumePDF({ name, subtitle, contact, sections, filen
   hider.appendChild(el);
   document.body.appendChild(hider);
   try {
+    const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
     await pdf.html(el, {
       html2canvas: { scale: 612 / 816, useCORS: true, backgroundColor: '#ffffff', letterRendering: true },
