@@ -1788,6 +1788,10 @@ function modernEscapeHTML(s) {
     .replace(/"/g, '&quot;');
 }
 
+function modernMd(s) {
+  return modernEscapeHTML(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
 function modernSplitList(lines) {
   const out = [];
   (lines || []).forEach(l => {
@@ -1991,7 +1995,7 @@ function buildModernResumeElement(parsed) {
     <section style="margin-bottom:20px;position:relative;">
       ${mainHead(MODERN_ICONS.user, 'Profile')}
       <p style="margin:0;font-size:11px;line-height:1.6;color:${INK_SOFT};text-align:justify;">
-        ${modernEscapeHTML(profile)}
+        ${modernMd(profile)}
       </p>
     </section>` : '';
 
@@ -2009,14 +2013,14 @@ function buildModernResumeElement(parsed) {
                                          font-weight:500;letter-spacing:0.3px;">${modernEscapeHTML(exp.date)}</span>` : ''}
             </div>
             ${exp.subtitle ? `<p style="font-size:10.5px;color:${INK_SOFT};margin:0 0 5px 0;
-                                        font-weight:500;">${modernEscapeHTML(exp.subtitle)}</p>` : ''}
+                                        font-weight:500;">${modernMd(exp.subtitle)}</p>` : ''}
             ${exp.bullets.length ? `<ul style="margin:0;padding:0;list-style:none;">
               ${exp.bullets.map(b => `
                 <li style="position:relative;padding-left:13px;margin-bottom:3px;
                            font-size:10.5px;line-height:1.55;color:${INK_SOFT};">
                   <span style="position:absolute;left:0;top:7px;width:4px;height:4px;
                                background:${NAVY};border-radius:50%;"></span>
-                  ${modernEscapeHTML(b)}
+                  ${modernMd(b)}
                 </li>`).join('')}
             </ul>` : ''}
           </div>`).join('')}
@@ -2037,14 +2041,14 @@ function buildModernResumeElement(parsed) {
                                         font-weight:500;letter-spacing:0.3px;">${modernEscapeHTML(ed.date)}</span>` : ''}
             </div>
             ${ed.subtitle ? `<p style="font-size:10.5px;color:${INK_SOFT};margin:0 0 4px 0;">
-              ${modernEscapeHTML(ed.subtitle)}</p>` : ''}
+              ${modernMd(ed.subtitle)}</p>` : ''}
             ${ed.bullets.length ? `<ul style="margin:0;padding:0;list-style:none;">
               ${ed.bullets.map(b => `
                 <li style="position:relative;padding-left:13px;margin-bottom:2px;
                            font-size:10.5px;line-height:1.55;color:${INK_SOFT};">
                   <span style="position:absolute;left:0;top:7px;width:4px;height:4px;
                                background:${NAVY};border-radius:50%;"></span>
-                  ${modernEscapeHTML(b)}
+                  ${modernMd(b)}
                 </li>`).join('')}
             </ul>` : ''}
           </div>`).join('')}
