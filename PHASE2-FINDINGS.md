@@ -68,3 +68,87 @@ None addressed in this PR.
 - **Fix #2 onclone variant: strip `style` attribute** from all SVGs in the cloned document via `html2canvas: { onclone: ... }`. Proven inert (PDF byte-identical to baseline). Either onclone runs at the wrong stage or the style-attribute bloat itself is not the throw cause. Reverted.
 
 The Phase 1-era "convert stroke-based multi-element paths to single-path geometry with fill='#fff'" framing of Fix #2 was based on an icon-source-markup theory that doesn't match the actual failure mode (atob format mismatch in jsPDF's context2d shim). Dropped from the gate.
+
+## 6. Issue #9 — jsPDF's `html()` doesn't use html2canvas; `@font-face` bundling does not reach the PDF
+
+Issue #9 ("bundle DM Sans inline to eliminate Google Fonts CDN dependency on Modern PDF render") was investigated, attempted, and reverted on `claude/continue-eleve-ai-suite-bKQeg` after diagnostics showed the premise was wrong. The PDF was always rendering in built-in Helvetica regardless of what the browser was displaying in the hidden render container, and the bundled commit caused visible spacing artifacts by introducing metric divergence between browser DOM layout and jsPDF's text-emission stage.
+
+This finding refutes §3's "Modern typography defects" bullet about font-fallback being the cause of "letter-spacing exploded across all text" — it isn't fallback, it's that jsPDF never had access to DM Sans in the first place. Recording here so the next investigator working on Modern typography doesn't re-attempt the same approach.
+
+### Diagnostic commands
+
+Run against a Modern PDF rendered with the bundled `@font-face` commit applied (commit since reverted):
+
+**(a) PDF font table** — confirms no DM Sans embedded, only the standard 14 base fonts:
+
+```
+$ pdffonts modern.pdf
+name                                 type              encoding         emb sub uni
+------------------------------------ ----------------- ---------------- --- --- ---
+Helvetica                            Type 1            WinAnsi          no  no  no
+Helvetica-Bold                       Type 1            WinAnsi          no  no  no
+Helvetica-Oblique                    Type 1            WinAnsi          no  no  no
+Helvetica-BoldOblique                Type 1            WinAnsi          no  no  no
+Courier (×4 variants)                Type 1            WinAnsi          no  no  no
+Times-Roman (×4 variants)            Type 1            WinAnsi          no  no  no
+Symbol, ZapfDingbats                 Type 1            ...              no  no  no
+```
+
+**(b) PDF image table** — confirms zero images embedded; the page is vector text, NOT a rasterized canvas (despite the misleading `html2canvas: {...}` option name in `pdf.html()` config):
+
+```
+$ pdfimages -list modern.pdf
+page   num  type   width height color comp bpc  enc interp  object ID
+--------------------------------------------------------------------------------
+(empty — no images on any page)
+```
+
+**(c) PDF text stream** — confirms the spacing defects are literal space characters in the text stream, not rendering artifacts:
+
+```
+$ pdftotext -layout modern.pdf
+Hartford , CT
+nthabi @example .com
++1 860 555 0142
+linkedin .com / in/ nthabiseng
+... multi - channel growth campaigns . Skilled in brand strategy , paid acquisition ...
+20 22- Present
+20 20 - 20 22
+```
+
+**(d) Reference DOM screenshot via puppeteer (bypassing jsPDF)** — confirms the source HTML/CSS is clean. The same `buildModernResumeElement` output rendered as a pure browser screenshot shows tight, correct text: `Hartford, CT`, `nthabi@example.com`, `linkedin.com/in/nthabiseng`. The defect is created entirely inside jsPDF's `pdf.html()` pipeline.
+
+### Mechanism — metric divergence between browser layout and jsPDF text emission
+
+1. The browser lays out the hidden render container using DM Sans (because `@font-face` loaded successfully). DM Sans's glyphs have specific advance widths that determine where each character sits.
+2. jsPDF's `pdf.html()` walks the DOM via an internal `context2d` shim (`pdf.context2d`, the same one §4 of this doc warned about for instrumentation). The shim reads each text node's measured bounding box — measurements computed in DM Sans.
+3. The shim emits each text node via `pdf.text()` using Helvetica (jsPDF's only available font without explicit `addFont()` registration). Helvetica is narrower than DM Sans at most weights.
+4. To make Helvetica's narrower text fill the DM Sans–sized bounding box, the shim distributes the deficit as extra space characters between word/punctuation tokens. Concentrated breaks: ` ,` ` @` ` .` ` /` `( ` ` )`.
+5. **Pre-#9**: Google Fonts CDN blocked or slow → browser falls back to system sans (Arial-class metrics, ≈ Helvetica) → DOM measurements match jsPDF's text widths → no padding needed → no gaps. The PDF was always Helvetica, but the layout/render fonts agreed.
+6. **Post-#9**: `@font-face` loads DM Sans reliably → browser uses DM Sans → measurements diverge from Helvetica's widths → padding kicks in → visible gaps. **Issue #9 caused the regression that issue #9 was trying to fix.**
+
+### What does NOT help, and why
+
+- **Setting `letterRendering: false`** in the `html2canvas: {...}` config: that option only applies to actual html2canvas rasterization, which `pdf.html()` does not invoke in this code path. Verified inert by render-validation: the spacing defects rendered byte-identically with `letterRendering: true` and `letterRendering: false`.
+- **Switching `autoPaging` from `'text'` to `'slice'`**: would change page-break behavior but not the text-emission path. The Context2D shim is on both paths.
+- **Bundling more `@font-face` weights, or changing `font-display`, or pre-loading via `document.fonts.load()`**: none of these reach jsPDF; they only affect the hidden render container's brief layout.
+
+### What WOULD have worked (option B, not taken)
+
+Register DM Sans as a real jsPDF font via `doc.addFileToVFS('DMSans-Regular.ttf', base64) + doc.addFont('DMSans-Regular.ttf', 'DMSans', 'normal')`, separately for each weight Modern uses (400/500/700/800). jsPDF requires TTF, not WOFF2, so the inline payload is much larger (~150–250KB base64 per weight). Then set Modern's container `font-family` to the registered jsPDF font name. This makes `pdf.text()` actually emit DM Sans glyphs, matches browser metrics, eliminates the padding.
+
+Not taken because the PDF was shipping fine in Helvetica before #9 and the user-perceived improvement of "true DM Sans in the PDF" did not justify the ~600KB–1MB inline payload and the registration code. Option A (full revert of #9) was selected. Recorded here so anyone later proposing "let's bundle the font for the PDF" understands which approach actually works.
+
+### Minimal's identical `letterRendering: true` at `index.html:2497` — also moot, no action
+
+Minimal's `pdf.html()` config has the same `letterRendering: true` flag. It is equally inert there for the same reason (option doesn't reach the active rendering path). Minimal additionally never showed the spacing defect because its font stack is Lato → Source Sans → system sans (`index.html:2270`), and those families either don't bundle (no `@font-face`) or fall back to system sans with Arial-class metrics — so Minimal's DOM measurements have always matched Helvetica's, no metric divergence, no padding. Leaving Minimal's flag at `true` intentionally; if/when Lato gets bundled during the mobile-Minimal workstream, this finding applies and the same analysis (register-the-font OR don't-bundle) needs to be repeated.
+
+### Lesson for future "fix the fonts in template X" work
+
+**Verify the actual PDF output pipeline before assuming what affects it.** Run `pdffonts file.pdf` to see which fonts are actually embedded, and `pdfimages -list file.pdf` to see whether text is vector or raster. For any template using `pdf.html()` in jsPDF 2.x, assume:
+- `html2canvas: {...}` options in the config probably don't apply (jsPDF's own Context2D shim handles text, not html2canvas)
+- `@font-face` bundling affects only the browser's hidden render container, not the PDF text stream
+- The PDF uses jsPDF's font table (Helvetica by default) unless `addFont()` was explicitly called
+
+This finding does not affect templates that render via direct `doc.text()` / `doc.rect()` calls (the older `downloadPDF`-style renderers in this codebase) — those have always been Helvetica-only and there was never a layout/render divergence to worry about. The bug only exists for `pdf.html()`-style renderers (Modern, Minimal) where a browser DOM intermediary creates the opportunity for metric mismatch.
+
