@@ -152,3 +152,39 @@ Minimal's `pdf.html()` config has the same `letterRendering: true` flag. It is e
 
 This finding does not affect templates that render via direct `doc.text()` / `doc.rect()` calls (the older `downloadPDF`-style renderers in this codebase) — those have always been Helvetica-only and there was never a layout/render divergence to worry about. The bug only exists for `pdf.html()`-style renderers (Modern, Minimal) where a browser DOM intermediary creates the opportunity for metric mismatch.
 
+## 7. Issues #8 + #10 — joint fix via pre-rasterized PNG icons
+
+Closes both:
+- Issue #10 (Modern's latent atob+clip-leak — described in §2): Modern's `mainHead()` inlined `<svg>` markup. html2canvas's `SVGElementContainer` serialized + URL-encoded the SVG, then jsPDF's `context2d.drawImage` → `getImageProperties` called `atob` on URL-encoded content → `InvalidCharacterError`, save/restore imbalance of +3.
+- Issue #8 (Minimal's empty navy squares): PR #7 had switched Minimal icons to `<img src="data:image/svg+xml;base64,...">` to eliminate the clip-leak, but those SVGs omitted the `xmlns` attribute so the `Image` never loaded → no clip-leak, but no glyph drawn either.
+
+The fix is the same shape for both templates because the dead-end is the same: jsPDF's `context2d.drawImage` can only handle raster formats it can identify from the data URI. SVG with `xmlns` loads but jsPDF throws `addImage does not support files of type 'UNKNOWN'` (Issue #8 had documented this exact branch). PNG is the only raster jsPDF will embed without an `addFont`-style registration step.
+
+**Implementation:** `MODERN_ICONS` and `MINIMAL_ICONS` are now objects of `<img src="data:image/png;base64,...">` strings, rasterized offline at 4× (52 px) from the original SVG paths with `fill="#fff"` (Modern) or `stroke="#fff"` (Minimal) so the glyph reads correctly against the navy circle/square chip. Total payload addition ~30 KB across both templates.
+
+Issue #8 explicitly weighed "runtime SVG→PNG rasterization at module init" vs "offline rasterize + embed PNG base64". The offline route was chosen because it keeps the production critical path synchronous — no `await MINIMAL_ICONS_READY` gate, no chance of an early-render race. The drift risk (someone edits an SVG path without regenerating the PNG) is mitigated by keeping the source SVG path strings inside the rasterization script (`/tmp/iconwork/rasterize.js` in this PR's working notes) and re-running it after any icon edit; not worth a permanent generator + checked-in pre-commit hook for assets that change ~never.
+
+### Verification harness (preserved for future icon work)
+
+Reproducible via the `/tmp/iconwork/harness.js` recipe in this PR's working notes. The harness loads `index.html` over `file://`, stubs the CDN scripts to local `node_modules` copies of jsPDF 2.5.1 + html2canvas 1.4.1 (the container has no CDN egress), instruments `doc.context2d` `{save, restore, drawImage}`, captures the produced PDF via `doc.output('arraybuffer')` injected through the html() callback. The pass criteria mirror PR #7:
+
+| template | metric          | baseline (HEAD 39a6534) | post-fix |
+| -------- | --------------- | -----------------------:| --------:|
+| modern   | throwCount      |                       3 |        0 |
+| modern   | save − restore  |                      +3 |        0 |
+| modern   | drawImage count |                       3 |        3 |
+| modern   | image type      |        `image/svg+xml,` | `image/png` |
+| modern   | embedded images |                       0 |        3 |
+| minimal  | throwCount      |                       0 |        0 |
+| minimal  | save − restore  |                       0 |        0 |
+| minimal  | drawImage count |                       0 |        6 |
+| minimal  | image type      |                    (—) | `image/png` |
+| minimal  | embedded images |                       0 |        6 |
+
+(Embedded-image counts read via `pdfplumber.Page.images`. Text content extracted by `pdftotext` is byte-identical between baseline and post-fix for both templates, confirming the change is icon-only.)
+
+### What does NOT need to change
+
+- `html2canvas: { logging: false }` on Modern at `index.html:2115` and `letterRendering: true` at `index.html:2497` on Minimal are left alone. With the throw eliminated, there is nothing for logging to suppress; with the active code path going through `context2d` (per §6), `letterRendering` is inert. Both are no-ops post-fix.
+- The `<svg>`-emitting helpers `head()` / `sideHead()` / `mainHead()` keep their HTML shape — only the icon payload they interpolate changed from inline SVG element to `<img>` element. Layout (the navy circle / navy square chip, the white rule, the heading row) is unchanged byte-identically.
+
