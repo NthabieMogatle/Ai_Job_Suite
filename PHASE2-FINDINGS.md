@@ -46,15 +46,43 @@ The fix shape that lands here for Minimal applies equally to Modern. Reasons not
 
 Follow-up work item: apply the same `<img src="data:image/svg+xml;base64,...">` transform to `MODERN_ICONS` and the `mainHead()` icon emission. Should be straightforward; trace harness will verify with the same 0-throws / delta-0 criteria.
 
-## 3. Modern typography defects (separate workstream)
+## 3. Modern parser data-dependent bugs (`modernParseExperience` orphan items)
 
-User-reported via mobile screenshot during this Phase 2 session, then reproduced via the Modern-at-mobile triage (renders byte-identical between origin/main and current branch — pre-existing on main, not a regression from this branch):
+**Reframe note:** previous revisions of this section bundled three unrelated Modern defects under "typography defects (separate workstream)" and tagged the list as the "Modern-at-mobile triage." That framing was misleading. The "letter-spacing exploded across all text" item turned out to be a metric-divergence artifact of `pdf.html()` using Helvetica regardless of the browser-side font (closed not_planned by §6). The `**bold**` literal-asterisks item was a template-renderer escape pass with no markdown conversion (closed by PR #12, commit `6f917ba`). What remained — the user's "Newlands West" screenshot — is neither typography nor mobile-specific; it is a data-dependent parser bug in `modernParseExperience` at `index.html:1812` that surfaces whenever a resume contains a bare line (no `|` separator, no bullet marker) inside a `WORK EXPERIENCE` block. Mobile is incidental; the same input produces the same defect on desktop.
 
-- **Letter-spacing exploded across all text** (name, section titles, dates, body, references) — lead hypothesis is font-fallback. Modern's `renderModernResumePDF` already does `await document.fonts.ready` (index.html:2095-2097); either it resolves before custom fonts actually finish loading in some environments, or the fonts simply never load (Google Fonts CDN may be unreachable / slow / blocked for some users). Possible structural fix: bundle DM Sans / Lato as base64 `@font-face` data URIs, sidestep the CDN entirely.
-- **`**bold**` literal asterisks** in Profile / Work Experience text — confirmed at source level: `index.html:1994` uses `modernEscapeHTML(profile)` which escapes but does not convert markdown. The AI prompt at index.html:1394 already instructs "no markdown symbols" but the model is violating it. Belt-and-suspenders fix: define a Modern-side `md` analog of Minimal's at index.html:2211 and use it where boldable text appears, AND tighten upstream content sanitization.
-- **Stray empty bullet** ("Newlands West" on user's screenshot) — data-dependent edge case in `modernParseExperience`, didn't reproduce with our test fixture. Likely an empty-line-in-bullets loop case. Investigate when working on the typography pass.
+### The bug
 
-None addressed in this PR.
+`modernParseExperience` walks lines as a state machine. The gate at `index.html:1835` previously read `if (current && current.bullets.length === 0 && !current.subtitle)` — i.e. attach a bare line to the current item's subtitle **only if** subtitle is still empty AND no bullets have started yet. A pipe-header `Company | Role | Dates` already sets `current.subtitle = role` while parsing, so by the time any later bare line arrives the gate is already closed and the bare line falls through to the orphan-item branch (`items.push(current); current = { title: t, ... }`).
+
+### Three trigger shapes
+
+| # | input shape | result pre-fix |
+| - | --- | --- |
+| A | pipe-header → bare line → bullets | orphan title-only item created from the bare line; the two bullets attach to the orphan, **misattributing them to a fake company** (data-integrity bug, not just cosmetic) |
+| B | pipe-header → bullets → bare line → next pipe-header | stray title-only item with a timeline ring **between** the two real items |
+| C | pipe-header → bullets → bare line at end | stray title-only **trailing** item with a timeline ring (the original "Newlands West" screenshot) |
+
+All three render through `experienceHTML` (`index.html:2002-2028`) as a `<div>` with `${timelineRing}` plus a lone `<h3>` and nothing else — visually identical to an empty bullet line for the user.
+
+### Fix
+
+Replace the gate at `index.html:1835-1840` with an unconditional subtitle-append:
+
+```js
+if (current) {
+  current.subtitle = current.subtitle ? current.subtitle + ' · ' + t : t;
+  return;
+}
+current = { title: t, date: '', subtitle: '', bullets: [] };
+```
+
+The `' · '` separator matches the existing pipe-header multi-part join at `index.html:1830` (`parts.slice(1, -1).join(' · ')`), so post-fix output for case A reads as `Senior Marketing Manager · Newlands West, Durban` — no new visual convention introduced and indistinguishable from a user-written `Acme | Senior Mgr | Newlands West, Durban | 2022-Present` pipe-header.
+
+### Verification
+
+Each trigger shape rendered as a Modern PDF pre- and post-fix via the `harness_dyn.js` recipe (load `index.html` over `file://`, stub CDN scripts to local `node_modules` jsPDF / html2canvas, select Modern, patch `doc.html()` to capture the produced bytes via injected callback). The six PNGs are linked in the PR description. Case A's misattribution is fully corrected (bullets re-attach to Acme); cases B and C drop their orphan items cleanly; the trailing-stray Education spacing in case C tightens up (no longer needs to render around an orphan).
+
+This entry is the canonical reference for future work on the parser. If a fourth trigger shape surfaces, add it to the table.
 
 ## 4. Library-quirk notes worth carrying into the PR description
 
