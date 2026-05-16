@@ -2220,7 +2220,7 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   const INK   = '#333';
   const MUTED = '#6b6b6b';
   const RULE  = '#c7d2de';
-  const FONT  = "'Lato','Source Sans 3','Source Sans Pro','Open Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+  const FONT  = "Helvetica, Arial, sans-serif";
 
   const esc   = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const md    = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -2246,6 +2246,8 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
       if (/^[-•*·]\s/.test(ln)) {
         if (!cur) cur = { title:'', loc:'', date:'', items:[] };
         cur.items.push(strip(ln));
+      } else if (cur && /^[A-Z][A-Za-z0-9 &/]{2,40}:\s*$/.test(ln)) {
+        cur.items.push(ln);
       } else {
         if (cur) out.push(cur);
         cur = { title:'', loc:'', date:'', items:[] };
@@ -2320,12 +2322,22 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
     if (/languages?/i.test(key)) {
       const d = parseLangs(lns);
       if (d.length) sideSecs.push({ title:'Languages', kind:'langs', data:d, icon:'flag' });
-    } else if (/skills?|technical|tools|software/i.test(key)) {
+    } else if (/experience|project/i.test(key)) {
+      const d = parseEntries(lns);
+      if (d.length) mainSecs.push({ title:'Experience', kind:'entries', data:d, icon:'brief', mode:'exp' });
+    } else if (/technical|tools|software/i.test(key)) {
+      const d = splitSkills(lns);
+      if (d.length) {
+        const existing = sideSecs.find(s => s.icon === 'mon' && s.kind === 'list');
+        if (existing) existing.data = existing.data.concat(d);
+        else sideSecs.push({ title:'Technical skills', kind:'list', data:d, icon:'mon' });
+      }
+    } else if (/skills?/i.test(key)) {
       const d = splitSkills(lns);
       if (d.length) {
         const existing = sideSecs.find(s => s.icon === 'key' && s.kind === 'list');
         if (existing) existing.data = existing.data.concat(d);
-        else sideSecs.push({ title:'Skills', kind:'list', data:d, icon:'key' });
+        else sideSecs.push({ title:'Key skills', kind:'list', data:d, icon:'key' });
       }
     } else if (/personal\s*info|info|details/i.test(key)) {
       const d = parsePairs(lns);
@@ -2368,52 +2380,55 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
       else cur.push(ln);
     }
     if (cur.length) refBlocks.push(cur);
-    if (refBlocks.length) sideSecs.push({ title:'Reference', kind:'refs', data:refBlocks, icon:'user' });
+    if (refBlocks.length) mainSecs.push({ title:'Reference', kind:'refs', data:refBlocks, icon:'user' });
   }
 
-  // === Render helpers ===
+  // === Render helpers (Briggs-tuned typography; Helvetica/Arial throughout; Round 3 compressed for single-page) ===
   const head = (title, ic) => `
-    <div style="display:flex;align-items:center;gap:10px;margin:18px 0 0;">
-      <div style="width:24px;height:24px;background:${NAVY};display:flex;align-items:center;justify-content:center;border-radius:3px;flex:0 0 24px;">${ICONS[ic] || ICONS.brief}</div>
-      <div style="font-size:16px;font-weight:700;color:${NAVY};flex:0 0 auto;">${esc(title)}</div>
-      <div style="flex:1;height:1px;background:${RULE};margin-left:4px;"></div>
+    <div style="display:flex;align-items:center;gap:11px;margin:14px 0 3px;">
+      <div style="width:28px;height:28px;background:${NAVY};display:flex;align-items:center;justify-content:center;border-radius:4px;flex:0 0 28px;">${ICONS[ic] || ICONS.brief}</div>
+      <div style="font-size:20px;font-weight:700;color:${NAVY};flex:0 0 auto;line-height:1.1;">${esc(title)}</div>
+      <div style="flex:1;height:1px;background:${RULE};margin-left:6px;"></div>
     </div>`;
 
   function renderBullets(items) {
     return items.map(it => {
       const m = it.match(/^\*\*([^*]+)\*\*\s*:\s*(.*)$/);
-      if (m) return `<div style="font-weight:700;color:${INK};margin-top:6px;font-size:10px;">${esc(m[1])}:</div>${m[2] ? `<div style="margin-top:2px;">• ${md(m[2])}</div>` : ''}`;
+      if (m) return `<div style="font-weight:700;color:${INK};margin-top:4px;font-size:11px;">${esc(m[1])}:</div>${m[2] ? `<div style="margin-top:2px;font-size:11px;line-height:1.45;">• ${md(m[2])}</div>` : ''}`;
       const m2 = it.match(/^([A-Z][A-Za-z0-9 &/]{2,40}):\s*$/);
-      if (m2) return `<div style="font-weight:700;color:${INK};margin-top:6px;font-size:10px;">${esc(m2[1])}:</div>`;
-      return `<div style="margin-top:3px;">• ${md(it)}</div>`;
+      if (m2) return `<div style="font-weight:700;color:${INK};margin-top:4px;font-size:11px;">${esc(m2[1])}:</div>`;
+      return `<div style="margin-top:2px;font-size:11px;line-height:1.45;">• ${md(it)}</div>`;
     }).join('');
   }
 
   function renderEntry(e, mode) {
-    const dateCell = `<div style="width:70px;flex:0 0 70px;font-size:9.5px;color:${INK};font-weight:700;line-height:1.5;padding-top:1px;">${formatDate(e.date)}</div>`;
+    const dateCell = `<div style="width:70px;flex:0 0 70px;font-size:10.5px;color:${NAVY};font-weight:700;line-height:1.45;padding-top:2px;">${formatDate(e.date)}</div>`;
     if (mode === 'course') {
-      return `<div style="display:flex;gap:14px;margin-top:9px;page-break-inside:avoid;break-inside:avoid;">${dateCell}<div style="flex:1;font-size:10px;color:${INK};padding-top:1px;">${esc(e.title)}</div></div>`;
+      return `<div style="display:flex;gap:14px;margin-top:6px;page-break-inside:avoid;break-inside:avoid;">${dateCell}<div style="flex:1;font-size:11px;color:${INK};padding-top:1px;">${esc(e.title)}</div></div>`;
     }
-    return `<div style="display:flex;gap:14px;margin-top:12px;page-break-inside:avoid;break-inside:avoid;">${dateCell}<div style="flex:1;min-width:0;font-size:10px;color:${INK};line-height:1.55;"><div style="font-weight:700;color:${INK};font-size:11.5px;line-height:1.35;">${esc(e.title)}</div>${e.loc ? `<div style="font-style:italic;color:${MUTED};font-size:9.5px;margin:2px 0 5px;">${esc(e.loc)}</div>` : ''}${e.items.length ? renderBullets(e.items) : ''}</div></div>`;
+    if (mode === 'edu') {
+      return `<div style="display:flex;gap:14px;margin-top:8px;page-break-inside:avoid;break-inside:avoid;">${dateCell}<div style="flex:1;min-width:0;font-size:11px;color:${INK};line-height:1.4;"><div style="font-weight:700;color:${INK};font-size:12.5px;line-height:1.35;">${esc(e.title)}</div>${e.loc ? `<div style="font-style:italic;color:${MUTED};font-size:11px;margin:2px 0 0;">${esc(e.loc)}</div>` : ''}${e.items.length ? renderBullets(e.items) : ''}</div></div>`;
+    }
+    return `<div style="display:flex;gap:14px;margin-top:10px;page-break-inside:avoid;break-inside:avoid;">${dateCell}<div style="flex:1;min-width:0;font-size:11px;color:${INK};line-height:1.5;"><div style="font-weight:700;color:${INK};font-size:13.5px;line-height:1.3;">${esc(e.title)}</div>${e.loc ? `<div style="font-style:italic;color:${MUTED};font-size:11px;margin:2px 0 3px;">${esc(e.loc)}</div>` : ''}${e.items.length ? renderBullets(e.items) : ''}</div></div>`;
   }
 
   const REF_LABEL_RE = /^(Phone|Email|Mobile|Tel|LinkedIn|Website):\s/i;
   function renderRefs(blocks) {
     return blocks.map((block, bi) => {
       const inner = block.map((line, li) => {
-        if (li === 0) return `<div style="font-weight:700;color:${NAVY};margin-top:${bi === 0 ? 9 : 0}px;font-size:10.5px;">${esc(line)}</div>`;
+        if (li === 0) return `<div style="font-weight:700;color:${NAVY};margin-top:${bi === 0 ? 4 : 0}px;font-size:11.5px;">${esc(line)}</div>`;
         const m = line.match(REF_LABEL_RE);
-        if (m) return `<div style="margin-top:3px;font-size:10px;color:${INK};"><span style="font-weight:700;color:${NAVY};">${esc(m[0])}</span>${esc(line.slice(m[0].length))}</div>`;
-        return `<div style="margin-top:3px;font-size:10px;color:${INK};">${esc(line)}</div>`;
+        if (m) return `<div style="margin-top:2px;font-size:11px;color:${INK};"><span style="font-weight:700;color:${NAVY};">${esc(m[0])}</span>${esc(line.slice(m[0].length))}</div>`;
+        return `<div style="margin-top:2px;font-size:11px;color:${INK};">${esc(line)}</div>`;
       }).join('');
-      const spacer = bi < blocks.length - 1 ? '<div style="height:10px;"></div>' : '';
+      const spacer = bi < blocks.length - 1 ? '<div style="height:5px;"></div>' : '';
       return inner + spacer;
     }).join('');
   }
 
-  const renderPairs = ps => ps.map(p => `<div style="margin-top:9px;line-height:1.45;">${p.k ? `<div style="color:${NAVY};font-weight:700;font-size:10px;">${esc(p.k)}</div>` : ''}<div style="color:${INK};font-size:9.5px;margin-top:2px;word-break:break-word;">${esc(p.v)}</div></div>`).join('');
-  const renderList  = items => items.map(i => `<div style="font-size:10px;color:${INK};margin-top:7px;">${md(i)}</div>`).join('');
-  const renderLangs = ls => ls.map(l => `<div style="margin-top:9px;"><div style="font-size:10px;color:${INK};margin-bottom:4px;">${esc(l.name)}</div><div style="height:4px;background:${NAVY};width:100%;"></div>${l.label ? `<div style="text-align:right;font-size:9.5px;color:${INK};margin-top:3px;">${esc(l.label)}</div>` : ''}</div>`).join('');
+  const renderPairs = ps => ps.map(p => `<div style="margin-top:7px;line-height:1.4;">${p.k ? `<div style="color:${NAVY};font-weight:700;font-size:11px;">${esc(p.k)}</div>` : ''}<div style="color:${INK};font-size:11px;margin-top:2px;word-break:break-word;">${esc(p.v)}</div></div>`).join('');
+  const renderList  = items => items.map(i => `<div style="font-size:11px;color:${INK};margin-top:5px;">${md(i)}</div>`).join('');
+  const renderLangs = ls => ls.map(l => `<div style="margin-top:5px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:11px;color:${INK};margin-bottom:2px;">${esc(l.name)}</div><div style="height:3px;background:${NAVY};width:100%;"></div>${l.label ? `<div style="text-align:right;font-size:10.5px;color:${INK};margin-top:1px;">${esc(l.label)}</div>` : ''}</div>`).join('');
 
   function renderSec(s) {
     if (!s.data || !s.data.length) return '';
@@ -2427,13 +2442,13 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   }
 
   const wrap = document.createElement('div');
-  wrap.style.cssText = `width:816px;min-height:1056px;background:#fff;padding:42px 50px 50px;box-sizing:border-box;font-family:${FONT};color:${INK};`;
+  wrap.style.cssText = `width:816px;min-height:1056px;background:#fff;padding:36px 56px 24px;box-sizing:border-box;font-family:${FONT};color:${INK};`;
 
-  const headerName     = `<div style="font-size:34px;font-weight:800;color:${NAVY};line-height:1.05;letter-spacing:-0.3px;">${esc(name || 'Your Name')}</div>`;
-  const headerSubtitle = subtitle ? `<div style="font-size:15px;color:${NAVY};margin-top:6px;font-weight:400;">${esc(subtitle)}</div>` : '';
-  const summaryHTML    = profileLines.length ? `<div style="font-size:10.5px;line-height:1.6;color:${INK};margin-top:14px;text-align:left;">${profileLines.map(l => md(l)).join(' ')}</div>` : '';
+  const headerName     = `<div style="font-size:52px;font-weight:800;color:${NAVY};line-height:1.0;letter-spacing:0;">${esc(name || 'Your Name')}</div>`;
+  const headerSubtitle = subtitle ? `<div style="font-size:22px;color:${NAVY};margin-top:4px;font-weight:400;">${esc(subtitle)}</div>` : '';
+  const summaryHTML    = profileLines.length ? `<div style="font-size:11px;line-height:1.5;color:${INK};margin-top:12px;text-align:left;">${profileLines.map(l => md(l)).join(' ')}</div>` : '';
 
-  wrap.innerHTML = `${headerName}${headerSubtitle}${summaryHTML}<div style="display:flex;gap:28px;margin-top:6px;align-items:flex-start;"><div style="flex:1.7;min-width:0;">${mainSecs.map(renderSec).join('')}</div><div style="flex:1;min-width:0;">${sideSecs.map(renderSec).join('')}</div></div>`;
+  wrap.innerHTML = `${headerName}${headerSubtitle}${summaryHTML}<div style="display:flex;gap:36px;margin-top:4px;align-items:flex-start;"><div style="flex:1.85;min-width:0;">${mainSecs.map(renderSec).join('')}</div><div style="flex:1;min-width:0;">${sideSecs.map(renderSec).join('')}</div></div>`;
   return wrap;
 }
 

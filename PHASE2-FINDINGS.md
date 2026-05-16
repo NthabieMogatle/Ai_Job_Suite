@@ -216,3 +216,45 @@ Reproducible via the `/tmp/iconwork/harness.js` recipe in this PR's working note
 - `html2canvas: { logging: false }` on Modern at `index.html:2115` and `letterRendering: true` at `index.html:2497` on Minimal are left alone. With the throw eliminated, there is nothing for logging to suppress; with the active code path going through `context2d` (per §6), `letterRendering` is inert. Both are no-ops post-fix.
 - The `<svg>`-emitting helpers `head()` / `sideHead()` / `mainHead()` keep their HTML shape — only the icon payload they interpolate changed from inline SVG element to `<img>` element. Layout (the navy circle / navy square chip, the white rule, the heading row) is unchanged byte-identically.
 
+## 9. Cross-template data-completeness as design constraint
+
+Recorded during the Minimal Briggs rebuild after a user-reported "References doesn't appear on Minimal" turned out to be position-level overflow rather than a missing render path. The audit that produced this finding surfaced a broader rule that should hold for any template added to this codebase, including the future Executive and Elegant rebuilds.
+
+### The rule
+
+Every form-populated field must have a render path on every template. A template that silently drops a populated form field is broken, even if the layout looks complete with the dropped content's absence.
+
+### The canonical list
+
+The current resume form at `index.html:742-786` exposes 11 input fields. The AI prompt at `index.html:1399-1408` outputs them in exactly 9 sections:
+
+| # | section | source field(s) | required render |
+|---|---|---|---|
+| 1 | Name (line 1) | `rv-name` | always |
+| 2 | Subtitle (line 2) | `rv-job` | always |
+| 3 | Contact (line 3, pipe-separated) | `rv-phone`, `rv-email`, `rv-location` | always |
+| 4 | `PROFESSIONAL SUMMARY` | AI-generated from `rv-desc` tailoring + candidate context | always |
+| 5 | `TECHNICAL SKILLS` | `rv-skills` | always |
+| 6 | `TECHNICAL EXPERIENCE` | `rv-exp` | always |
+| 7 | `EDUCATION` | `rv-edu` | always |
+| 8 | `LANGUAGES` | `rv-languages` | if populated |
+| 9 | `REFERENCES` | `rv-references` | if populated |
+
+A template build is data-complete iff every populated section above lands somewhere visible in the output. `rv-desc` (job description for tailoring) is the only field with no render obligation — it is consumed by the AI for keyword targeting and does not appear in the output.
+
+### How to verify a new template against this rule
+
+Render against a fixture that populates every optional field, then confirm each of the 9 sections is visible on the produced PDF. The standard fixture for cross-template parity verification is the Nthabiseng Mogatle resume with both `LANGUAGES` (multi-language) and `REFERENCES` (multi-block) populated. Single-page templates must additionally verify p2 has zero non-blank rows after rendering this fully-populated fixture; partial-overflow of the LAST section in the layout is the failure mode that produced the original "References missing" report — the section had a render path but landed past the page boundary.
+
+### Mechanism that creates the trap
+
+Modern (`buildModernResumeElement`) and Minimal (`buildMinimalResumeElement`) both compute the rendered DOM as a single tall container and let jsPDF's `pdf.html()` autoPaging split at the PDF page boundary. A section can render correctly inside the container while ending up past the single-page cutoff, in which case its content lands on p2 or gets clipped depending on autoPaging mode. The mechanism is not "render path missing" — it is "render path exists, output position is wrong." The fix is structural: re-route the section's column placement, re-order it within the column, or compress earlier sections, so the position lands on p1.
+
+### Round 3 Minimal application of this rule
+
+References was re-routed from `sideSecs` to `mainSecs` so it lands at the bottom of the main column rather than at the end of the (more compressed) sidebar. This is a deliberate visual divergence from Modern, which keeps References in the sidebar; the divergence is justified by Minimal's tighter sidebar and the Briggs-style reference template family commonly placing References full-width below Experience / Education.
+
+### Constraint for future Executive + Elegant builds
+
+When the Executive and Elegant templates are rebuilt or modified, apply the same nine-section parity test before any merge. Render the standard fully-populated fixture, eyeball that all nine sections appear on the produced PDF, and either confirm single-page or document the multi-page intent. If a section is silently dropped, that is a release blocker — regardless of whether the layout otherwise looks correct.
+
