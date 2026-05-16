@@ -1394,7 +1394,7 @@ CRITICAL RULES — MUST FOLLOW:
 - Output in clean plain text with NO markdown symbols (no **, ##, --, etc.)
 - Do NOT include placeholders or fake companies, dates, or degrees
 - COPY the candidate's Name, Email, Phone, and Location EXACTLY as provided in CANDIDATE DETAILS. Never invent, substitute, or "improve" these values, even if they look like placeholders or test data.
-- Keep the entire resume under 550 words
+- Keep the entire resume under 500 words. Count words; do not exceed.
 
 STRUCTURE (use exactly these section headers, each appearing ONCE — only include LANGUAGES and REFERENCES sections if content is provided):
 1. [Candidate name on first line]
@@ -1411,15 +1411,24 @@ EXPERIENCE FORMATTING RULES — VERY IMPORTANT:
 - Each role or project must have its own title on its own line
 - Leave ONE blank line between the title and the bullets
 - Use bullet points (starting with -) for ALL experience descriptions — NO paragraphs
-- Each bullet must be 1 line max, starting with a strong action verb
+- Each bullet must be 18 words or fewer, starting with a strong action verb. Count words; do not exceed.
 - If there are multiple roles or projects, separate them with ONE blank line between each
-- Maximum 4-5 bullets per role
+- Maximum 3 bullets per role, no exceptions. Count bullets.
+- Render every role the candidate provides; do not drop or collapse older roles. Respect the per-role bullet cap above for each one — for senior candidates with many roles, this naturally means each older role gets 2-3 tighter bullets rather than skipping any role entirely.
 
 PROFESSIONAL SUMMARY:
-- 2-3 sentences maximum, no bullets, concise paragraph only
+- 2-3 sentences AND no more than 60 words total, no bullets, paragraph only. Count words; do not exceed.
 
 TECHNICAL SKILLS:
 - List skills separated by commas or on separate lines — no bullets needed here
+- Maximum 8 skills. If the candidate provides more, select the 8 most relevant to the target role.
+
+CAPACITY HANDLING — WHEN USER INPUT EXCEEDS CAPS:
+- The customer experience must feel like distillation, not data loss. Every key claim in the user's input should be represented in the output, even if compressed.
+- If the candidate provides more bullet content than fits 3 bullets per role, select the 3 most impactful claims and fold the remaining detail INTO those 3 — do NOT silently drop information.
+- If the candidate provides more than 8 skills, select the 8 most directly relevant to the target role; do not list the rest separately.
+- If a bullet would run over 18 words, condense it by removing filler clauses and redundant qualifiers, NOT by truncating mid-thought. Preserve the impact claim and the verb.
+- If the summary would run over 60 words, tighten phrasing; do not drop key positioning statements.
 
 INDUSTRY-SPECIFIC CONTENT:
 - Use action verbs and terminology natural to the ${job} field
@@ -1430,7 +1439,7 @@ INDUSTRY-SPECIFIC CONTENT:
 - For other roles: use verbs natural to that specific industry
 
 WRITING STYLE — CRITICAL FOR SOUNDING HUMAN:
-- Mix short punchy bullet points with longer descriptive ones — vary the rhythm
+- Vary bullet rhythm by varying the action verb and sentence structure, not by varying length. All bullets must respect the 18-word cap regardless of feel.
 - NEVER use these words: delve, leverage, robust, navigate, tapestry, underscore, furthermore, moreover, utilize, synergy, holistic, streamline, spearhead, orchestrate
 - Replace with plain words ("use" not "utilize", "lead" not "spearhead", "show" not "underscore")
 - NO em dashes (—) anywhere in the resume
