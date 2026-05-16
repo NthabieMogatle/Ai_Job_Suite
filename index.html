@@ -1841,10 +1841,16 @@ function modernParseExperience(lines) {
       };
       return;
     }
-    if (current) {
+    const looksLikeRoleHeading =
+      /\b\d{4}\b/.test(t) && (
+        /\b\d{4}\s*[-–—]\s*(?:\d{4}|present|now)\b/i.test(t) ||
+        (t.split(',').length >= 3 && /\d{4}/.test(t.split(',').pop()))
+      );
+    if (current && !looksLikeRoleHeading) {
       current.subtitle = current.subtitle ? current.subtitle + ' · ' + t : t;
       return;
     }
+    if (current) items.push(current);
     current = { title: t, date: '', subtitle: '', bullets: [] };
   });
   if (current) items.push(current);
