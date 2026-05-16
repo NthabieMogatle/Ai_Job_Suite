@@ -258,3 +258,45 @@ References was re-routed from `sideSecs` to `mainSecs` so it lands at the bottom
 
 When the Executive and Elegant templates are rebuilt or modified, apply the same nine-section parity test before any merge. Render the standard fully-populated fixture, eyeball that all nine sections appear on the produced PDF, and either confirm single-page or document the multi-page intent. If a section is silently dropped, that is a release blocker — regardless of whether the layout otherwise looks correct.
 
+## 10. Single-page fit as length-discipline design principle
+
+Recorded after the Round 4 diagnostic confirmed both Minimal (post-PR #18 Briggs rebuild) and Modern (post-PR #14 + #15 + #17) render the §9 standard fully-populated fixture at zero non-blank p2 rows on main HEAD `074be9e`. Codifies length discipline as a standing constraint distinct from §9's data-completeness rule.
+
+### The rule
+
+Every implemented and future template must fit a moderately-dense standard fixture on a single page. The §9 standard Nthabiseng Mogatle resume (4 languages, 2 reference blocks, all 9 AI-output sections including sub-labels and three work-experience entries) is the canonical benchmark. A template that overflows this fixture is broken for length discipline, even if all 9 sections render correctly inside the overflow.
+
+### Why this is a template-side concern
+
+Resume length is governed by two independent layers of defense:
+
+1. **AI prompt bullet-cap** (`index.html:1397` and `1416`) — first line of defense. Caps the entire resume at under 550 words and limits each work-experience entry to 4-5 bullets max. The AI is responsible for not producing dense output in the first place. Tracked separately as the "Modern dense-resume overflow" workstream — when the AI violates the cap, the prompt is the right place to tighten.
+2. **Template compression** — second line of defense. Even when the AI emits content within its caps, individual templates must lay it out compactly enough to fit on one page. This is where margin / padding / line-height decisions live, and where the Round 1-3 Minimal rebuild spent most of its calibration effort.
+
+The two layers are independent because they fail differently. A loose AI prompt produces resumes that no template can fit; a tight template hides AI prompt violations by clipping content; a loose template can overflow even on AI output that's within its caps. Both layers need their own discipline.
+
+### Verification recipe
+
+Same as §9, with the explicit zero-non-blank-p2 gate elevated to a release blocker:
+
+1. Render the standard Nthabiseng Mogatle fully-populated fixture (`/tmp/iconwork/resume.txt` at the time of this writing) against the candidate template via the `render_at_head.js` harness.
+2. Convert each PDF page to PNG via the `pypdfium2 render(scale=2.0)` recipe.
+3. Programmatically count non-blank rows on p2 (PIL convert to L, count rows where any pixel < 200). Zero non-blank rows is the pass criterion.
+4. If p2 has non-blank content, the template fails this gate and requires compression before merge — same iteration loop documented for the Round 3 Minimal calibration in PR #18's commit message.
+
+A template can document a deliberate multi-page intent (e.g., a future Detailed or Long-Form template explicitly designed for multi-page CVs) to opt out of this rule. The default is single-page.
+
+### Application to current templates
+
+| template | main HEAD diagnostic | status |
+|---|---|---|
+| Minimal | p2 = 0 non-blank rows | passes |
+| Modern | p2 = 0 non-blank rows | passes |
+
+No Round 4 code change required for either template — the Round 1-3 Minimal calibration and the Modern fixture density both happen to satisfy this rule on the §9 standard fixture. The diagnostic and this section are the entirety of Round 4's output.
+
+### Constraint for future Executive + Elegant builds
+
+When the Executive and Elegant templates are rebuilt or modified, the §9 nine-section parity check and this §10 single-page fit check both apply. Render the standard fixture, count p2 non-blank rows, confirm zero. Both checks are release blockers; both are non-negotiable for templates marketed as single-page. Compression iterates the same way Round 3 Minimal did — margin / padding / line-height adjustments inside the template builder, no parser or icon changes.
+
+
