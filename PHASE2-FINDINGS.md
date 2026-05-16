@@ -216,3 +216,40 @@ Reproducible via the `/tmp/iconwork/harness.js` recipe in this PR's working note
 - `html2canvas: { logging: false }` on Modern at `index.html:2115` and `letterRendering: true` at `index.html:2497` on Minimal are left alone. With the throw eliminated, there is nothing for logging to suppress; with the active code path going through `context2d` (per §6), `letterRendering` is inert. Both are no-ops post-fix.
 - The `<svg>`-emitting helpers `head()` / `sideHead()` / `mainHead()` keep their HTML shape — only the icon payload they interpolate changed from inline SVG element to `<img>` element. Layout (the navy circle / navy square chip, the white rule, the heading row) is unchanged byte-identically.
 
+## 8. §6's severity conclusion was wrong — letter-spacing artifact is unshippable at heading sizes and around punctuation
+
+Recorded after the merge of PR #14 + PR #15, when the post-merge Nthabiseng Mogatle renders at main `97d00de` were reviewed at full resolution. §6 had concluded that "the PDF was shipping fine in Helvetica before #9" and that bundling DM Sans wasn't justified by user-perceived improvement. Both halves of that conclusion underestimated the severity of the metric-divergence artifact:
+
+### Observation 1 — Minimal p1, the buyer's name
+
+The Minimal header renders the name as `N T H A B I S E N G   M O G A T L E`. Every section label on the page (`Senior Marketing Manager`, `Experience`, `Personal Info`, `Key Skills`, `Languages`, `References`) renders with the same wide character spacing. Inter-glyph gaps are visually large enough that the name reads as separate characters rather than two words.
+
+![Minimal p1 at main 97d00de — name and section labels letter-spaced](.verification/section-8-letter-spacing-minimal-p1.png)
+
+### Observation 2 — Modern p1, the contact line
+
+The Modern p1 contact row renders the email as `nthabi @ example . com` with spaces both around the `@` and around the `.`. The phone number reads `+1 860 555 0142` with gaps before punctuation. The LinkedIn URL reads `linkedin .com / in/ nthabiseng` with similar gaps around `.` and `/`. The PROFILE paragraph below shows the same pattern at body-text size: gaps cluster around `,`, `.`, `(`, `)`, `/`, `@`.
+
+The Modern section headings (`PROFILE`, `WORK EXPERIENCE`, `EDUCATION`) are also widely letter-spaced, matching §6's `pdftotext -layout` output (`W O R K   E X P E R I E N C E`).
+
+![Modern p1 at main 97d00de — letter-spaced headings and punctuation-adjacent gaps in contact + body text](.verification/section-8-letter-spacing-modern-p1.png)
+
+### Reframing of the severity claim
+
+§6 said this is the same Context2D shim mechanism that emits Helvetica regardless of the browser font. That part is still accurate. What §6 got wrong was the consequence:
+
+- §6: *"the PDF was shipping fine in Helvetica before #9"* — no, the artifact is visible in the post-merge renders here, with Google Fonts CDN unreachable from the harness environment (the CDN-blocked branch of §6's reasoning). The Helvetica-only path is not artifact-free.
+- §6: *"the user-perceived improvement of 'true DM Sans in the PDF' did not justify the inline payload"* — this judgement was framed against a non-existent baseline. The shipping output renders the buyer's own name with visible inter-character gaps; the reframed question is whether the current output is acceptable at all, not whether DM Sans bundling is worth the bytes.
+
+### Two patterns visible — open question
+
+The renders show two distinct visual phenomena that may or may not share a single root cause: (a) wide letter-spacing on uppercase section labels and on the Minimal name header, where the spacing is roughly uniform across the string; and (b) punctuation-adjacent gaps in lowercase body text and contact info, where the gaps cluster specifically around `@`, `.`, `/`, `,`, `(`, `)`. Both are visible in the embedded PNGs above. Whether (a) and (b) trace to the same `pdf.html()` Context2D metric-padding mechanism, or whether (a) is partially or entirely from template-side CSS `letter-spacing` properties on the heading elements, is an open question for the next investigation session. Recording the distinction here so it can be answered before fix-shape brainstorming starts.
+
+### What this section does not do
+
+This is observation only. No fix shape is proposed. §6's recorded dead-ends (`letterRendering: true/false`, `autoPaging slice ↔ text`, additional `@font-face` weights, `font-display`, `document.fonts.load()`) remain dead ends; §6's recorded "option B that would have worked" (`addFileToVFS` + `addFont` to register a real jsPDF TTF per weight) remains untaken. Whether either of those frames is the right starting point for the reopened Issue #9 is a question for tomorrow's session, not for this docs PR.
+
+### Reproduction
+
+Render at main `97d00de` (or any post–PR #14 + PR #15 commit) via the `render_at_head.js` recipe with the Nthabiseng Mogatle fixture (Hartford / `nthabi@example.com` / `linkedin.com/in/nthabiseng`, plus a `WORK EXPERIENCE` block with at least one pipe-headered entry). Both templates exhibit the patterns above on p1; p2 is blank autoPaging overflow. The artifact is visible without any special instrumentation — open the PDF at full size and inspect the name, the contact row, and any uppercase section heading.
+
