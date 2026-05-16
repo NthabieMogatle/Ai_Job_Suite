@@ -1832,11 +1832,10 @@ function modernParseExperience(lines) {
       };
       return;
     }
-    if (current && current.bullets.length === 0 && !current.subtitle) {
-      current.subtitle = t;
+    if (current) {
+      current.subtitle = current.subtitle ? current.subtitle + ' · ' + t : t;
       return;
     }
-    if (current) items.push(current);
     current = { title: t, date: '', subtitle: '', bullets: [] };
   });
   if (current) items.push(current);
