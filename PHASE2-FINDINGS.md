@@ -270,7 +270,7 @@ Every implemented and future template must fit a moderately-dense standard fixtu
 
 Resume length is governed by two independent layers of defense:
 
-1. **AI prompt bullet-cap** (`index.html:1397` and `1416`) — first line of defense. Caps the entire resume at under 550 words and limits each work-experience entry to 4-5 bullets max. The AI is responsible for not producing dense output in the first place. Tracked separately as the "Modern dense-resume overflow" workstream — when the AI violates the cap, the prompt is the right place to tighten.
+1. **AI prompt bullet-cap** (`index.html:1397`, `1414`, `1416`, `1419`, and the CAPACITY HANDLING block at `1428-1434`) — first line of defense. Hard-caps the entire resume at under 500 words, each work-experience entry at 3 bullets, each bullet at 18 words, the professional summary at 60 words and 2-3 sentences, and the technical skills list at 8 items. When candidate input exceeds any cap, the prompt instructs the AI to distill rather than truncate — every key claim must be represented even if compressed. The AI is responsible for not producing dense output in the first place; the prompt's job is to enforce the caps the templates can render.
 2. **Template compression** — second line of defense. Even when the AI emits content within its caps, individual templates must lay it out compactly enough to fit on one page. This is where margin / padding / line-height decisions live, and where the Round 1-3 Minimal rebuild spent most of its calibration effort.
 
 The two layers are independent because they fail differently. A loose AI prompt produces resumes that no template can fit; a tight template hides AI prompt violations by clipping content; a loose template can overflow even on AI output that's within its caps. Both layers need their own discipline.
@@ -298,5 +298,22 @@ No Round 4 code change required for either template — the Round 1-3 Minimal ca
 ### Constraint for future Executive + Elegant builds
 
 When the Executive and Elegant templates are rebuilt or modified, the §9 nine-section parity check and this §10 single-page fit check both apply. Render the standard fixture, count p2 non-blank rows, confirm zero. Both checks are release blockers; both are non-negotiable for templates marketed as single-page. Compression iterates the same way Round 3 Minimal did — margin / padding / line-height adjustments inside the template builder, no parser or icon changes.
+
+### Explicit single-page-fit boundary
+
+The single-page guarantee covers standard-shape resumes: 1-4 work entries, moderate density, cap-compliant content as defined by the AI prompt's hard caps. Inside that envelope, every template marketed as single-page must produce zero non-blank p2 rows on the §9 standard fixture, no exceptions.
+
+Outside that envelope — specifically, senior-executive resumes with 5+ work entries that the candidate wants fully visible — the guarantee is partial: **all work entries are preserved on p1, trailing supplementary sections (later education entries, certifications, references) gracefully spill to p2**. This is accepted product behaviour, not a bug, and was confirmed empirically in Round 5 verification:
+
+| fixture | shape | Minimal p2 | Modern p2 | result |
+|---|---|---:|---:|---|
+| Nthabiseng (§9 standard) | 3 work entries, moderate density | 0 | 0 | single-page, all 9 sections rendered |
+| Marcus Delacroix | 3 work entries, dense content | 0 | 0 | single-page, all 9 sections rendered |
+| Priya Ramachandran | 1 work entry, light grad | 0 | 0 | single-page, lots of headroom |
+| Eleanor Whitfield | 7 work entries, senior executive | 184 | 92 | p1 carries all 7 work entries; trailing sections (later education, certifications, references) spill to p2 |
+
+The product rationale for accepting the executive boundary: senior candidates expect 2-page CVs in most regions, and collapsing older roles to a single "Earlier Experience" line (the Lever C path explicitly rejected in Round 5) actively hurts career-changer and senior-IC customers whose career history is the primary value of the document. The 500-word total cap (Lever E) remains the global discipline; the per-element caps (Levers A, B, D, F) prevent dense-content overflow inside the standard envelope; structural overflow on high-entry executive cases is documented here as accepted product behaviour rather than a release blocker.
+
+When the future Executive template is built, its single-page check should be run against the §9 standard fixture (1-4 work entries) and pass. Performance on the high-entry Eleanor-shape fixture is informational, not a release blocker — the Executive template's job is to render senior-shape resumes with deliberate two-page intent, and the §10 verification recipe explicitly permits that opt-out for templates marketed as multi-page.
 
 
