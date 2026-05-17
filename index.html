@@ -29,6 +29,14 @@
   --success: #4caf7d;
   --radius: 12px;
   --radius-sm: 8px;
+  --type-display-size: clamp(2.5rem, 5.5vw, 3.5rem);
+  --type-h1-size: clamp(1.875rem, 3.5vw, 2.5rem);
+  --type-h2-size: 1.375rem;
+  --type-h3-size: 1.0625rem;
+  --type-body-size: 1rem;
+  --type-small-size: 0.8125rem;
+  --type-kicker-size: 0.75rem;
+  --type-wordmark-size: 2rem;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -78,15 +86,33 @@ body::before {
 
 .header h1 {
   font-family: 'Playfair Display', serif;
-  font-size: clamp(2rem, 5vw, 3rem);
+  font-size: var(--type-display-size);
   font-weight: 600;
   color: var(--text);
-  line-height: 1.2;
+  line-height: 1.1;
   margin-bottom: 0.5rem;
 }
 
 .header h1 span { color: var(--gold); }
-.header p { font-size: 15px; color: var(--muted); font-weight: 300; }
+.header p { font-size: var(--type-h3-size); color: var(--muted); font-weight: 300; line-height: 1.6; }
+
+.wordmark {
+  font-family: 'Playfair Display', serif;
+  font-size: var(--type-wordmark-size);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.hero-pricing {
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--type-kicker-size);
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
 
 .gumroad-cta { margin-top: 1.5rem; }
 .gumroad-cta button {
@@ -718,12 +744,12 @@ body::before {
 
   <div class="header">
     <div style="text-align:center; margin-bottom:30px;">
-      <div style="font-family:'Playfair Display', serif; font-size:38px; font-weight:600; color:var(--text); letter-spacing:0.02em; line-height:1; padding:1.5rem 0;">Élève</div>
+      <div class="wordmark" style="padding:1.5rem 0;">Élève</div>
     </div>
     <h1>The resume that gets you<span style="color:#c9a84c;"> in&nbsp;the&nbsp;room.</span></h1>
-    <p style="margin-top:10px; font-size:16px; color:#aaa;">ATS-optimized resumes and cover letters in seconds. Designed to open doors, not get filtered out.</p>
+    <p style="margin-top:10px; color:#aaa;">ATS-optimized resumes and cover letters in seconds. Designed to open doors, not get filtered out.</p>
     <div class="gumroad-cta">
-      <div style="font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; color: var(--text); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1rem;">$29 · One-time payment · Lifetime access</div>
+      <div class="hero-pricing" style="margin-bottom:1rem;">$29 · One-time payment · Lifetime access</div>
       <a href="https://eleveemporium.gumroad.com/l/pllrsk" data-gumroad-single-product="true" style="text-decoration:none;">
         <button>Get Instant Access</button>
       </a>
