@@ -696,6 +696,17 @@ body::before {
     margin: 0 auto;
   }
 }
+.feature-row.reverse {
+  direction: rtl;
+}
+.feature-row.reverse > * {
+  direction: ltr;
+}
+@media (max-width: 768px) {
+  .feature-row.reverse {
+    direction: ltr;
+  }
+}
 </style>
 
 </head>
@@ -729,6 +740,19 @@ body::before {
       <div class="feature-kicker">ATS Intelligence</div>
       <h2 class="feature-heading">Know your score before you send it.</h2>
       <p class="feature-body">Every resume is analyzed against the job you're applying for. Keyword match, format quality, impact strength — scored and explained, with specific improvements you can act on before submitting.</p>
+    </div>
+  </div>
+</section>
+
+<section class="feature-section">
+  <div class="feature-row reverse">
+    <div class="feature-image">
+      <img src="assets/feature-resume.jpg" alt="Maya Thompson resume in Élève's Modern template showing navy header with two-column layout, professional formatting, and structured sections for skills, work experience, and education" />
+    </div>
+    <div class="feature-text">
+      <div class="feature-kicker">The Output</div>
+      <h2 class="feature-heading">Resumes you'd actually send.</h2>
+      <p class="feature-body">Every line is written, formatted, and structured to match the work you've actually done. Choose from four templates, each designed to read as professional, not generated.</p>
     </div>
   </div>
 </section>
