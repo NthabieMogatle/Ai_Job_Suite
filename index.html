@@ -2083,7 +2083,7 @@ function buildModernResumeElement(parsed) {
 
   // Header name sizing — tiered by length so longest names fit on one line
   const nameLen = (name || '').length;
-  const nameSize = nameLen > 30 ? 28 : nameLen > 24 ? 36 : nameLen > 18 ? 44 : 56;
+  const nameSize = nameLen > 30 ? 28 : nameLen > 24 ? 32 : nameLen > 18 ? 36 : 44;
 
   const sideHead = (label) => `
     <h3 style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:800;color:${NAVY};
@@ -2238,7 +2238,7 @@ function buildModernResumeElement(parsed) {
                 -webkit-font-smoothing:antialiased;box-sizing:border-box;">
       <header style="padding:38px 56px 14px 56px;">
         <h1 style="font-family:'DM Sans',sans-serif;font-size:${nameSize}px;font-weight:800;color:${NAVY};
-                   text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;overflow:hidden;
+                   text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;
                    margin:0 0 6px 0;line-height:1;">
           ${modernEscapeHTML(name || '')}</h1>
         ${subtitle ? `<p style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;
