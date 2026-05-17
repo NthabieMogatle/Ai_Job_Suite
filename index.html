@@ -1547,6 +1547,18 @@ CRITICAL RULES — MUST FOLLOW:
 - COPY the candidate's Name, Email, Phone, and Location EXACTLY as provided in CANDIDATE DETAILS. Never invent, substitute, or "improve" these values, even if they look like placeholders or test data.
 - Keep the entire resume under 500 words. Count words; do not exceed.
 
+TAILORING TO JOB DESCRIPTION:
+${desc ? `A job description was provided below. Treat it as the PRIMARY tailoring source for this resume:
+- The PROFESSIONAL SUMMARY must directly reflect 2-3 of the JD's stated requirements or responsibilities, using the JD's own terminology where the candidate has matching background.
+- In TECHNICAL EXPERIENCE, prioritise and re-order bullets so the ones that map to the JD's named duties, certifications, tools, or systems come FIRST within each role.
+- In TECHNICAL SKILLS, when selecting the 8 skills to keep, prefer the candidate's skills that the JD explicitly names or implies.
+- Mirror specific terminology from the JD (certifications, systems, protocols, frameworks, named responsibilities) where the candidate has the matching background.
+- Do NOT fabricate certifications, tools, systems, employers, or experience the candidate did not provide — only emphasise and re-frame what they already have.
+- Do NOT list keywords separately or output an "ATS KEYWORDS" section — the tailoring must show through the prose itself.
+
+JOB DESCRIPTION:
+${desc}` : 'No job description was provided — write a strong general-purpose resume for the target role.'}
+
 STRUCTURE (use exactly these section headers, each appearing ONCE — only include LANGUAGES and REFERENCES sections if content is provided):
 1. [Candidate name on first line]
 2. [Job title on second line]
@@ -1569,6 +1581,7 @@ EXPERIENCE FORMATTING RULES — VERY IMPORTANT:
 
 PROFESSIONAL SUMMARY:
 - 2-3 sentences AND no more than 60 words total, no bullets, paragraph only. Count words; do not exceed.
+- If a job description was provided, the summary MUST reflect that specific JD's requirements and use its terminology — not a generic summary for the role.
 
 TECHNICAL SKILLS:
 - List skills separated by commas or on separate lines — no bullets needed here
@@ -1601,7 +1614,6 @@ WRITING STYLE — CRITICAL FOR SOUNDING HUMAN:
 
 CONTENT RULES:
 - Show impact and outcomes in every bullet point
-- Naturally weave keywords from this job description into the content (do NOT list them separately): ${desc || 'not provided'}
 
 CANDIDATE DETAILS:
 - Name: ${name}
