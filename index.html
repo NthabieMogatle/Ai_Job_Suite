@@ -43,6 +43,7 @@
 
 body {
   font-family: 'DM Sans', sans-serif;
+  font-size: var(--type-body-size);
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -177,8 +178,9 @@ body::before {
 
 .form-card h2 {
   font-family: 'Playfair Display', serif;
-  font-size: 18px;
+  font-size: var(--type-h2-size);
   font-weight: 400;
+  line-height: 1.4;
   color: var(--text);
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
@@ -191,10 +193,10 @@ body::before {
 
 .form-group label {
   display: block;
-  font-size: 12px;
+  font-size: var(--type-kicker-size);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--muted);
   margin-bottom: 8px;
 }
@@ -207,7 +209,7 @@ body::before {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
-  font-size: 14px;
+  font-size: var(--type-body-size);
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
   outline: none;
@@ -279,30 +281,31 @@ body::before {
 }
 
 .output-header span {
-  font-size: 12px;
+  font-size: var(--type-kicker-size);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--muted);
 }
 
 .output-badge {
   background: rgba(76,175,125,0.15);
   color: var(--success);
-  font-size: 11px;
+  font-size: var(--type-kicker-size);
+  font-weight: 500;
   padding: 3px 10px;
   border-radius: 20px;
   border: 1px solid rgba(76,175,125,0.2);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .output-text {
-  font-size: 14px;
-  line-height: 1.85;
+  font-size: var(--type-body-size);
+  line-height: 1.65;
   color: var(--text);
   white-space: pre-wrap;
-  font-weight: 300;
+  font-weight: 400;
 }
 
 .output-actions {
@@ -333,7 +336,7 @@ body::before {
   text-align: center;
   padding: 2.5rem;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--type-small-size);
 }
 
 .loading.visible { display: block; }
@@ -350,7 +353,7 @@ body::before {
 
 .error-msg {
   display: none;
-  font-size: 13px;
+  font-size: var(--type-small-size);
   color: #e07070;
   background: rgba(224,112,112,0.08);
   border: 1px solid rgba(224,112,112,0.2);
@@ -384,10 +387,10 @@ body::before {
 }
 
 .ats-title {
-  font-size: 13px;
+  font-size: var(--type-kicker-size);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--muted);
 }
 
@@ -406,13 +409,13 @@ body::before {
 }
 
 .ats-score-wrap { text-align: center; margin-bottom: 1.25rem; }
-.ats-score-label { font-size: 13px; color: var(--muted); }
+.ats-score-label { font-size: var(--type-small-size); color: var(--muted); }
 
 .ats-bar-wrap { margin-bottom: 1rem; }
 .ats-bar-label {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: var(--type-small-size);
   color: var(--muted);
   margin-bottom: 5px;
 }
@@ -431,7 +434,7 @@ body::before {
   transition: width 0.8s ease;
 }
 
-.ats-tips { font-size: 13px; line-height: 1.8; color: var(--text); white-space: pre-wrap; }
+.ats-tips { font-size: var(--type-body-size); line-height: 1.65; color: var(--text); white-space: pre-wrap; }
 
 /* ===== INTERVIEW PREP CARD ===== */
 .interview-card {
@@ -456,10 +459,10 @@ body::before {
 }
 
 .interview-title {
-  font-size: 13px;
+  font-size: var(--type-kicker-size);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--muted);
 }
 
@@ -468,7 +471,7 @@ body::before {
 .question-item {
   padding: 14px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 14px;
+  font-size: var(--type-body-size);
   color: var(--text);
   display: flex;
   flex-direction: column;
@@ -524,40 +527,40 @@ body::before {
   border: 1px solid rgba(201,168,76,0.15);
   border-radius: var(--radius-sm);
   padding: 14px 16px;
-  font-size: 13px;
-  line-height: 1.75;
+  font-size: var(--type-body-size);
+  line-height: 1.65;
   color: var(--text);
 }
 
 .q-answer-box.open { display: block; }
 
 .q-answer-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--type-kicker-size);
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--gold);
   margin-bottom: 8px;
 }
 
 .q-answer-framework {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--type-small-size);
   margin-bottom: 10px;
   line-height: 1.6;
 }
 
 .q-answer-example {
   color: var(--text);
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: var(--type-body-size);
+  line-height: 1.65;
 }
 
 .interview-loading {
   text-align: center;
   padding: 1.5rem;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--type-small-size);
   display: none;
 }
 .interview-loading.visible { display: block; }
@@ -574,8 +577,8 @@ body::before {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
-.template-card h3 { margin: 0 0 8px; font-size: 18px; }
-.template-card p { margin: 0; font-size: 13px; color: #aaa; }
+.template-card h3 { margin: 0 0 8px; font-family: 'DM Sans', sans-serif; font-size: var(--type-h3-size); font-weight: 600; line-height: 1.4; }
+.template-card p { margin: 0; font-size: var(--type-small-size); color: #aaa; }
 
 .template-card:hover {
   transform: translateY(-4px);
@@ -639,9 +642,10 @@ body::before {
 .footer {
   text-align: center;
   margin-top: 3rem;
-  font-size: 12px;
+  font-size: var(--type-kicker-size);
+  font-weight: 500;
   color: var(--muted2);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
 }
 
 @keyframes fadeUp {
@@ -689,25 +693,25 @@ body::before {
 }
 .feature-kicker {
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
+  font-size: var(--type-kicker-size);
   font-weight: 500;
   color: var(--muted);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 .feature-heading {
   font-family: 'Playfair Display', serif;
-  font-size: clamp(1.75rem, 3vw, 2.5rem);
-  font-weight: 600;
+  font-size: var(--type-h1-size);
+  font-weight: 400;
   color: var(--text);
   line-height: 1.2;
 }
 .feature-body {
   font-family: 'DM Sans', sans-serif;
-  font-size: 16px;
-  font-weight: 300;
+  font-size: var(--type-body-size);
+  font-weight: 400;
   color: var(--muted);
-  line-height: 1.7;
+  line-height: 1.65;
   max-width: 480px;
 }
 @media (max-width: 768px) {
@@ -1028,7 +1032,7 @@ body::before {
       <div class="ats-bar"><div class="ats-bar-fill" id="rv-bar-imp" style="width:0%"></div></div>
     </div>
     <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
-      <div style="font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:10px;">Improvement Tips</div>
+      <div style="font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:10px;">Improvement Tips</div>
       <div class="ats-tips" id="rv-ats-tips"></div>
     </div>
     <div class="output-actions">
@@ -1111,7 +1115,7 @@ body::before {
         <span class="output-badge">AI Generated</span>
       </div>
       <div class="interview-loading" id="li-tips-loading"><div class="spinner"></div>Generating profile tips...</div>
-      <div id="li-tips-content" style="font-size:14px; line-height:1.8; color:var(--text);"></div>
+      <div id="li-tips-content" style="font-size:16px; line-height:1.65; color:var(--text);"></div>
       <div class="output-actions" id="li-tips-actions" style="display:none;">
         <button class="btn-action" onclick="copyOutput('li-tips-content', this)">Copy Tips</button>
       </div>
@@ -3499,8 +3503,8 @@ function unlockPremium() {
   <div style="background:#161618; border:1px solid rgba(201,168,76,0.3); border-radius:16px; padding:2rem; max-width:420px; width:90%; margin:auto; position:relative;">
     <div style="text-align:center; margin-bottom:1.5rem;">
       <div style="font-size:36px; margin-bottom:10px;">✉</div>
-      <h2 style="font-family:'Playfair Display',serif; font-size:22px; color:#f0ede6; margin-bottom:8px;">Check your email</h2>
-      <p style="font-size:14px; color:#888580; line-height:1.6;" id="verifySubtitle">We sent a 6-digit code to <strong id="verifyEmailDisplay" style="color:#c9a84c;"></strong></p>
+      <h2 style="font-family:'Playfair Display',serif; font-size:22px; font-weight:400; line-height:1.4; color:#f0ede6; margin-bottom:8px;">Check your email</h2>
+      <p style="font-size:13px; color:#888580; line-height:1.5;" id="verifySubtitle">We sent a 6-digit code to <strong id="verifyEmailDisplay" style="color:#c9a84c;"></strong></p>
     </div>
 
 <div style="display:flex; gap:8px; justify-content:center; margin-bottom:1.25rem;" id="codeInputs">
