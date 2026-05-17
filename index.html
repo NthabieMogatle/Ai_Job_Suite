@@ -1573,7 +1573,7 @@ PROFESSIONAL SUMMARY:
 TECHNICAL SKILLS:
 - List skills separated by commas or on separate lines — no bullets needed here
 - Maximum 8 skills. If the candidate provides more, select the 8 most relevant to the target role.
-- Preserve all punctuation (slashes, parentheses, hyphens) in skill names and technical terms exactly as provided. Example: "Epic/Cerner" must remain "Epic/Cerner", not "Epic Cerner".
+- Preserve all punctuation (slashes, parentheses, hyphens) AND spaces in skill names and technical terms exactly as provided. Example: "Epic/Cerner" must remain "Epic/Cerner" (not "Epic Cerner"), and "Team leadership" must remain "Team leadership" (not "Teamleadership").
 
 CAPACITY HANDLING — WHEN USER INPUT EXCEEDS CAPS:
 - The customer experience must feel like distillation, not data loss. Every key claim in the user's input should be represented in the output, even if compressed.
@@ -2578,7 +2578,7 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   const head = (title, ic) => `
     <div style="display:flex;align-items:center;gap:11px;margin:14px 0 3px;">
       <div style="width:28px;height:28px;background:${NAVY};display:flex;align-items:center;justify-content:center;border-radius:4px;flex:0 0 28px;">${ICONS[ic] || ICONS.brief}</div>
-      <div style="font-size:20px;font-weight:700;color:${NAVY};flex:0 0 auto;line-height:1.1;">${esc(title)}</div>
+      <div style="font-size:16px;font-weight:700;color:${NAVY};flex:0 0 auto;line-height:1.1;">${esc(title)}</div>
       <div style="flex:1;height:1px;background:${RULE};margin-left:6px;"></div>
     </div>`;
 
