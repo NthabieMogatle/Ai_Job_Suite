@@ -629,6 +629,73 @@ body::before {
   .form-row { grid-template-columns: 1fr; }
   .wrapper { padding: 2rem 1rem 4rem; }
 }
+
+.feature-section {
+  position: relative;
+  z-index: 1;
+  padding: 6rem 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.feature-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+.feature-image {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.feature-image img {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  display: block;
+}
+.feature-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.feature-kicker {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.feature-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+.feature-body {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 480px;
+}
+@media (max-width: 768px) {
+  .feature-section {
+    padding: 3rem 1.5rem;
+  }
+  .feature-row {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .feature-image img {
+    margin: 0 auto;
+  }
+}
 </style>
 
 </head>
@@ -651,6 +718,22 @@ body::before {
       </a>
     </div>
   </div>
+</div>
+
+<section class="feature-section">
+  <div class="feature-row">
+    <div class="feature-image">
+      <img src="assets/feature-ats.jpg" alt="ATS Score Analysis showing 82% Strong Match with keyword, format, and impact scores plus improvement tips" />
+    </div>
+    <div class="feature-text">
+      <div class="feature-kicker">ATS Intelligence</div>
+      <h2 class="feature-heading">Know your score before you send it.</h2>
+      <p class="feature-body">Every resume is analyzed against the job you're applying for. Keyword match, format quality, impact strength — scored and explained, with specific improvements you can act on before submitting.</p>
+    </div>
+  </div>
+</section>
+
+<div class="wrapper">
 
   <!-- Tabs -->
 
