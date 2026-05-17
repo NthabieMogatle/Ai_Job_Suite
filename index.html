@@ -2086,9 +2086,10 @@ function buildModernResumeElement(parsed) {
   const nameSize = nameLen > 30 ? 28 : nameLen > 24 ? 32 : nameLen > 18 ? 36 : 44;
 
   const sideHead = (label) => `
-    <h3 style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:800;color:${NAVY};
-               text-transform:uppercase;letter-spacing:2.5px;margin:0 0 11px 0;
-               padding-bottom:6px;border-bottom:1.5px solid ${NAVY};">${label}</h3>`;
+    <div style="margin:0 0 11px 0;padding-bottom:6px;border-bottom:1.5px solid ${NAVY};">
+      <h3 style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:800;color:${NAVY};
+                 text-transform:uppercase;letter-spacing:2.5px;margin:0;line-height:1.1;">${label}</h3>
+    </div>`;
 
   const mainHead = (svgIcon, label) => `
     <div style="position:relative;margin:0 0 12px 0;padding-bottom:7px;border-bottom:1.5px solid ${NAVY};">
@@ -2249,13 +2250,13 @@ function buildModernResumeElement(parsed) {
       </header>
 
       <div style="padding:22px 56px 30px 56px;">
-        <div style="display:flex;align-items:flex-start;position:relative;">
-          <div style="position:absolute;left:249px;top:6px;bottom:0;
-                      border-left:2px dotted ${NAVY};"></div>
+        <div style="display:flex;align-items:flex-start;">
           <aside style="width:230px;flex-shrink:0;padding-right:24px;box-sizing:border-box;">
             ${contactHTML}${skillsHTML}${languagesHTML}${referencesHTML}
           </aside>
-          <main style="width:474px;flex-shrink:0;padding-left:64px;box-sizing:border-box;">
+          <main style="position:relative;width:474px;flex-shrink:0;padding-left:64px;box-sizing:border-box;">
+            <div style="position:absolute;left:19px;top:6px;bottom:0;
+                        border-left:2px dotted ${NAVY};"></div>
             ${profileHTML}${experienceHTML}${educationHTML}
           </main>
         </div>
