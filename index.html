@@ -1155,7 +1155,7 @@ let selectedElegantVariant = 'brown';
 const SUPABASE_URL = "https://roqhmdqrgovnqjiuoewe.supabase.co";
 const SUPABASE_KEY = "sb_publishable_cC8Fx8q75VUwEXU_x4sx9g__Iw7aS79";
 const FREE_GENERATION_LIMIT = 99;
-const PAYWALL_URL = 'https://eleveemporium.gumroad.com/l/pllrsk';
+const PAYWALL_URL = 'https://elevehired.gumroad.com/l/pllrsk';
 let userEmail = localStorage.getItem('aiJobSuiteUserEmail') || '';
 let usageData = JSON.parse(localStorage.getItem('aiJobSuiteUsageData') || '{}');
 let premiumUnlocked = localStorage.getItem("premiumUnlocked") === "true";
@@ -1221,7 +1221,7 @@ function setColorVariant(template, variant, el) {
   const cardId = template === 'elegant' ? 'tpl-detailed' : 'tpl-' + template;
   const card = document.getElementById(cardId);
   if (card && card.classList.contains('locked')) {
-    window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank");
+    window.open("https://elevehired.gumroad.com/l/pllrsk", "_blank");
 
     return;
   }
@@ -3473,7 +3473,7 @@ async function requireEmailVerification(email, prefix, callback) {
 function handleLockedTemplate(template) {
   setTemplate(template === 'detailed' ? 'detailed' : template);
   if (!premiumUnlocked) {
-    window.open("https://eleveemporium.gumroad.com/l/pllrsk", "_blank");
+    window.open("https://elevehired.gumroad.com/l/pllrsk", "_blank");
   }
 }
 
