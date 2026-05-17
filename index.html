@@ -1967,11 +1967,17 @@ function modernMd(s) {
   );
 }
 
+// Fix CamelCase-glued skill phrases the model sometimes outputs (e.g. "Teamleadership" → "Team leadership").
+// Keep this list small and only for phrases observed in real outputs; the prompt is the primary defence.
+function fixGluedSkills(s) {
+  return (s || '').replace(/\bTeamleadership\b/g, 'Team leadership');
+}
+
 function modernSplitList(lines) {
   const out = [];
   (lines || []).forEach(l => {
-    const cleaned = (l || '').replace(/^[-•▸◆]\s*/, '').replace(/(\w)?\*\*(.+?)\*\*(\w)?/g, (m, pre, inner, post) =>
-      (pre || '') + (pre ? ' ' : '') + inner + (post ? ' ' : '') + (post || '')).trim();
+    const cleaned = fixGluedSkills((l || '').replace(/^[-•▸◆]\s*/, '').replace(/(\w)?\*\*(.+?)\*\*(\w)?/g, (m, pre, inner, post) =>
+      (pre || '') + (pre ? ' ' : '') + inner + (post ? ' ' : '') + (post || '')).trim());
     if (!cleaned) return;
     if (cleaned.includes(',')) {
       cleaned.split(',').forEach(item => {
@@ -2496,8 +2502,8 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   function splitSkills(lines) {
     const out = [];
     (lines || []).forEach(l => {
-      const cleaned = strip(l).replace(/(\w)?\*\*(.+?)\*\*(\w)?/g, (m, pre, inner, post) =>
-        (pre || '') + (pre ? ' ' : '') + inner + (post ? ' ' : '') + (post || ''));
+      const cleaned = fixGluedSkills(strip(l).replace(/(\w)?\*\*(.+?)\*\*(\w)?/g, (m, pre, inner, post) =>
+        (pre || '') + (pre ? ' ' : '') + inner + (post ? ' ' : '') + (post || '')));
       if (!cleaned) return;
       if (cleaned.includes(',')) cleaned.split(',').forEach(item => { const t = item.trim(); if (t) out.push(t); });
       else out.push(cleaned);
@@ -2590,7 +2596,7 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   const head = (title, ic) => `
     <div style="display:flex;align-items:center;gap:11px;margin:14px 0 3px;">
       <div style="width:28px;height:28px;background:${NAVY};display:flex;align-items:center;justify-content:center;border-radius:4px;flex:0 0 28px;">${ICONS[ic] || ICONS.brief}</div>
-      <div style="font-size:16px;font-weight:700;color:${NAVY};flex:0 0 auto;line-height:1.1;">${esc(title)}</div>
+      <div style="font-size:16px;font-weight:700;color:${NAVY};flex:0 0 auto;line-height:1.1;white-space:nowrap;">${esc(title)}</div>
       <div style="flex:1;height:1px;background:${RULE};margin-left:6px;"></div>
     </div>`;
 
