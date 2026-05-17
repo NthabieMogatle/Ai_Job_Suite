@@ -2201,7 +2201,7 @@ function buildModernResumeElement(parsed) {
     </section>` : '';
 
   const educationHTML = education.length ? `
-    <section style="margin-bottom:0;position:relative;">
+    <section style="margin-bottom:0;position:relative;page-break-inside:avoid;break-inside:avoid;">
       ${mainHead(MODERN_ICONS.gradCap, 'Education')}
       <div>
         ${education.map(ed => `
@@ -2250,16 +2250,22 @@ function buildModernResumeElement(parsed) {
       </header>
 
       <div style="padding:22px 56px 30px 56px;">
-        <div style="display:flex;align-items:stretch;">
-          <aside style="width:230px;flex-shrink:0;padding-right:24px;box-sizing:border-box;
-                        display:flex;flex-direction:column;">
-            ${contactHTML}${skillsHTML}${languagesHTML}${referencesHTML}
-          </aside>
-          <main style="position:relative;width:474px;flex-shrink:0;padding-left:64px;box-sizing:border-box;">
-            <div style="position:absolute;left:19px;top:6px;bottom:0;
-                        border-left:2px dotted ${NAVY};"></div>
-            ${profileHTML}${experienceHTML}${educationHTML}
-          </main>
+        <div style="position:relative;">
+          <div style="position:absolute;left:249px;top:6px;bottom:0;
+                      border-left:2px dotted ${NAVY};pointer-events:none;"></div>
+          <div style="display:grid;grid-template-columns:230px 474px;">
+            <div style="padding-right:24px;box-sizing:border-box;">${contactHTML}</div>
+            <div style="padding-left:64px;box-sizing:border-box;position:relative;">${profileHTML}</div>
+          </div>
+          <div style="display:flex;align-items:stretch;">
+            <aside style="width:230px;flex-shrink:0;padding-right:24px;box-sizing:border-box;
+                          display:flex;flex-direction:column;">
+              ${skillsHTML}${languagesHTML}${referencesHTML}
+            </aside>
+            <main style="position:relative;width:474px;flex-shrink:0;padding-left:64px;box-sizing:border-box;">
+              ${experienceHTML}${educationHTML}
+            </main>
+          </div>
         </div>
       </div>
     </div>`;
