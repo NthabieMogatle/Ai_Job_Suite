@@ -1949,13 +1949,15 @@ function modernEscapeHTML(s) {
 }
 
 function modernMd(s) {
-  return modernEscapeHTML(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  return modernEscapeHTML(s).replace(/(\w)?\*\*(.+?)\*\*(\w)?/g, (m, pre, inner, post) =>
+    (pre || '') + (pre ? ' ' : '') + '<strong>' + inner + '</strong>' + (post ? ' ' : '') + (post || '')
+  );
 }
 
 function modernSplitList(lines) {
   const out = [];
   (lines || []).forEach(l => {
-    const cleaned = (l || '').replace(/^[-•▸◆]\s*/, '').trim();
+    const cleaned = (l || '').replace(/^[-•▸◆]\s*/, '').replace(/\*\*/g, '').trim();
     if (!cleaned) return;
     if (cleaned.includes(',')) {
       cleaned.split(',').forEach(item => {
@@ -2078,6 +2080,10 @@ function buildModernResumeElement(parsed) {
   const INK_SOFT = '#334155';
   const MUTED    = '#64748b';
   const WHITE    = '#ffffff';
+
+  // Header name sizing — tiered by length so longest names fit on one line
+  const nameLen = (name || '').length;
+  const nameSize = nameLen > 30 ? 28 : nameLen > 24 ? 36 : nameLen > 18 ? 44 : 56;
 
   const sideHead = (label) => `
     <h3 style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:800;color:${NAVY};
@@ -2231,11 +2237,12 @@ function buildModernResumeElement(parsed) {
                 color:${INK_SOFT};font-size:11px;line-height:1.5;
                 -webkit-font-smoothing:antialiased;box-sizing:border-box;">
       <header style="padding:38px 56px 14px 56px;">
-        <h1 style="font-family:'DM Sans',sans-serif;font-size:40px;font-weight:800;color:${NAVY};
-                   text-transform:uppercase;letter-spacing:1px;margin:0 0 6px 0;line-height:1;">
+        <h1 style="font-family:'DM Sans',sans-serif;font-size:${nameSize}px;font-weight:800;color:${NAVY};
+                   text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;overflow:hidden;
+                   margin:0 0 6px 0;line-height:1;">
           ${modernEscapeHTML(name || '')}</h1>
-        ${subtitle ? `<p style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
-                                color:${NAVY};text-transform:uppercase;letter-spacing:5px;
+        ${subtitle ? `<p style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;
+                                color:${NAVY};text-transform:uppercase;letter-spacing:0.2em;
                                 margin:0 0 14px 0;">${modernEscapeHTML(subtitle)}</p>`
                    : '<div style="height:14px;"></div>'}
         <div style="height:1.5px;background:${NAVY};width:100%;"></div>
@@ -2389,7 +2396,8 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   const FONT  = "Helvetica, Arial, sans-serif";
 
   const esc   = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const md    = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  const md    = s => esc(s).replace(/(\w)?\*\*(.+?)\*\*(\w)?/g, (m, pre, inner, post) =>
+    (pre || '') + (pre ? ' ' : '') + '<strong>' + inner + '</strong>' + (post ? ' ' : '') + (post || ''));
   const strip = s => String(s == null ? '' : s).trim().replace(/^[-•*·▪▸◆]\s*/, '');
 
   const formatDate = d => {
@@ -2460,7 +2468,7 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   function splitSkills(lines) {
     const out = [];
     (lines || []).forEach(l => {
-      const cleaned = strip(l);
+      const cleaned = strip(l).replace(/\*\*/g, '');
       if (!cleaned) return;
       if (cleaned.includes(',')) cleaned.split(',').forEach(item => { const t = item.trim(); if (t) out.push(t); });
       else out.push(cleaned);
@@ -2610,11 +2618,14 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   const wrap = document.createElement('div');
   wrap.style.cssText = `width:816px;min-height:1056px;background:#fff;padding:36px 56px 24px;box-sizing:border-box;font-family:${FONT};color:${INK};`;
 
-  const headerName     = `<div style="font-size:52px;font-weight:800;color:${NAVY};line-height:1.0;letter-spacing:0;">${esc(name || 'Your Name')}</div>`;
-  const headerSubtitle = subtitle ? `<div style="font-size:22px;color:${NAVY};margin-top:4px;font-weight:400;">${esc(subtitle)}</div>` : '';
+  // Header name sizing — tiered by length so longest names fit on one line
+  const nameLen = (name || '').length;
+  const nameSize = nameLen > 30 ? 24 : nameLen > 24 ? 30 : nameLen > 18 ? 36 : 42;
+  const headerName     = `<div style="font-size:${nameSize}px;font-weight:800;color:${NAVY};line-height:1.0;letter-spacing:0;white-space:nowrap;overflow:hidden;">${esc(name || 'Your Name')}</div>`;
+  const headerSubtitle = subtitle ? `<div style="font-size:18px;color:${NAVY};margin-top:4px;font-weight:500;">${esc(subtitle)}</div>` : '';
   const summaryHTML    = profileLines.length ? `<div style="font-size:11px;line-height:1.5;color:${INK};margin-top:12px;text-align:left;">${profileLines.map(l => md(l)).join(' ')}</div>` : '';
 
-  wrap.innerHTML = `${headerName}${headerSubtitle}${summaryHTML}<div style="display:flex;gap:36px;margin-top:4px;align-items:flex-start;"><div style="flex:1.85;min-width:0;">${mainSecs.map(renderSec).join('')}</div><div style="flex:1;min-width:0;">${sideSecs.map(renderSec).join('')}</div></div>`;
+  wrap.innerHTML = `${headerName}${headerSubtitle}${summaryHTML}<div style="display:flex;gap:36px;margin-top:4px;align-items:flex-start;"><div style="flex:7;min-width:0;">${mainSecs.map(renderSec).join('')}</div><div style="flex:3;min-width:0;">${sideSecs.map(renderSec).join('')}</div></div>`;
   return wrap;
 }
 
