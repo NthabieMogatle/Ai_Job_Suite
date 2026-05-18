@@ -1974,10 +1974,47 @@ function modernMd(s) {
   );
 }
 
-// Fix CamelCase-glued skill phrases the model sometimes outputs (e.g. "Teamleadership" → "Team leadership").
-// Keep this list small and only for phrases observed in real outputs; the prompt is the primary defence.
+// Fix glued skill phrases the model sometimes outputs. Two layers:
+//  1) CamelCase regex — splits any lowercase→uppercase boundary (TeamLeadership, PatientCare, VasoactiveDrip).
+//     A denylist preserves legitimate internal-capital product/tech names (JavaScript, GitHub, iOS, etc).
+//  2) Explicit-token regex — catches lowercase-only glued variants that no regex can detect heuristically
+//     (Teamleadership, Patientcare, Vasoactivedrip). Extend this list when new glued tokens appear in real outputs.
+const GLUED_SKILL_PRESERVE = [
+  'JavaScript','TypeScript','CoffeeScript','ActionScript','VBScript',
+  'GitHub','GitLab','BitBucket','SourceTree','StackOverflow','CodePen','JSFiddle',
+  'MySQL','PostgreSQL','MongoDB','MariaDB','DynamoDB','CouchDB','RethinkDB','GraphQL','NoSQL',
+  'PowerShell','PowerPoint','SharePoint','OneDrive','OneNote','WordPress','MailChimp','HubSpot','SalesForce',
+  'MacBook','iMac','iPhone','iPad','iPod','iOS','macOS','watchOS','tvOS','AirPods','AirDrop','FaceTime','AppStore','iCloud','iTunes',
+  'PlayStation','XBox','GameCube','DreamCast',
+  'LinkedIn','YouTube','FaceBook','WhatsApp','SnapChat','TikTok','PayPal','eBay','BlackBerry',
+  'DevOps','MLOps','DataOps','GitOps',
+  'NodeJS','NextJS','NestJS','VueJS','AngularJS','EmberJS','BackboneJS','ThreeJS','jQuery',
+  'AutoCAD','SolidWorks','SketchUp','InDesign','PhotoShop','LightRoom','AfterEffects','PremierePro','FinalCut',
+  'QuickBooks','TurboTax','OpenOffice','LibreOffice','VirtualBox','VMware','RedHat','CentOS','FreeBSD','OpenBSD',
+  'JavaScripts','TypeScripts'
+];
+const GLUED_SKILL_TOKEN = /[A-Za-z][a-z]+(?:[A-Z][a-z]*)+/g;
+const GLUED_SKILL_LOWER = [
+  ['Teamleadership','Team leadership'],
+  ['Patientcare','Patient care'],
+  ['Vasoactivedrip','Vasoactive drip'],
+  ['Bedsiderounds','Bedside rounds'],
+  ['Vasoactivemedication','Vasoactive medication'],
+  ['Endoflife','End of life'],
+  ['Chargenurse','Charge nurse'],
+  ['Acutecare','Acute care'],
+  ['Triagepatients','Triage patients']
+];
 function fixGluedSkills(s) {
-  return (s || '').replace(/\bTeamleadership\b/g, 'Team leadership');
+  if (!s) return s || '';
+  let out = s.replace(GLUED_SKILL_TOKEN, (tok) => {
+    if (GLUED_SKILL_PRESERVE.includes(tok)) return tok;
+    return tok.replace(/([a-z])([A-Z])/g, (m, a, b) => `${a} ${b.toLowerCase()}`);
+  });
+  for (const [glued, fixed] of GLUED_SKILL_LOWER) {
+    out = out.replace(new RegExp(`\\b${glued}\\b`, 'g'), fixed);
+  }
+  return out;
 }
 
 function modernSplitList(lines) {
@@ -2645,7 +2682,7 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
         return `<div style="margin-top:2px;font-size:11px;color:${INK};">${esc(line)}</div>`;
       }).join('');
       const spacer = bi < blocks.length - 1 ? '<div style="height:5px;"></div>' : '';
-      return inner + spacer;
+      return `<div style="page-break-inside:avoid;break-inside:avoid;">${inner}</div>${spacer}`;
     }).join('');
   }
 
