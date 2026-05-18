@@ -2503,7 +2503,6 @@ function buildMinimalResumeElement(parsed) {
   const education   = eduKey  ? minimalParseMainItems(sections[eduKey])  : [];
   const projects    = projKey ? minimalParseMainItems(sections[projKey]) : [];
 
-  // CRITICAL FIX: split comma-joined skill strings into individual skills
   const splitSkillsFlat = (lines) => {
     const out = [];
     (lines || []).forEach(line => {
@@ -2519,8 +2518,8 @@ function buildMinimalResumeElement(parsed) {
   const languages = langKey   ? (sections[langKey] || []).map(s => String(s).trim()).filter(Boolean) : [];
 
   const sectionHead = (label) => `
-    <div style="margin:0 0 10px 0;padding-bottom:5px;border-bottom:1px solid ${RULE};">
-      <h2 style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;
+    <div style="margin:0 0 12px 0;padding-bottom:5px;border-bottom:1px solid ${RULE};">
+      <h2 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;
                  color:${MUTED};text-transform:uppercase;letter-spacing:2px;margin:0;line-height:1.1;">
         ${minimalEscapeHTML(label)}
       </h2>
@@ -2530,23 +2529,23 @@ function buildMinimalResumeElement(parsed) {
     <div style="margin-bottom:14px;page-break-inside:avoid;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
         <div style="flex:1;min-width:0;">
-          <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;
-                     color:${INK};margin:0 0 1px 0;line-height:1.3;">
+          <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;
+                     color:${INK};margin:0 0 2px 0;line-height:1.3;">
             ${minimalEscapeHTML(item.title || '')}
           </h3>
-          ${item.meta ? `<div style="font-size:11px;color:${metaColor};font-weight:600;line-height:1.3;">
+          ${item.meta ? `<div style="font-size:12px;color:${metaColor};font-weight:600;line-height:1.3;">
             ${minimalEscapeHTML(item.meta)}
           </div>` : ''}
         </div>
-        ${item.dates ? `<div style="font-size:10px;color:${MUTED};white-space:nowrap;font-weight:500;">
+        ${item.dates ? `<div style="font-size:11px;color:${MUTED};white-space:nowrap;font-weight:500;">
           ${minimalEscapeHTML(item.dates)}
         </div>` : ''}
       </div>
-      ${item.bullets.length ? `<ul style="margin:5px 0 0 0;padding:0;list-style:none;">
+      ${item.bullets.length ? `<ul style="margin:6px 0 0 0;padding:0;list-style:none;">
         ${item.bullets.map(b => `
-          <li style="position:relative;padding-left:11px;margin-bottom:3px;
-                     font-size:10.5px;line-height:1.5;color:${INK_SOFT};">
-            <span style="position:absolute;left:0;top:7px;width:3px;height:3px;
+          <li style="position:relative;padding-left:12px;margin-bottom:4px;
+                     font-size:11.5px;line-height:1.55;color:${INK_SOFT};">
+            <span style="position:absolute;left:0;top:8px;width:3px;height:3px;
                          background:${MUTED};border-radius:50%;"></span>
             ${minimalEscapeHTML(b)}
           </li>`).join('')}
@@ -2554,39 +2553,38 @@ function buildMinimalResumeElement(parsed) {
     </div>`;
 
   const summaryHTML = summary ? `
-    <section style="margin-bottom:18px;">
+    <section style="margin-bottom:20px;">
       ${sectionHead('Summary')}
-      <p style="margin:0;font-size:11px;line-height:1.6;color:${INK_SOFT};">
+      <p style="margin:0;font-size:12px;line-height:1.6;color:${INK_SOFT};">
         ${minimalEscapeHTML(summary)}
       </p>
     </section>` : '';
 
   const experienceHTML = experiences.length ? `
-    <section style="margin-bottom:18px;">
+    <section style="margin-bottom:20px;">
       ${sectionHead('Experience')}
       ${experiences.map(e => entryBlock(e, BLUE)).join('')}
     </section>` : '';
 
   const educationHTML = education.length ? `
-    <section style="margin-bottom:18px;">
+    <section style="margin-bottom:20px;">
       ${sectionHead('Education')}
       ${education.map(e => entryBlock(e, INK_SOFT)).join('')}
     </section>` : '';
 
   const projectsHTML = projects.length ? `
-    <section style="margin-bottom:18px;">
+    <section style="margin-bottom:20px;">
       ${sectionHead('Projects')}
       ${projects.map(e => entryBlock(e, BLUE)).join('')}
     </section>` : '';
 
-  // Sidebar: individual pill tags
   const skillsHTML = skills.length ? `
-    <section style="margin-bottom:18px;">
+    <section style="margin-bottom:20px;">
       ${sectionHead('Skills')}
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
         ${skills.map(s => `
-          <span style="display:inline-block;padding:4px 9px;border:1px solid ${RULE};
-                       border-radius:3px;font-size:10px;color:${INK_SOFT};line-height:1.2;
+          <span style="display:inline-block;padding:5px 11px;border:1px solid ${RULE};
+                       border-radius:3px;font-size:11px;color:${INK_SOFT};line-height:1.2;
                        white-space:nowrap;">
             ${minimalEscapeHTML(s)}
           </span>`).join('')}
@@ -2603,7 +2601,6 @@ function buildMinimalResumeElement(parsed) {
     return 3;
   };
   const renderLangRow = (langStr) => {
-    // Extract level from parens, dashes, colons, or trailing words
     let label = langStr;
     let level = '';
     const parenMatch = langStr.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
@@ -2612,22 +2609,22 @@ function buildMinimalResumeElement(parsed) {
     else if (dashMatch) { label = dashMatch[1].trim(); level = dashMatch[2].trim(); }
     const dots = levelToDots(level);
     return `
-      <div style="margin-bottom:8px;font-size:10.5px;color:${INK};">
+      <div style="margin-bottom:10px;font-size:12px;color:${INK};">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
           <span style="font-weight:500;">${minimalEscapeHTML(label)}</span>
           <span style="display:flex;gap:3px;flex-shrink:0;">
             ${[1,2,3,4,5].map(i => `
-              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
+              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;
                            background:${i <= dots ? INK : RULE};"></span>`).join('')}
           </span>
         </div>
-        ${level ? `<div style="font-size:9.5px;color:${MUTED};margin-top:1px;">
+        ${level ? `<div style="font-size:10.5px;color:${MUTED};margin-top:2px;">
           ${minimalEscapeHTML(level)}
         </div>` : ''}
       </div>`;
   };
   const languagesHTML = languages.length ? `
-    <section style="margin-bottom:18px;">
+    <section style="margin-bottom:20px;">
       ${sectionHead('Languages')}
       ${languages.map(renderLangRow).join('')}
     </section>` : '';
@@ -2639,22 +2636,22 @@ function buildMinimalResumeElement(parsed) {
   container.innerHTML = `
     <div style="width:816px;min-height:1050px;background:${WHITE};
                 font-family:Helvetica,Arial,sans-serif;color:${INK_SOFT};
-                font-size:11px;line-height:1.5;
+                font-size:12px;line-height:1.5;
                 -webkit-font-smoothing:antialiased;box-sizing:border-box;
                 padding:48px 56px;">
 
       <header style="display:flex;justify-content:space-between;align-items:flex-start;
                      gap:32px;margin-bottom:28px;">
         <div style="flex:1;min-width:0;">
-          <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:30px;font-weight:700;
+          <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:32px;font-weight:700;
                      color:${INK};margin:0 0 4px 0;line-height:1.15;">
             ${minimalEscapeHTML(name || '')}
           </h1>
-          ${subtitle ? `<p style="font-size:15px;font-weight:500;color:${BLUE};
-                                   margin:0 0 10px 0;line-height:1.2;">
+          ${subtitle ? `<p style="font-size:16px;font-weight:500;color:${BLUE};
+                                   margin:0 0 12px 0;line-height:1.2;">
             ${minimalEscapeHTML(subtitle)}
           </p>` : ''}
-          ${contactList.length ? `<div style="font-size:10.5px;color:${INK_SOFT};line-height:1.5;">
+          ${contactList.length ? `<div style="font-size:11.5px;color:${INK_SOFT};line-height:1.5;">
             ${contactList.map(c => minimalEscapeHTML(c)).join(' &nbsp;·&nbsp; ')}
           </div>` : ''}
         </div>
