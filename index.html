@@ -1547,6 +1547,18 @@ CRITICAL RULES — MUST FOLLOW:
 - COPY the candidate's Name, Email, Phone, and Location EXACTLY as provided in CANDIDATE DETAILS. Never invent, substitute, or "improve" these values, even if they look like placeholders or test data.
 - Keep the entire resume under 500 words. Count words; do not exceed.
 
+TAILORING TO JOB DESCRIPTION:
+${desc ? `A job description was provided below. Treat it as the PRIMARY tailoring source for this resume:
+- The PROFESSIONAL SUMMARY must directly reflect 2-3 of the JD's stated requirements or responsibilities, using the JD's own terminology where the candidate has matching background.
+- In TECHNICAL EXPERIENCE, prioritise and re-order bullets so the ones that map to the JD's named duties, certifications, tools, or systems come FIRST within each role.
+- In TECHNICAL SKILLS, when selecting the 8 skills to keep, prefer the candidate's skills that the JD explicitly names or implies.
+- Mirror specific terminology from the JD (certifications, systems, protocols, frameworks, named responsibilities) where the candidate has the matching background.
+- Do NOT fabricate certifications, tools, systems, employers, or experience the candidate did not provide — only emphasise and re-frame what they already have.
+- Do NOT list keywords separately or output an "ATS KEYWORDS" section — the tailoring must show through the prose itself.
+
+JOB DESCRIPTION:
+${desc}` : 'No job description was provided — write a strong general-purpose resume for the target role.'}
+
 STRUCTURE (use exactly these section headers, each appearing ONCE — only include LANGUAGES and REFERENCES sections if content is provided):
 1. [Candidate name on first line]
 2. [Job title on second line]
@@ -1569,10 +1581,12 @@ EXPERIENCE FORMATTING RULES — VERY IMPORTANT:
 
 PROFESSIONAL SUMMARY:
 - 2-3 sentences AND no more than 60 words total, no bullets, paragraph only. Count words; do not exceed.
+- If a job description was provided, the summary MUST reflect that specific JD's requirements and use its terminology — not a generic summary for the role.
 
 TECHNICAL SKILLS:
 - List skills separated by commas or on separate lines — no bullets needed here
 - Maximum 8 skills. If the candidate provides more, select the 8 most relevant to the target role.
+- Preserve all punctuation (slashes, parentheses, hyphens) AND spaces in skill names and technical terms exactly as provided. Example: "Epic/Cerner" must remain "Epic/Cerner" (not "Epic Cerner"), and "Team leadership" must remain "Team leadership" (not "Teamleadership").
 
 CAPACITY HANDLING — WHEN USER INPUT EXCEEDS CAPS:
 - The customer experience must feel like distillation, not data loss. Every key claim in the user's input should be represented in the output, even if compressed.
@@ -1600,7 +1614,6 @@ WRITING STYLE — CRITICAL FOR SOUNDING HUMAN:
 
 CONTENT RULES:
 - Show impact and outcomes in every bullet point
-- Naturally weave keywords from this job description into the content (do NOT list them separately): ${desc || 'not provided'}
 
 CANDIDATE DETAILS:
 - Name: ${name}
@@ -1954,10 +1967,17 @@ function modernMd(s) {
   );
 }
 
+// Fix CamelCase-glued skill phrases the model sometimes outputs (e.g. "Teamleadership" → "Team leadership").
+// Keep this list small and only for phrases observed in real outputs; the prompt is the primary defence.
+function fixGluedSkills(s) {
+  return (s || '').replace(/\bTeamleadership\b/g, 'Team leadership');
+}
+
 function modernSplitList(lines) {
   const out = [];
   (lines || []).forEach(l => {
-    const cleaned = (l || '').replace(/^[-•▸◆]\s*/, '').replace(/\*\*/g, '').trim();
+    const cleaned = fixGluedSkills((l || '').replace(/^[-•▸◆]\s*/, '').replace(/(\w)?\*\*(.+?)\*\*(\w)?/g, (m, pre, inner, post) =>
+      (pre || '') + (pre ? ' ' : '') + inner + (post ? ' ' : '') + (post || '')).trim());
     if (!cleaned) return;
     if (cleaned.includes(',')) {
       cleaned.split(',').forEach(item => {
@@ -2146,7 +2166,13 @@ function buildModernResumeElement(parsed) {
     <section style="margin-bottom:0;margin-top:auto;">${sideHead('Reference')}
       <div style="font-size:10.5px;color:${INK_SOFT};line-height:1.5;">
         ${refBlocks.map((block, bi) => {
-          const blockHTML = block.map((line, li) => {
+          // Single-line CSV reference: split on commas — first chunk is bold name, rest are detail.
+          let normalized = block;
+          if (block.length === 1 && block[0].includes(',')) {
+            const parts = block[0].split(',').map(s => s.trim()).filter(Boolean);
+            if (parts.length > 1) normalized = [parts[0], parts.slice(1).join(' · ')];
+          }
+          const blockHTML = normalized.map((line, li) => {
             if (li === 0) {
               return `<div style="font-weight:700;color:${NAVY};margin-bottom:2px;">${modernEscapeHTML(line)}</div>`;
             }
@@ -2233,7 +2259,7 @@ function buildModernResumeElement(parsed) {
   container.style.cssText = 'position:fixed;left:0;top:0;width:816px;background:#ffffff;z-index:-9999;opacity:0.001;pointer-events:none;';
 
   container.innerHTML = `
-    <div style="width:816px;min-height:1056px;background:${WHITE};
+    <div style="width:816px;min-height:1050px;background:${WHITE};
                 font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
                 color:${INK_SOFT};font-size:11px;line-height:1.5;
                 -webkit-font-smoothing:antialiased;box-sizing:border-box;">
@@ -2476,7 +2502,8 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   function splitSkills(lines) {
     const out = [];
     (lines || []).forEach(l => {
-      const cleaned = strip(l).replace(/\*\*/g, '');
+      const cleaned = fixGluedSkills(strip(l).replace(/(\w)?\*\*(.+?)\*\*(\w)?/g, (m, pre, inner, post) =>
+        (pre || '') + (pre ? ' ' : '') + inner + (post ? ' ' : '') + (post || '')));
       if (!cleaned) return;
       if (cleaned.includes(',')) cleaned.split(',').forEach(item => { const t = item.trim(); if (t) out.push(t); });
       else out.push(cleaned);
@@ -2569,7 +2596,7 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   const head = (title, ic) => `
     <div style="display:flex;align-items:center;gap:11px;margin:14px 0 3px;">
       <div style="width:28px;height:28px;background:${NAVY};display:flex;align-items:center;justify-content:center;border-radius:4px;flex:0 0 28px;">${ICONS[ic] || ICONS.brief}</div>
-      <div style="font-size:20px;font-weight:700;color:${NAVY};flex:0 0 auto;line-height:1.1;">${esc(title)}</div>
+      <div style="font-size:16px;font-weight:700;color:${NAVY};flex:0 0 auto;line-height:1.1;white-space:nowrap;">${esc(title)}</div>
       <div style="flex:1;height:1px;background:${RULE};margin-left:6px;"></div>
     </div>`;
 
@@ -2597,7 +2624,14 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   const REF_LABEL_RE = /^(Phone|Email|Mobile|Tel|LinkedIn|Website):\s/i;
   function renderRefs(blocks) {
     return blocks.map((block, bi) => {
-      const inner = block.map((line, li) => {
+      // Single-line CSV reference (e.g. "Name, Title, Org, email, phone"): split on commas,
+      // treat first chunk as the bold name and the rest as regular detail line.
+      let normalized = block;
+      if (block.length === 1 && block[0].includes(',')) {
+        const parts = block[0].split(',').map(s => s.trim()).filter(Boolean);
+        if (parts.length > 1) normalized = [parts[0], parts.slice(1).join(' · ')];
+      }
+      const inner = normalized.map((line, li) => {
         if (li === 0) return `<div style="font-weight:700;color:${NAVY};margin-top:${bi === 0 ? 4 : 0}px;font-size:11.5px;">${esc(line)}</div>`;
         const m = line.match(REF_LABEL_RE);
         if (m) return `<div style="margin-top:2px;font-size:11px;color:${INK};"><span style="font-weight:700;color:${NAVY};">${esc(m[0])}</span>${esc(line.slice(m[0].length))}</div>`;
@@ -2624,16 +2658,17 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   }
 
   const wrap = document.createElement('div');
-  wrap.style.cssText = `width:816px;min-height:1056px;background:#fff;padding:36px 56px 24px;box-sizing:border-box;font-family:${FONT};color:${INK};`;
+  wrap.style.cssText = `width:816px;min-height:1050px;background:#fff;padding:36px 56px 24px;box-sizing:border-box;font-family:${FONT};color:${INK};`;
 
   // Header name sizing — tiered by length so longest names fit on one line
   const nameLen = (name || '').length;
   const nameSize = nameLen > 30 ? 24 : nameLen > 24 ? 30 : nameLen > 18 ? 36 : 42;
   const headerName     = `<div style="font-size:${nameSize}px;font-weight:800;color:${NAVY};line-height:1.0;letter-spacing:0;white-space:nowrap;overflow:hidden;">${esc(name || 'Your Name')}</div>`;
   const headerSubtitle = subtitle ? `<div style="font-size:18px;color:${NAVY};margin-top:4px;font-weight:500;">${esc(subtitle)}</div>` : '';
+  const headerRule     = `<div style="height:1.5px;background:${NAVY};width:100%;margin-top:10px;"></div>`;
   const summaryHTML    = profileLines.length ? `<div style="font-size:11px;line-height:1.5;color:${INK};margin-top:12px;text-align:left;">${profileLines.map(l => md(l)).join(' ')}</div>` : '';
 
-  wrap.innerHTML = `${headerName}${headerSubtitle}${summaryHTML}<div style="display:flex;gap:36px;margin-top:4px;align-items:flex-start;"><div style="flex:7;min-width:0;">${mainSecs.map(renderSec).join('')}</div><div style="flex:3;min-width:0;">${sideSecs.map(renderSec).join('')}</div></div>`;
+  wrap.innerHTML = `${headerName}${headerSubtitle}${headerRule}${summaryHTML}<div style="display:flex;gap:36px;margin-top:4px;align-items:flex-start;"><div style="flex:7;min-width:0;">${mainSecs.map(renderSec).join('')}</div><div style="flex:3;min-width:0;">${sideSecs.map(renderSec).join('')}</div></div>`;
   return wrap;
 }
 
