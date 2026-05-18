@@ -1548,13 +1548,20 @@ CRITICAL RULES — MUST FOLLOW:
 - Keep the entire resume under 500 words. Count words; do not exceed.
 
 TAILORING TO JOB DESCRIPTION:
-${desc ? `A job description was provided below. Treat it as the PRIMARY tailoring source for this resume:
-- The PROFESSIONAL SUMMARY must directly reflect 2-3 of the JD's stated requirements or responsibilities, using the JD's own terminology where the candidate has matching background.
-- In TECHNICAL EXPERIENCE, prioritise and re-order bullets so the ones that map to the JD's named duties, certifications, tools, or systems come FIRST within each role.
-- In TECHNICAL SKILLS, when selecting the 8 skills to keep, prefer the candidate's skills that the JD explicitly names or implies.
-- Mirror specific terminology from the JD (certifications, systems, protocols, frameworks, named responsibilities) where the candidate has the matching background.
+${desc ? `A job description was provided below. It is the PRIMARY tailoring source for this resume — the output must visibly reflect it, not a generic template for the role.
+
+REQUIREMENTS — the JD's specific terminology MUST appear in these structural anchors:
+- The FIRST sentence of PROFESSIONAL SUMMARY must mirror the JD's own language for the role's core responsibilities (use the JD's nouns and verbs, not synonyms).
+- The FIRST bullet of EACH role under TECHNICAL EXPERIENCE must map directly to a named JD duty, system, protocol, certification, or tool that the candidate has matching background for.
+- In the 8 TECHNICAL SKILLS, prefer skills the JD explicitly names or implies over generic skills for the role.
+- Across the resume, mirror specific JD terminology (certifications, systems, protocols, frameworks, named responsibilities) wherever the candidate has the matching background. Use the JD's exact phrasing — e.g. if the JD says "vasoactive drip titration", do NOT soften it to "medication management".
+
+GUARDRAILS:
 - Do NOT fabricate certifications, tools, systems, employers, or experience the candidate did not provide — only emphasise and re-frame what they already have.
-- Do NOT list keywords separately or output an "ATS KEYWORDS" section — the tailoring must show through the prose itself.
+- Do NOT list keywords separately or output an "ATS KEYWORDS" section — tailoring must show through the prose.
+- Do NOT fall back to generic boilerplate phrasing for the role when JD-specific terminology is available.
+
+SELF-CHECK before finalising output: scan the resume and confirm at least 5 distinctive terms or phrases from the JD are mirrored in PROFESSIONAL SUMMARY, TECHNICAL EXPERIENCE bullets, or TECHNICAL SKILLS. If fewer than 5, rewrite to add them (without fabrication).
 
 JOB DESCRIPTION:
 ${desc}` : 'No job description was provided — write a strong general-purpose resume for the target role.'}
@@ -2594,9 +2601,9 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
 
   // === Render helpers (Briggs-tuned typography; Helvetica/Arial throughout; Round 3 compressed for single-page) ===
   const head = (title, ic) => `
-    <div style="display:flex;align-items:center;gap:11px;margin:14px 0 3px;">
-      <div style="width:28px;height:28px;background:${NAVY};display:flex;align-items:center;justify-content:center;border-radius:4px;flex:0 0 28px;">${ICONS[ic] || ICONS.brief}</div>
-      <div style="font-size:16px;font-weight:700;color:${NAVY};flex:0 0 auto;line-height:1.1;white-space:nowrap;">${esc(title)}</div>
+    <div style="display:flex;align-items:center;gap:9px;margin:13px 0 3px;">
+      <div style="width:22px;height:22px;background:${NAVY};display:flex;align-items:center;justify-content:center;border-radius:4px;flex:0 0 22px;">${ICONS[ic] || ICONS.brief}</div>
+      <div style="font-size:13px;font-weight:700;color:${NAVY};flex:0 0 auto;line-height:1.1;white-space:nowrap;letter-spacing:0.2px;">${esc(title)}</div>
       <div style="flex:1;height:1px;background:${RULE};margin-left:6px;"></div>
     </div>`;
 
