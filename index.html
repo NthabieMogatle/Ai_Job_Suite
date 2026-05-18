@@ -2478,13 +2478,12 @@ function buildMinimalResumeElement(parsed) {
   const CIRCLE_BG = '#E5E7EB';
   const WHITE     = '#FFFFFF';
 
-  // Initials from name: first letter of first word + first letter of last word
+  // Initials: first letter of first word + first letter of last word
   const nameWords = String(name || '').trim().split(/\s+/).filter(Boolean);
   const initials = nameWords.length === 0 ? '?'
     : nameWords.length === 1 ? nameWords[0][0].toUpperCase()
     : (nameWords[0][0] + nameWords[nameWords.length - 1][0]).toUpperCase();
 
-  // Contact parsing
   const contactList = minimalSplitContact(contact);
 
   // Section discovery
@@ -2503,10 +2502,22 @@ function buildMinimalResumeElement(parsed) {
   const experiences = expKey  ? minimalParseMainItems(sections[expKey])  : [];
   const education   = eduKey  ? minimalParseMainItems(sections[eduKey])  : [];
   const projects    = projKey ? minimalParseMainItems(sections[projKey]) : [];
-  const skills      = skillsKey ? (sections[skillsKey] || []).map(s => String(s).trim()).filter(Boolean) : [];
-  const languages   = langKey   ? (sections[langKey]   || []).map(s => String(s).trim()).filter(Boolean) : [];
 
-  // Section header (small caps + thin underline)
+  // CRITICAL FIX: split comma-joined skill strings into individual skills
+  const splitSkillsFlat = (lines) => {
+    const out = [];
+    (lines || []).forEach(line => {
+      String(line || '')
+        .split(/[,;|]/)
+        .map(s => s.trim())
+        .filter(Boolean)
+        .forEach(s => out.push(s));
+    });
+    return out;
+  };
+  const skills    = skillsKey ? splitSkillsFlat(sections[skillsKey]) : [];
+  const languages = langKey   ? (sections[langKey] || []).map(s => String(s).trim()).filter(Boolean) : [];
+
   const sectionHead = (label) => `
     <div style="margin:0 0 10px 0;padding-bottom:5px;border-bottom:1px solid ${RULE};">
       <h2 style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;
@@ -2515,7 +2526,6 @@ function buildMinimalResumeElement(parsed) {
       </h2>
     </div>`;
 
-  // Entry block for main column (job/edu/project)
   const entryBlock = (item) => `
     <div style="margin-bottom:14px;page-break-inside:avoid;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
@@ -2543,7 +2553,6 @@ function buildMinimalResumeElement(parsed) {
       </ul>` : ''}
     </div>`;
 
-  // Build section HTML
   const summaryHTML = summary ? `
     <section style="margin-bottom:18px;">
       ${sectionHead('Summary')}
@@ -2570,13 +2579,13 @@ function buildMinimalResumeElement(parsed) {
       ${projects.map(entryBlock).join('')}
     </section>` : '';
 
-  // Sidebar: Skills as outlined pill tags, Languages as dot rating
+  // Sidebar: individual pill tags
   const skillsHTML = skills.length ? `
     <section style="margin-bottom:18px;">
       ${sectionHead('Skills')}
-      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
         ${skills.map(s => `
-          <span style="display:inline-block;padding:4px 10px;border:1px solid ${RULE};
+          <span style="display:inline-block;padding:4px 9px;border:1px solid ${RULE};
                        border-radius:3px;font-size:10px;color:${INK_SOFT};line-height:1.2;
                        white-space:nowrap;">
             ${minimalEscapeHTML(s)}
@@ -2584,7 +2593,6 @@ function buildMinimalResumeElement(parsed) {
       </div>
     </section>` : '';
 
-  // Language with dot rating — parse "English Native" / "Spanish Conversational" etc.
   const levelToDots = (text) => {
     const t = String(text || '').toLowerCase();
     if (/native|fluent|c2/.test(t)) return 5;
@@ -2595,19 +2603,27 @@ function buildMinimalResumeElement(parsed) {
     return 3;
   };
   const renderLangRow = (langStr) => {
-    const parts = langStr.split(/\s{2,}|\t|—|–|-|\||:/).map(s => s.trim()).filter(Boolean);
-    const label = parts[0] || langStr;
-    const level = parts.slice(1).join(' ') || '';
+    // Extract level from parens, dashes, colons, or trailing words
+    let label = langStr;
+    let level = '';
+    const parenMatch = langStr.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
+    const dashMatch  = langStr.match(/^(.+?)\s*[—–\-:|]\s*(.+)$/);
+    if (parenMatch) { label = parenMatch[1].trim(); level = parenMatch[2].trim(); }
+    else if (dashMatch) { label = dashMatch[1].trim(); level = dashMatch[2].trim(); }
     const dots = levelToDots(level);
     return `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;
-                  font-size:11px;color:${INK};">
-        <span style="font-weight:500;">${minimalEscapeHTML(label)}</span>
-        <span style="display:flex;gap:3px;">
-          ${[1,2,3,4,5].map(i => `
-            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
-                         background:${i <= dots ? INK : RULE};"></span>`).join('')}
-        </span>
+      <div style="margin-bottom:8px;font-size:10.5px;color:${INK};">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span style="font-weight:500;">${minimalEscapeHTML(label)}</span>
+          <span style="display:flex;gap:3px;flex-shrink:0;">
+            ${[1,2,3,4,5].map(i => `
+              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;
+                           background:${i <= dots ? INK : RULE};"></span>`).join('')}
+          </span>
+        </div>
+        ${level ? `<div style="font-size:9.5px;color:${MUTED};margin-top:1px;">
+          ${minimalEscapeHTML(level)}
+        </div>` : ''}
       </div>`;
   };
   const languagesHTML = languages.length ? `
@@ -2616,7 +2632,6 @@ function buildMinimalResumeElement(parsed) {
       ${languages.map(renderLangRow).join('')}
     </section>` : '';
 
-  // Container
   const container = document.createElement('div');
   container.id = 'minimal-resume-pdf-container';
   container.style.cssText = 'position:fixed;left:0;top:0;width:816px;background:#ffffff;z-index:-9999;opacity:0.001;pointer-events:none;';
@@ -2629,13 +2644,13 @@ function buildMinimalResumeElement(parsed) {
                 padding:48px 56px;">
 
       <header style="display:flex;justify-content:space-between;align-items:flex-start;
-                     gap:24px;margin-bottom:24px;">
+                     gap:32px;margin-bottom:28px;">
         <div style="flex:1;min-width:0;">
-          <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:32px;font-weight:700;
-                     color:${INK};margin:0 0 4px 0;line-height:1.1;">
+          <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:30px;font-weight:700;
+                     color:${INK};margin:0 0 4px 0;line-height:1.15;">
             ${minimalEscapeHTML(name || '')}
           </h1>
-          ${subtitle ? `<p style="font-size:16px;font-weight:500;color:${BLUE};
+          ${subtitle ? `<p style="font-size:15px;font-weight:500;color:${BLUE};
                                    margin:0 0 10px 0;line-height:1.2;">
             ${minimalEscapeHTML(subtitle)}
           </p>` : ''}
@@ -2651,11 +2666,11 @@ function buildMinimalResumeElement(parsed) {
         </div>
       </header>
 
-      <div style="display:flex;gap:32px;">
-        <main style="flex:0 0 62%;min-width:0;overflow-wrap:anywhere;">
+      <div style="display:flex;gap:36px;">
+        <main style="flex:0 0 60%;min-width:0;overflow-wrap:anywhere;">
           ${summaryHTML}${experienceHTML}${educationHTML}${projectsHTML}
         </main>
-        <aside style="flex:0 0 calc(38% - 32px);min-width:0;overflow-wrap:anywhere;">
+        <aside style="flex:0 0 calc(40% - 36px);min-width:0;overflow-wrap:anywhere;">
           ${skillsHTML}${languagesHTML}
         </aside>
       </div>
