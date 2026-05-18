@@ -2526,7 +2526,7 @@ function buildMinimalResumeElement(parsed) {
       </h2>
     </div>`;
 
-  const entryBlock = (item) => `
+  const entryBlock = (item, metaColor) => ``
     <div style="margin-bottom:14px;page-break-inside:avoid;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
         <div style="flex:1;min-width:0;">
@@ -2564,19 +2564,19 @@ function buildMinimalResumeElement(parsed) {
   const experienceHTML = experiences.length ? `
     <section style="margin-bottom:18px;">
       ${sectionHead('Experience')}
-      ${experiences.map(entryBlock).join('')}
+      ${experiences.map(e => entryBlock(e, BLUE)).join('')}
     </section>` : '';
 
   const educationHTML = education.length ? `
     <section style="margin-bottom:18px;">
       ${sectionHead('Education')}
-      ${education.map(entryBlock).join('')}
+      ${education.map(e => entryBlock(e, INK_SOFT)).join('')}
     </section>` : '';
 
   const projectsHTML = projects.length ? `
     <section style="margin-bottom:18px;">
       ${sectionHead('Projects')}
-      ${projects.map(entryBlock).join('')}
+      ${projects.map(e => entryBlock(e, BLUE)).join('')}
     </section>` : '';
 
   // Sidebar: individual pill tags
