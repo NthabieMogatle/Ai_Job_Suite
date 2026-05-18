@@ -2637,10 +2637,10 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   }
 
   // === Render helpers (Briggs-tuned typography; Helvetica/Arial throughout; Round 3 compressed for single-page) ===
-  const head = (title, ic) => `
-    <div style="display:flex;align-items:center;gap:9px;margin:13px 0 3px;">
-      <div style="width:22px;height:22px;background:${NAVY};display:flex;align-items:center;justify-content:center;border-radius:4px;flex:0 0 22px;">${ICONS[ic] || ICONS.brief}</div>
-      <div style="font-size:13px;font-weight:700;color:${NAVY};flex:0 0 auto;line-height:1.1;white-space:nowrap;letter-spacing:0.2px;">${esc(title)}</div>
+    const head = (title, ic) => `
+    <div style="display:flex;align-items:center;gap:11px;margin:14px 0 3px;">
+      <div style="width:28px;height:28px;background:${NAVY};display:flex;align-items:center;justify-content:center;border-radius:4px;flex:0 0 28px;">${ICONS[ic] || ICONS.brief}</div>
+      <div style="font-size:16px;font-weight:700;color:${NAVY};flex:0 0 auto;line-height:1.1;white-space:nowrap;">${esc(title)}</div>
       <div style="flex:1;height:1px;background:${RULE};margin-left:6px;"></div>
     </div>`;
 
