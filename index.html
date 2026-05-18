@@ -2710,7 +2710,7 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   const headerName     = `<div style="font-size:${nameSize}px;font-weight:800;color:${NAVY};line-height:1.0;letter-spacing:0;white-space:nowrap;overflow:hidden;">${esc(name || 'Your Name')}</div>`;
   const headerSubtitle = subtitle ? `<div style="font-size:18px;color:${NAVY};margin-top:4px;font-weight:500;">${esc(subtitle)}</div>` : '';
   const headerRule     = `<div style="height:1.5px;background:${NAVY};width:100%;margin-top:10px;"></div>`;
-  const summaryHTML    = profileLines.length ? `<div style="font-size:11px;line-height:1.5;color:${INK};margin-top:12px;text-align:left;">${profileLines.map(l => md(l)).join(' ')}</div>` : '';
+  const summaryHTML    = profileLines.length ? `<div style="font-size:11px;line-height:1.45;color:${INK};margin-top:12px;text-align:left;">${profileLines.map(l => md(l)).join(' ')}</div>` : '';
 
   wrap.innerHTML = `${headerName}${headerSubtitle}${headerRule}${summaryHTML}<div style="display:flex;gap:36px;margin-top:4px;align-items:flex-start;"><div style="flex:7;min-width:0;">${mainSecs.map(renderSec).join('')}</div><div style="flex:3;min-width:0;">${sideSecs.map(renderSec).join('')}</div></div>`;
   return wrap;
