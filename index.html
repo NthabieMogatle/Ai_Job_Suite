@@ -2471,7 +2471,7 @@ function buildMinimalResumeElement({ name, subtitle, contact, sections }) {
   const INK   = '#333';
   const MUTED = '#6b6b6b';
   const RULE  = '#c7d2de';
-  const FONT  = "Helvetica, Arial, sans-serif";
+  const FONT  = "Georgia, 'Times New Roman', serif";
 
   const esc   = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const md    = s => esc(s).replace(/(\w)?\*\*(.+?)\*\*(\w)?/g, (m, pre, inner, post) =>
