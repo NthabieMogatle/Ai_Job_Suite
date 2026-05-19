@@ -2107,7 +2107,7 @@ async function renderResumePDF(template, parsed, filename) {
 
   const container = document.createElement('div');
   container.style.cssText =
-    'position:fixed;left:-9999px;top:0;width:816px;background:#fff;';
+    'position:absolute;left:-9999px;top:0;width:816px;background:#fff;';
   container.innerHTML = html;
   document.body.appendChild(container);
 
@@ -2129,7 +2129,6 @@ async function renderResumePDF(template, parsed, filename) {
         autoPaging: 'text',
         margin: 0,
         html2canvas: {
-          scale: 612 / 816,
           useCORS: true,
           backgroundColor: '#ffffff',
           letterRendering: true,
