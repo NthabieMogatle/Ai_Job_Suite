@@ -1664,7 +1664,7 @@ async function runGeneration(prefix, prompt) {
     if (!text) throw new Error('No output was returned.');
     
     // Strip em/en dashes — AI detector signal
-    text = text.replace(/\s*[—–]\s*/g, ', ').replace(/, ([.!?])/g, '$1');
+    text = text.replace(/\s*[—–]\s*/g, ' - ');
 
 
     // Clean up any ATS keyword sections or repeated content
