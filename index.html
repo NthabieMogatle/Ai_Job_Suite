@@ -2060,8 +2060,9 @@ function modernParseExperience(lines) {
       };
       return;
     }
-   const looksLikeRoleHeading =
-      /\b\d{4}\b/.test(t) || /\([^)]*\d{4}[^)]*\)/.test(t);
+   const isJustDate = /^[\s,()|·]*(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+)?\d{4}\s*[-–—]?\s*(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+)?(?:\d{4}|present|now|current)?[\s,()|·]*$/i.test(t);
+      if (isJustDate && current) { current.date = t.replace(/[()]/g,'').trim(); return; }
+      const looksLikeRoleHeading = /[A-Za-z]/.test(t) && !isJustDate;
     if (current && !looksLikeRoleHeading) {
       current.subtitle = current.subtitle ? current.subtitle + ' · ' + t : t;
       return;
