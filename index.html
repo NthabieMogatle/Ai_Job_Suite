@@ -2630,7 +2630,10 @@ function buildElegantHTML(parsed, variant) {
           ${refsRaw.length ? `<section style="page-break-inside:avoid;">
             ${leftHead('References')}
             <div style="font-size:10px;color:#444;line-height:1.55;">
-              ${refsRaw.map(r => `<div style="margin-bottom:3px;">${escapeHTML(r)}</div>`).join('')}
+              ${refsRaw.map((r, i) => {
+                const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
+                return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
+              }).join('')}
             </div>
           </section>` : ''}
         </aside>
