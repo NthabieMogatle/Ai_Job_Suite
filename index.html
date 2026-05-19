@@ -2214,56 +2214,73 @@ function buildModernHTML(parsed) {
         <div style="height:1.5px;background:${NAVY};width:100%;"></div>
       </header>
 
-      <div style="padding:22px 56px 30px 56px;display:flex;gap:36px;">
-        <aside style="width:220px;flex-shrink:0;">
-          ${contactItems.length ? `
-            <section style="margin-bottom:20px;">${sideHead('Contact')}
-              ${contactItems.map(c => `<div style="font-size:10.5px;color:${INK};line-height:1.5;margin-bottom:5px;word-break:break-word;">${escapeHTML(c)}</div>`).join('')}
-            </section>` : ''}
-          ${skills.length ? `
-            <section style="margin-bottom:20px;">${sideHead('Skills')}
-              ${skills.map(s => `
-                <div style="display:flex;gap:7px;margin-bottom:4px;font-size:10.5px;color:${INK};line-height:1.45;">
-                  <span style="display:inline-block;width:4px;height:4px;background:${NAVY};border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
-                  <span>${escapeHTML(s)}</span>
-                </div>`).join('')}
-            </section>` : ''}
-          ${langs.length ? `
-            <section style="margin-bottom:20px;">${sideHead('Languages')}
-              ${langs.map(l => `
-                <div style="display:flex;gap:7px;margin-bottom:4px;font-size:10.5px;color:${INK};line-height:1.45;">
-                  <span style="display:inline-block;width:4px;height:4px;background:${NAVY};border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
-                  <span>${escapeHTML(l)}</span>
-                </div>`).join('')}
-            </section>` : ''}
-          ${refsRaw.length ? `
-            <section>${sideHead('Reference')}
-              <div style="font-size:10.5px;color:${INK};line-height:1.5;">
-                ${refsRaw.map((r, i) => {
-                  const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
-                  return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
-                }).join('')}
-              </div>
-            </section>` : ''}
-        </aside>
+      <div style="padding:22px 56px 30px 56px;">
 
-        <main style="flex:1;min-width:0;">
-          ${summary ? `
-            <section style="margin-bottom:20px;page-break-inside:avoid;">
-              ${mainHead('Profile')}
-              <p style="margin:0;font-size:11px;line-height:1.6;color:${INK};">${cleanInline(summary)}</p>
-            </section>` : ''}
-          ${exp.length ? `
-            <section style="margin-bottom:20px;">
-              ${mainHead('Experience')}
-              ${exp.map(renderEntry).join('')}
-            </section>` : ''}
-          ${edu.length ? `
-            <section style="page-break-inside:avoid;">
-              ${mainHead('Education')}
-              ${edu.map(renderEntry).join('')}
-            </section>` : ''}
-        </main>
+        <div style="display:flex;gap:36px;align-items:flex-start;">
+          <div style="width:220px;flex-shrink:0;">
+            ${contactItems.length ? `
+              <section>${sideHead('Contact')}
+                ${contactItems.map(c => `<div style="font-size:10.5px;color:${INK};line-height:1.5;margin-bottom:5px;word-break:break-word;">${escapeHTML(c)}</div>`).join('')}
+              </section>` : ''}
+          </div>
+          <div style="flex:1;min-width:0;">
+            ${summary ? `
+              <section style="page-break-inside:avoid;">
+                ${mainHead('Profile')}
+                <p style="margin:0;font-size:11px;line-height:1.6;color:${INK};">${cleanInline(summary)}</p>
+              </section>` : ''}
+          </div>
+        </div>
+
+        <div style="display:flex;gap:36px;align-items:flex-start;margin-top:22px;">
+          <div style="width:220px;flex-shrink:0;">
+            ${skills.length ? `
+              <section style="margin-bottom:20px;">${sideHead('Skills')}
+                ${skills.map(s => `
+                  <div style="display:flex;gap:7px;margin-bottom:4px;font-size:10.5px;color:${INK};line-height:1.45;">
+                    <span style="display:inline-block;width:4px;height:4px;background:${NAVY};border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
+                    <span>${escapeHTML(s)}</span>
+                  </div>`).join('')}
+              </section>` : ''}
+            ${langs.length ? `
+              <section>${sideHead('Languages')}
+                ${langs.map(l => `
+                  <div style="display:flex;gap:7px;margin-bottom:4px;font-size:10.5px;color:${INK};line-height:1.45;">
+                    <span style="display:inline-block;width:4px;height:4px;background:${NAVY};border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
+                    <span>${escapeHTML(l)}</span>
+                  </div>`).join('')}
+              </section>` : ''}
+          </div>
+          <div style="flex:1;min-width:0;">
+            ${exp.length ? `
+              <section>
+                ${mainHead('Experience')}
+                ${exp.map(renderEntry).join('')}
+              </section>` : ''}
+          </div>
+        </div>
+
+        <div style="display:flex;gap:36px;align-items:flex-start;margin-top:22px;">
+          <div style="width:220px;flex-shrink:0;">
+            ${refsRaw.length ? `
+              <section>${sideHead('Reference')}
+                <div style="font-size:10.5px;color:${INK};line-height:1.5;">
+                  ${refsRaw.map((r, i) => {
+                    const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
+                    return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
+                  }).join('')}
+                </div>
+              </section>` : ''}
+          </div>
+          <div style="flex:1;min-width:0;">
+            ${edu.length ? `
+              <section style="page-break-inside:avoid;">
+                ${mainHead('Education')}
+                ${edu.map(renderEntry).join('')}
+              </section>` : ''}
+          </div>
+        </div>
+
       </div>
     </div>`;
 }
@@ -2568,10 +2585,10 @@ function buildElegantHTML(parsed, variant) {
   const nameSize = nameLen > 28 ? 26 : nameLen > 20 ? 30 : 34;
 
   return `
-    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;max-height:1056px;overflow:hidden;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:#333;font-size:11px;line-height:1.5;box-sizing:border-box;">
 
-      <header style="background:${p.header};padding:36px 56px 30px 56px;border-top:5px solid ${p.accent};
+      <header style="background:${p.header};padding:24px 56px 18px 56px;border-top:5px solid ${p.accent};
                      border-bottom:4px solid ${p.accent};text-align:center;">
         <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:${nameSize}px;font-weight:800;
                    color:#fff8e6;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 6px 0;
@@ -2583,7 +2600,7 @@ function buildElegantHTML(parsed, variant) {
         </div>` : ''}
       </header>
 
-      <div style="display:flex;gap:24px;padding:28px 36px 30px 36px;">
+      <div style="display:flex;gap:24px;padding:16px 36px 8px 36px;">
         <aside style="width:200px;flex-shrink:0;">
           ${skills.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">
             ${leftHead('Skills')}
