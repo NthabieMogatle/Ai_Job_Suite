@@ -2685,7 +2685,7 @@ async function renderMinimalResumePDF({ name, subtitle, contact, sections, filen
     await pdf.html(el, {
       html2canvas: { scale: 612 / 816, useCORS: true, backgroundColor: '#ffffff', letterRendering: true },
       x: 0, y: 0, width: 612, windowWidth: 816,
-      autoPaging: 'slice'
+      autoPaging: false
     });
     pdf.save((filename || 'resume-minimal') + '.pdf');
   } finally {
