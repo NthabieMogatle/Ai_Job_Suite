@@ -2060,21 +2060,18 @@ function modernParseExperience(lines) {
       };
       return;
     }
-    const looksLikeRoleHeading =
-      /\b\d{4}\b/.test(t) && (
-        /\b\d{4}\s*[-–—]\s*(?:\d{4}|present|now)\b/i.test(t) ||
-        (t.split(',').length >= 3 && /\d{4}/.test(t.split(',').pop()))
-      );
+   const looksLikeRoleHeading =
+      /\b\d{4}\b/.test(t) || /\([^)]*\d{4}[^)]*\)/.test(t);
     if (current && !looksLikeRoleHeading) {
       current.subtitle = current.subtitle ? current.subtitle + ' · ' + t : t;
       return;
     }
     if (current) items.push(current);
     current = { title: t, date: '', subtitle: '', bullets: [] };
-  });
-  if (current) items.push(current);
-  return items;
-}
+    });
+    if (current) items.push(current);
+    return items;
+    }
 
 // Pre-rasterized to PNG base64 — bypasses html2canvas SVGElementContainer + jsPDF.context2d atob() throw and gives jsPDF an image type it can drawImage (SVG → UNKNOWN; PNG → embeds). See PHASE2-FINDINGS.md §1, Issues #8 and #10.
 const MODERN_ICONS = {
