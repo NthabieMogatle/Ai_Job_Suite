@@ -1960,1343 +1960,672 @@ function downloadOutput(id, filename) {
 }
 
 /* ===== PDF DOWNLOAD ===== */
-function modernEscapeHTML(s) {
+/* Unified system: one parser, one renderer, four HTML template builders.
+   Replaces the previous Modern HTML / Minimal HTML / Executive jsPDF / Elegant jsPDF split. */
+
+function escapeHTML(s) {
   return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-function modernMd(s) {
-  return modernEscapeHTML(s).replace(/(\w)?\*\*(.+?)\*\*(\w)?/g, (m, pre, inner, post) =>
-    (pre || '') + (pre ? ' ' : '') + '<strong>' + inner + '</strong>' + (post ? ' ' : '') + (post || '')
-  );
+function cleanInline(s) {
+  return escapeHTML(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
-// Fix glued skill phrases the model sometimes outputs. Two layers:
-//  1) CamelCase regex — splits any lowercase→uppercase boundary (TeamLeadership, PatientCare, VasoactiveDrip).
-//     A denylist preserves legitimate internal-capital product/tech names (JavaScript, GitHub, iOS, etc).
-//  2) Explicit-token regex — catches lowercase-only glued variants that no regex can detect heuristically
-//     (Teamleadership, Patientcare, Vasoactivedrip). Extend this list when new glued tokens appear in real outputs.
 const GLUED_SKILL_PRESERVE = [
-  'JavaScript','TypeScript','CoffeeScript','ActionScript','VBScript',
-  'GitHub','GitLab','BitBucket','SourceTree','StackOverflow','CodePen','JSFiddle',
-  'MySQL','PostgreSQL','MongoDB','MariaDB','DynamoDB','CouchDB','RethinkDB','GraphQL','NoSQL',
-  'PowerShell','PowerPoint','SharePoint','OneDrive','OneNote','WordPress','MailChimp','HubSpot','SalesForce',
-  'MacBook','iMac','iPhone','iPad','iPod','iOS','macOS','watchOS','tvOS','AirPods','AirDrop','FaceTime','AppStore','iCloud','iTunes',
-  'PlayStation','XBox','GameCube','DreamCast',
-  'LinkedIn','YouTube','FaceBook','WhatsApp','SnapChat','TikTok','PayPal','eBay','BlackBerry',
-  'DevOps','MLOps','DataOps','GitOps',
-  'NodeJS','NextJS','NestJS','VueJS','AngularJS','EmberJS','BackboneJS','ThreeJS','jQuery',
-  'AutoCAD','SolidWorks','SketchUp','InDesign','PhotoShop','LightRoom','AfterEffects','PremierePro','FinalCut',
-  'QuickBooks','TurboTax','OpenOffice','LibreOffice','VirtualBox','VMware','RedHat','CentOS','FreeBSD','OpenBSD',
-  'JavaScripts','TypeScripts'
+  'JavaScript','TypeScript','GitHub','GitLab','MySQL','PostgreSQL','MongoDB','GraphQL','NoSQL',
+  'PowerShell','PowerPoint','SharePoint','OneDrive','WordPress','MailChimp','HubSpot','SalesForce',
+  'iPhone','iPad','iOS','macOS','LinkedIn','YouTube','FaceBook','WhatsApp','SnapChat','TikTok','PayPal',
+  'DevOps','MLOps','NodeJS','NextJS','VueJS','AngularJS','jQuery','AutoCAD','SolidWorks','PhotoShop',
+  'QuickBooks','TurboTax','VMware','RedHat','FreeBSD','BlackBerry','eBay','FaceTime','AppStore',
+  'iCloud','iTunes','PlayStation','XBox'
 ];
-const GLUED_SKILL_TOKEN = /[A-Za-z][a-z]+(?:[A-Z][a-z]*)+/g;
-const GLUED_SKILL_LOWER = [
-  ['Teamleadership','Team leadership'],
-  ['Patientcare','Patient care'],
-  ['Vasoactivedrip','Vasoactive drip'],
-  ['Bedsiderounds','Bedside rounds'],
-  ['Vasoactivemedication','Vasoactive medication'],
-  ['Endoflife','End of life'],
-  ['Chargenurse','Charge nurse'],
-  ['Acutecare','Acute care'],
-  ['Triagepatients','Triage patients'],
-  ['ReactNode.js','React, Node.js'],
-  ['ReactNode','React, Node']
-];
+
 function fixGluedSkills(s) {
   if (!s) return s || '';
-  let out = s.replace(GLUED_SKILL_TOKEN, (tok) => {
+  return s.replace(/[A-Za-z][a-z]+(?:[A-Z][a-z]*)+/g, tok => {
     if (GLUED_SKILL_PRESERVE.includes(tok)) return tok;
     return tok.replace(/([a-z])([A-Z])/g, (m, a, b) => `${a} ${b.toLowerCase()}`);
   });
-  for (const [glued, fixed] of GLUED_SKILL_LOWER) {
-    out = out.replace(new RegExp(`\\b${glued}\\b`, 'g'), fixed);
+}
+
+const SECTION_HEADERS = [
+  "PROFESSIONAL SUMMARY","SUMMARY","PROFILE","ABOUT","ABOUT ME","OBJECTIVE",
+  "TECHNICAL SKILLS","SKILLS",
+  "TECHNICAL EXPERIENCE","WORK EXPERIENCE","EXPERIENCE",
+  "PROJECTS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING",
+  "LANGUAGES","LANGUAGE","REFERENCES","REFERENCE"
+];
+
+function isHeading(line) {
+  return SECTION_HEADERS.includes(
+    String(line || '').toUpperCase().replace(/[^A-Z &]/g, '').trim()
+  );
+}
+
+function parseResumeText(rawText) {
+  const rawLines = rawText.split("\n").map(l => l.trim()).filter(Boolean);
+  const name = rawLines[0] || "Your Name";
+
+  let subtitleIdx = -1, contactIdx = -1;
+  for (let i = 1; i < Math.min(5, rawLines.length); i++) {
+    const l = rawLines[i];
+    if (isHeading(l)) break;
+    const isContact = l.includes("|") || l.includes("@") || /^\+?\d/.test(l) || /^\(\d/.test(l);
+    if (!isContact && subtitleIdx === -1) subtitleIdx = i;
+    else if (isContact && contactIdx === -1) contactIdx = i;
   }
-  return out;
-}
 
-function modernSplitList(lines) {
-  const out = [];
-  (lines || []).forEach(l => {
-    const cleaned = fixGluedSkills((l || '').replace(/^[-•▸◆]\s*/, '').replace(/(\w)?\*\*(.+?)\*\*(\w)?/g, (m, pre, inner, post) =>
-      (pre || '') + (pre ? ' ' : '') + inner + (post ? ' ' : '') + (post || '')).trim());
-    if (!cleaned) return;
-    if (cleaned.includes(',')) {
-      cleaned.split(',').forEach(item => {
-        const t = item.trim();
-        if (t) out.push(t);
-      });
-    } else {
-      out.push(cleaned);
-    }
-  });
-  return out;
-}
+  const subtitle = subtitleIdx > -1 ? rawLines[subtitleIdx] : "";
+  const contact  = contactIdx > -1  ? rawLines[contactIdx]  : "";
+  const bodyStart = Math.max(subtitleIdx, contactIdx) + 1 || 2;
 
-function modernParseExperience(lines) {
-  const items = [];
+  const sections = {};
   let current = null;
-  (lines || []).forEach(line => {
-    const t = (line || '').trim();
-    if (!t) return;
-    if (/^[-•▸◆]/.test(t)) {
-      const bullet = t.replace(/^[-•▸◆]\s*/, '').trim();
-      if (!current) current = { title: '', date: '', subtitle: '', bullets: [] };
-      current.bullets.push(bullet);
-      return;
+  rawLines.slice(bodyStart).forEach(line => {
+    if (isHeading(line)) {
+      current = line.toUpperCase().replace(/[^A-Z &]/g, '').trim();
+      sections[current] = [];
+    } else if (current) {
+      sections[current].push(line);
     }
-    if (t.includes('|')) {
-      if (current) items.push(current);
-      const parts = t.split('|').map(p => p.trim()).filter(Boolean);
-      current = {
-        title: parts[0] || '',
-        date: parts.length > 1 ? parts[parts.length - 1] : '',
-        subtitle: parts.length > 2 ? parts.slice(1, -1).join(' · ') : '',
-        bullets: []
-      };
-      return;
-    }
-   const isJustDate = /^[\s,()|·]*(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+)?\d{4}\s*[-–—]?\s*(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+)?(?:\d{4}|present|now|current)?[\s,()|·]*$/i.test(t);
-      if (isJustDate && current) { current.date = t.replace(/[()]/g,'').trim(); return; }
-      const looksLikeRoleHeading = /[A-Za-z]/.test(t) && !isJustDate;
-    if (current && !looksLikeRoleHeading) {
-      current.subtitle = current.subtitle ? current.subtitle + ' · ' + t : t;
-      return;
-    }
-    if (current) items.push(current);
-    current = { title: t, date: '', subtitle: '', bullets: [] };
-    });
-    if (current) items.push(current);
-    return items;
-    }
-
-// Pre-rasterized to PNG base64 — bypasses html2canvas SVGElementContainer + jsPDF.context2d atob() throw and gives jsPDF an image type it can drawImage (SVG → UNKNOWN; PNG → embeds). See PHASE2-FINDINGS.md §1, Issues #8 and #10.
-const MODERN_ICONS = {
-  phone:     '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAA0CAYAAADFeBvrAAAEFUlEQVR4AeyaW2iOcRzHzYUys5VTNJJTlEOJXLiYnEbSLpyuttzJhVwQORuWQ0btau2CUnNDYikmhoZoS5QrjBuUzWEO0ZQ2n++8r97D839Oe5/DFn2/fv/nf3j+v8/+z573/z7PBg8aYP/+A8V9QR1XqKenpwBX4Qt4er8GAmAEAA/xXrweP6BuEjG2Mq4QiReS9R08Cyc1ksIV2oYQYylLIBIeSra38RycKdWdyayMy7ElEMldx/OwSeVAbzI1RlmfBUSiNSS0CDupjr5znTqF3Z4GRIK6CWzxkMRVxhR56B941zQgZluLM+uoMqqYlos4NspMfryPzJazSgd8jAtkSCbQO5+z7AJqmM+xOR2WCdTk8+y6zQ/3OTanw9KA8vLyXnH2W9irOhn73uugIPqnASUmqE1EL+GGl85B9rUCusyEXn/a2iIxLHplAXHp9JCW11WKLxAwUh3//cZu1M4P4aWbjmH0yVohTUqC7cSz2I1uuulk1SeIOkugxET7iD+xk+46dQiz3QjEKn0gkRPYSZ+cOoTZbgRKJFFN7MB20k3Erj3UNlsgVkmXnL5+2yXVf4ASFPp2+iJRtgrrrCqjqrNdISXFKmkFKih3YytVsDFdZdUQRZ0jkJICqoW4H5t0DqgZpsYw610BKSGgjhKbsZVGUdkM1BRipHINlMhyA7ETW2k0lfejhvIExCppB1FO4iaNpSFSKE9AJDsIqGvEKmxSpFCegUQBlG4Q9SobHBmUL6AExEZiIzYpEijfQKySPpf02OuxiYh6Qd3jRjGVsicxphgXeBpEZ99AjNXvk7ZGKyk/xyaNo0FQS4hGkXwRLsOncCsd3+IOytr1U3SnPgFpClbqI3Eh1ocvwVJaqSaSq8WlOB8X4jW4Bj9j1BfcgLfh+VjS06QjtDdgV0+V+gykWYH6TCzBTk+MNtNHD1R+EL/iS3grTn1lw2GWyqhpBWoy0VY5AdIMQP0irsDncRDS28MnQJXanTxnQJoEqG6sD95jOg7AegnXCNRB07ldA5lOYFUP1B7qtU3SZUUxp8rjbJVA6c1HPuU0BQKkGYDSW4nZlE0bWpr6pNWMbgFMe0iKfxUYkE4P1Busl2dO33rV3Y9nMihtGxYoEJP1Cih99VjAQRvOtb6nnjAUIE0IlD4sdQlqtdKSULtPP2XcYfxPoQFpRqC6sFZrIsensW71BF/SlquE831LHR0qUHJiktDrl+0cT8Pateu5BUXXekRPwWStdCRAJNMrwHTT0AMYbV5PUqmHmwRb6e8nljFW+8isjpECJbMhudd4Jx5DnQCtHi930XacPkuxtk4cZisWQKlpkWw9XkydLscdxENYcQL1uynbKnZAyWxJvg1X40qsqF19stkYYwtkzNihYcAB/QEAAP///60mBwAAAAZJREFUAwAYjBd4kL2LYgAAAABJRU5ErkJggg==" width="13" height="13" alt="">',
-  envelope:  '<img src="data:image/png;base64,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" width="13" height="13" alt="">',
-  location:  '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAA0CAYAAADFeBvrAAAFEElEQVR4AcSaWahWVRiGz6koERIaCQoqyLKJLCJsPnXVRTSYFEUXEdlFWEYaWRGBJVkUFVFGA3bRQE4XB6crh6MgKg6oOHJUcJ4QZ8Xh93ll/7LdZ6+1vrX3+o+H7z1rrW9907vnvfZ/SVviv0ajcS8YDeaDNWAHaIr6qxnMA7Lpnzh9WxJCFNcXfAg2UOAK8Bl4FAwAN4CmqH8ng8eAbNbjswrIty+62lKLEIVcAT6gis3gG3AbiJW7cZDvJmINB5czriyVCZF4EFm7wXfgOlBXrifAD6Cb2A/SVpJKhEg4hGxzwY0gtdxEQJ1jL9JGSzQhyHxKlomg1qGBv0/6MDmFXB/RRkkUIRK8QfQvQW/JWHIOjUlmJkRgnTN/xARPZDuO3LpimsKZCBHwZqJNB5eC3hbl7KQGnVvB3CZCRPkLXAWqyjocBZpKcjVev4OgBAmxZZ4iSgeIkT0YjwJPg37t7e0DBPWBdB/T7gMx8gy1PBJyCBIiwFhglQaGOs/6Q+BrMBscQndO1AfSKaYee8afm7D/GxMy9RJii+gu/lAoSG6+g4KHggM5XWkXm/3gTSZ1BNCYpIOa7vJZegnh+AKwyjAK7LIaN+3wmUP/PWCV53yGIUJe51zgORT2c24c1cX3JxxmAYt4a3ISYtfqydhyuB2kildBXXmdAEdASAZR2zUuIychHO4HFulkC++0GPpsiLGD+akgJO0YOGvzEdK1H9+gbApa2A309G6xrrSHrIQ2Wiow2lhjXeuK59tDV7qcCvrdhbF5WGKow65E3UPVr4cmU/gIBe8lWYzbszZFc4cxiLM2H6G9xuADjXYWM+fJXnB2HhU+QlonKMQpHd5Xqq2mtBJyXoh8hJZQ00kQkoHcFx4OGYXmiaH3rXtCdswfB8tBqTgJcV84hcdSYJHxFHSZxbDMBl+98+gVpWy6qFtEbaeLyubYSSgzmJG1oUYn88iQkWderxOK4TE5PzXtfK+kEyL0d4mPS/UVW/px16RLj88TzH0BrPKvz9BLiF2rO7fOJV+M/FwXBX6bV7j62PUBstVymMusqO+ipq1FZX7sJZQZxj5Fj6BQrV87L+fMP0DslWAEiBE9lXvtg4TYInqr3OWN0nNS69fLKPwg2AgWgMVAy716Otdej1027qaWST1TXagJEsrMtUSbdaMaPT7diocuyVrevYW+dDTRosMz6GQl9D2RYvcSLslEN/nfLNFMhNjVJwg2GlwsGUUNZyzJTYQUiIC/0NZZW8O9kiwk9/9WTzOhLOA7WdtbjZbF3opJFkWILaWFjMkxCWrajiPnqpgYUYSywMNo94NWyxYStPZzCgna2GJaENFnFQ1bBV0AhpDrcGyCKntIpDpJpBsuTUtkDGQWVYlsJlQSXIee80WrxN6qEpHPrcZFu8qE2IJHCTYY6L2JJoloYX8wsXV1qxSwMiFlI7HeHN9VPwFE4mVibqsTqxYhJaaAX2lTnE+fEGsmsWpJbULKTiH6LKJjX8MqmEAMfTOq4nuBTxJCWUT9riD2q5xc1/Iv2W0gGSG28HYK0w8yaMyiG/Tz+B4zewQMkxFSHgrTx6uX6OvGSOMV3TSfxGe91ypyMikh5abAKbRvg5A8i61ew0N2UfPJCSk7hf5J63vLfQ2bmMURwtmkJYSy1PrZ2T9ZP9+8D5n/8oqU/ZYRougG0GfGCbmCR6L7MTdO3m0ZoWalEHiFvm68w+nrt3UMWydnAQAA//8PtCUcAAAABklEQVQDAGljW35UL346AAAAAElFTkSuQmCC" width="13" height="13" alt="">',
-  globe:     '<img src="data:image/png;base64,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" width="13" height="13" alt="">',
-  linkedin:  '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAA0CAYAAADFeBvrAAADYUlEQVR4AeyaPYgTQRiGL2fj/51aKP4hKFcrCMqJRkRsRPAErxG8awRBQSwU0eJipYXYWFnIoYggFlrYqIU/KIpooXZep2hjIeepWKjr84UENpPMzDcxyc6GHN+bne9nZ953Z3czGa6/j78kSYpJkjwGMyBvJpyF+xak9PXDfpjGQ7ANzAd5M+Es3EXUepmh8ygogLzbLAScE0EbaHSLbRZBMmXdImhQBHWLmLKOnqDyZYj4I3SGptDyEnwFUZpW0DXYLygUCkNgE1iMPwp+gqhMI2gSAWPge5o5/i38ERCVaQQdszFG1H1y90A05hP0HtIzHrbPPPmOpn2CVirYLFXUdKzEJ2gui9ddNjbk5pHbA6IxnyAhegXia6WRBrHZ+NfBahCNaQTJbfcOARNgFOwGx1HwBuwFUZlGkBCew0cJ3AR3wUUwBKIzraDoiNsIZSqoQuobx8vgLLgA7oBPoCnTCNrBd5HVGHUapG2ftZgEhR+AmPzsLxIaAIdBCZwAI0Ce240U3QBBphEU1KGy+Cqk5UI9sdWTfw0OkJc9j88cVZaFoNsQHVexo4ja5xy2A9VCOAtBpyAXZIiSny2q8zSCQneEnPWQ+xWkplLMeZdofgFO0whKnD3UJ9X1fEEvB1vBuvpuGkbkd1nDRDWYiSAErAAPICGvZ3kxTOFP4vvMu7LXCHLeQj4GZh7iq4i9AjtB2sbJyWokHTPbcp4Zq/HbIch3y52GwTLQyI42ClZjPEcfq23bUSPIdq4t/teWqMTLm+qVtnlYwiz5nifniyELQQOmCsNfY/imW7O3YSazEOQbc9AkGeL7Og/pq1rru+V8z1i1n6aO7RDkI9zSt6apWiPIR9Ds848ZMHzfDBrlda6Tj0ZQ6BV1Dgg9zZiUWc3JR9O5j6A5cm+GzCvi8f97hjz916V9MxQ643UDuAKaW658fsCH76F3XuGAcRqWtkOQb4YaEmlVMAtBubvlfrfqajfTj2aGDrICLtnAoOZi84itVuLULwQuk+1m13jOtZ5G0BijTzhAqsYO4bnqzQtAeY3tx3Odv4i81TSCrCfHmOgJinFW0pxkhmSzPB3Lc3taBMk/UuRZRJr7CxF0hkhbv+zovxMmS66T/WwNyQwVGfEp+AHyZrJp8gjSw2h5+w8AAP//Bj26FQAAAAZJREFUAwAIObiTHXZ70AAAAABJRU5ErkJggg==" width="13" height="13" alt="">',
-  github:    '<img src="data:image/png;base64,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" width="13" height="13" alt="">',
-  user:      '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAA0CAYAAADFeBvrAAADSklEQVR4AeyZSWgUQRSGM57iQnAJOagZT4KIexRFweCCXjwpEVxQQTQKCjGgeHA34EU9iEvUg4rihqA3ERdyEBQMScQc1OhBFFHEi6jHjN8LI/SEqerpqtczTWh5n9Wp6vfe/1dPz2Q6w6qG2L/UUNIvaHqF0itU5h2I/SWXy+XmQnOehrj9xWII8SvgJeQw8Ara83TKHLyAZcyph6ohRNbCDVQ+gvlgigUsPOHcazCGY7VQM4SwLKrewgYoNTZx4nty6xlVQs0Qam7BOIgatSRcBZVQMcQOt6BmIbjGUmrsck0O5qkYouAB8I29vgUk39sQOzuJQi4vNdIKIkut8QUzDj94G6LnItCKxb6FNAz53DuD9XtvjoahCYNVefw80SN3IFXDUO9AJZ3/3viW0TDU4ysikN8dOHY6rKihIoq7isxFmvI2lMlkPtLxKfjGQ2p98i3ibSgvQH4n+50/dhl+kbQZvEPFEDv7FSWt4Bot1PjhmhzMUzEkBRF0mfE4RI1j5F6JmmQ6X82QNEDYIcZ50Adh8Y4TGsg5zKgWqoZEFQI7GafAHNgNt+ELfAb5iiG/Vc/meCrner+rUacg1A1JdYT2QzechXVQD1lYD+egB/rlXG1iMaQtMkq91JBtt/g+MwKWQCtchw4DsraHtUYYbqsZdc3rCiGmBtZCO7ym+R94BqdgIzQakLXTrHXAX3K74Dw0wUjmnMPJEE3r4BJdv8MdaIYZ4BryrreT5LvwjdpnwOnxVmRDNNpOU/mc2cZYDdoxioLydt9HrzUcR4qSDVG8GmQHL9KhBuIOeU5xj54XojQqyRBFx1L0OTRBuWMH/R9DSa+GkgzhQG702B+008cUy1l4AKERaoidOUGVmVDpWImWrWEirIYoIEb2hxUp4/pJNMm9ZWxpNURWGyQpRiNmHxjDaIidkMdTq/5nJmjcYtNiNESS3IgMiQv5UJ9uUmUzNM2UlID5WSYNNkM/TUkJmK8zabAZ8n7oZ2qqMG/UZjTEN0r5O+l9hebaJW6iTT7oi9Y1GpKzSVzNKDegPMg4ynElOUj/yWiy/g3XaogCVRToBXnUdISxkrTR/4NoshFqyJacxLXUUBKvSlBTeoWCu5HE438AAAD//yyQ5iUAAAAGSURBVAMAm0c3eGcvz7QAAAAASUVORK5CYII=" width="13" height="13" alt="">',
-  briefcase: '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAA0CAYAAADFeBvrAAACD0lEQVR4AeyZTSuEURTHZyayUN42FopELCSl2dgwIb6AWVFKSlY2lpSX72BjzcZKieUQC6VZsFE+gIUUay+N33nq1jNlcZvn3PHccXV+7ul2znnO/5yZmnpymQb7C4LSvlC1DVUqlTbYhxO4tERi94ht1RqUiiAaGqChMmzBAkxZIrHbxJap0c+Z2BILopEWujiHQajVhkk8pVYzZyJLLIinr8EQGLvG2bVEYgmNbJT/K5DINASNxzooZbPZSdixZJLcEhjLG6fWU0NQX+zhNzHf1o3nyHfRNu/XuCpBfIY7IA8FW6jaCcZ6bfNMHIm9YKzL3Fue0mu7SZYzEkRyMxxy8QZ3IB8DW8aIN7aMY5tn4iSHtMiklrm3OaXXd3o/gCapEAnCuYBV8NXWafwMMjmUbeLMgO82j5YN2VDRdyWx/osiaCR24bs7KoLUfkelYBptIigFfei1EATpzdJNpT/dkAtJQZCLqWrWDBvSnKaLWmFDLqaqWTNsSHOaLmqFDbmYqmbNsCHNabqoFTbkYqqaNcOGNKfpolbYkIupatb8vxvSnKLLWg25oU+XE6tz7Q/Z0FOdH+rycY8iaI4nfIPv9oWA2Rwvd59x5MXvC6evJhryaHmVDWVwHqAbNdNwBFeecEyfE/TeA/f4mUiQOAKX8lp+ibPgCYv0eSu9G6oEmUufzyAo7dsLG0r7hn4AAAD//5SqGPUAAAAGSURBVAMA5ElKeMR8Vc8AAAAASUVORK5CYII=" width="13" height="13" alt="">',
-  gradCap:   '<img src="data:image/png;base64,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" width="13" height="13" alt="">',
-};
-
-function modernContactIcon(token) {
-  const v = (token || '').toLowerCase();
-  if (v.includes('@')) return MODERN_ICONS.envelope;
-  if (v.includes('linkedin')) return MODERN_ICONS.linkedin;
-  if (v.includes('github')) return MODERN_ICONS.github;
-  if (/^\+?\d|\(\d/.test(v) || /\d{3}.{0,2}\d{3}/.test(v)) return MODERN_ICONS.phone;
-  if (v.startsWith('http') || /\.(com|io|dev|net|org|co)\b/.test(v)) return MODERN_ICONS.globe;
-  return MODERN_ICONS.location;
-}
-
-function buildModernResumeElement(parsed) {
-  const { name, subtitle, contact, sections } = parsed;
-
-  const contactItems = (contact || '')
-    .split('|')
-    .map(p => p.trim())
-    .filter(Boolean)
-    .map(p => ({ icon: modernContactIcon(p), text: p }));
-
-  const skillsKey = Object.keys(sections).find(k => k.includes('SKILL'));
-  const skills = skillsKey ? modernSplitList(sections[skillsKey]) : [];
-
-  const langKey = Object.keys(sections).find(k => k.includes('LANGUAGE'));
-  const languages = langKey ? modernSplitList(sections[langKey]) : [];
-
-  const eduKey = Object.keys(sections).find(k => k === 'EDUCATION');
-  const education = eduKey ? modernParseExperience(sections[eduKey]) : [];
-
-  const profileKey = Object.keys(sections).find(k =>
-    k.includes('SUMMARY') || k.includes('PROFILE') || k.includes('ABOUT'));
-  const profile = profileKey
-    ? (sections[profileKey] || []).join(' ').replace(/\s+/g, ' ').trim()
-    : '';
-
-  const expKey = Object.keys(sections).find(k =>
-    k.includes('EXPERIENCE') || k.includes('PROJECT'));
-  const experiences = expKey ? modernParseExperience(sections[expKey]) : [];
-
-  const refKey = Object.keys(sections).find(k => k.includes('REFERENCE'));
-  const refRawLines = refKey ? (sections[refKey] || []).map(l => (l == null ? '' : String(l)).trimEnd()) : [];
-  const refBlocks = [];
-  {
-    let cur = [];
-    for (const line of refRawLines) {
-      if (line.trim() === '') {
-        if (cur.length) { refBlocks.push(cur); cur = []; }
-      } else {
-        cur.push(line);
-      }
-    }
-    if (cur.length) refBlocks.push(cur);
-  }
-
-  const NAVY     = '#1c2e4a';
-  const INK_SOFT = '#334155';
-  const MUTED    = '#64748b';
-  const WHITE    = '#ffffff';
-
-  // Header name sizing — tiered by length so longest names fit on one line
-  const nameLen = (name || '').length;
-  const nameSize = nameLen > 30 ? 28 : nameLen > 24 ? 32 : nameLen > 18 ? 36 : 44;
-
-  const sideHead = (label) => `
-    <div style="margin:0 0 11px 0;padding-bottom:6px;border-bottom:1.5px solid ${NAVY};">
-      <h3 style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:800;color:${NAVY};
-                 text-transform:uppercase;letter-spacing:2.5px;margin:0;line-height:1.1;">${label}</h3>
-    </div>`;
-
-  const mainHead = (svgIcon, label) => `
-    <div style="position:relative;margin:0 0 12px 0;padding-bottom:7px;border-bottom:1.5px solid ${NAVY};">
-      <div style="position:absolute;left:-57px;top:-7px;width:28px;height:28px;border-radius:50%;
-                  background:${NAVY};color:${WHITE};display:flex;align-items:center;justify-content:center;
-                  font-size:13px;line-height:0;">${svgIcon}</div>
-      <h2 style="font-family:'DM Sans',sans-serif;font-size:16px;font-weight:800;color:${NAVY};
-                 text-transform:uppercase;letter-spacing:3px;margin:0;line-height:1.1;">${label}</h2>
-    </div>`;
-
-  const timelineRing = `<div style="position:absolute;left:-48px;top:5px;width:10px;height:10px;
-    border-radius:50%;background:${WHITE};border:2px solid ${NAVY};box-sizing:border-box;"></div>`;
-
-  const contactHTML = contactItems.length ? `
-    <section style="margin-bottom:20px;">${sideHead('Contact')}
-      <ul style="list-style:none;padding:0;margin:0;">
-        ${contactItems.map(c => `
-          <li style="margin-bottom:8px;
-                     font-family:Helvetica,Arial,sans-serif;
-                     font-size:10.5px;color:${INK_SOFT};line-height:1.45;">
-            ${modernEscapeHTML(c.text)}
-          </li>`).join('')}
-      </ul>
-    </section>` : '';
-
-  const skillsHTML = skills.length ? `
-    <section style="margin-bottom:20px;">${sideHead('Skills')}
-      <ul style="list-style:none;padding:0;margin:0;">
-        ${skills.map(s => `
-          <li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;
-                     font-size:10.5px;color:${INK_SOFT};line-height:1.45;">
-            <span style="display:inline-block;width:4px;height:4px;background:${NAVY};
-                         border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
-            <span>${modernEscapeHTML(s)}</span>
-          </li>`).join('')}
-      </ul>
-    </section>` : '';
-
-  const languagesHTML = languages.length ? `
-    <section style="margin-bottom:20px;">${sideHead('Languages')}
-      <ul style="list-style:none;padding:0;margin:0;">
-        ${languages.map(l => `
-          <li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;
-                     font-size:10.5px;color:${INK_SOFT};line-height:1.45;">
-            <span style="display:inline-block;width:4px;height:4px;background:${NAVY};
-                         border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
-            <span>${modernEscapeHTML(l)}</span>
-          </li>`).join('')}
-      </ul>
-    </section>` : '';
-
-  const REF_LABEL_RE = /^(Phone|Email|Mobile|Tel|LinkedIn|Website):\s/i;
-  const referencesHTML = refBlocks.length ? `
-    <section style="margin-bottom:0;margin-top:auto;">${sideHead('Reference')}
-      <div style="font-size:10.5px;color:${INK_SOFT};line-height:1.5;">
-        ${refBlocks.map((block, bi) => {
-          // Single-line CSV reference: split on commas — first chunk is bold name, rest are detail.
-          let normalized = block;
-          if (block.length === 1 && block[0].includes(',')) {
-            const parts = block[0].split(',').map(s => s.trim()).filter(Boolean);
-            if (parts.length > 1) normalized = [parts[0], parts.slice(1).join(' · ')];
-          }
-          const blockHTML = normalized.map((line, li) => {
-            if (li === 0) {
-              return `<div style="font-weight:700;color:${NAVY};margin-bottom:2px;">${modernEscapeHTML(line)}</div>`;
-            }
-            const m = line.match(REF_LABEL_RE);
-            if (m) {
-              const label = m[0];
-              const rest = line.slice(label.length);
-              return `<div style="margin-bottom:2px;"><span style="font-weight:700;color:${NAVY};">${modernEscapeHTML(label)}</span>${modernEscapeHTML(rest)}</div>`;
-            }
-            return `<div style="margin-bottom:2px;">${modernEscapeHTML(line)}</div>`;
-          }).join('');
-          const spacer = bi < refBlocks.length - 1 ? '<div style="height:8px;"></div>' : '';
-          return blockHTML + spacer;
-        }).join('')}
-      </div>
-    </section>` : '';
-
-  const profileHTML = profile ? `
-    <section style="margin-bottom:20px;position:relative;">
-      ${mainHead(MODERN_ICONS.user, 'Profile')}
-      <p style="margin:0;font-size:11px;line-height:1.6;color:${INK_SOFT};text-align:justify;">
-        ${modernMd(profile)}
-      </p>
-    </section>` : '';
-
-  const experienceHTML = experiences.length ? `
-    <section style="margin-bottom:20px;position:relative;">
-      ${mainHead(MODERN_ICONS.briefcase, 'Work Experience')}
-      <div>
-        ${experiences.map(exp => `
-          <div style="position:relative;margin-bottom:14px;page-break-inside:avoid;">
-            ${timelineRing}
-            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px;">
-              <h3 style="font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:700;
-                         color:${NAVY};margin:0;line-height:1.3;">${modernEscapeHTML(exp.title)}</h3>
-              ${exp.date ? `<span style="font-size:10px;color:${MUTED};white-space:nowrap;
-                                         font-weight:500;letter-spacing:0.3px;">${modernEscapeHTML(exp.date)}</span>` : ''}
-            </div>
-            ${exp.subtitle ? `<p style="font-size:10.5px;color:${INK_SOFT};margin:0 0 5px 0;
-                                        font-weight:500;">${modernMd(exp.subtitle)}</p>` : ''}
-            ${exp.bullets.length ? `<ul style="margin:0;padding:0;list-style:none;">
-              ${exp.bullets.map(b => `
-                <li style="position:relative;padding-left:13px;margin-bottom:3px;
-                           font-size:10.5px;line-height:1.55;color:${INK_SOFT};">
-                  <span style="position:absolute;left:0;top:7px;width:4px;height:4px;
-                               background:${NAVY};border-radius:50%;"></span>
-                  ${modernMd(b)}
-                </li>`).join('')}
-            </ul>` : ''}
-          </div>`).join('')}
-      </div>
-    </section>` : '';
-
-  const educationHTML = education.length ? `
-    <section style="margin-bottom:0;position:relative;page-break-inside:avoid;break-inside:avoid;">
-      ${mainHead(MODERN_ICONS.gradCap, 'Education')}
-      <div>
-        ${education.map(ed => `
-          <div style="position:relative;margin-bottom:10px;page-break-inside:avoid;">
-            ${timelineRing}
-            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px;">
-              <h3 style="font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:700;
-                         color:${NAVY};margin:0;line-height:1.3;">${modernEscapeHTML(ed.title)}</h3>
-              ${ed.date ? `<span style="font-size:10px;color:${MUTED};white-space:nowrap;
-                                        font-weight:500;letter-spacing:0.3px;">${modernEscapeHTML(ed.date)}</span>` : ''}
-            </div>
-            ${ed.subtitle ? `<p style="font-size:10.5px;color:${INK_SOFT};margin:0 0 4px 0;">
-              ${modernMd(ed.subtitle)}</p>` : ''}
-            ${ed.bullets.length ? `<ul style="margin:0;padding:0;list-style:none;">
-              ${ed.bullets.map(b => `
-                <li style="position:relative;padding-left:13px;margin-bottom:2px;
-                           font-size:10.5px;line-height:1.55;color:${INK_SOFT};">
-                  <span style="position:absolute;left:0;top:7px;width:4px;height:4px;
-                               background:${NAVY};border-radius:50%;"></span>
-                  ${modernMd(b)}
-                </li>`).join('')}
-            </ul>` : ''}
-          </div>`).join('')}
-      </div>
-    </section>` : '';
-
-  const container = document.createElement('div');
-  container.id = 'modern-resume-pdf-container';
-  container.style.cssText = 'position:fixed;left:0;top:0;width:816px;background:#ffffff;z-index:-9999;opacity:0.001;pointer-events:none;';
-
-  container.innerHTML = `
-    <div style="width:816px;min-height:1050px;background:${WHITE};
-                font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
-                color:${INK_SOFT};font-size:11px;line-height:1.5;
-                -webkit-font-smoothing:antialiased;box-sizing:border-box;">
-      <header style="padding:38px 56px 14px 56px;">
-        <h1 style="font-family:'DM Sans',sans-serif;font-size:${nameSize}px;font-weight:800;color:${NAVY};
-                   text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;
-                   margin:0 0 6px 0;line-height:1;">
-          ${modernEscapeHTML(name || '')}</h1>
-        ${subtitle ? `<p style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;
-                                color:${NAVY};text-transform:uppercase;letter-spacing:0.2em;
-                                margin:0 0 14px 0;">${modernEscapeHTML(subtitle)}</p>`
-                   : '<div style="height:14px;"></div>'}
-        <div style="height:1.5px;background:${NAVY};width:100%;"></div>
-      </header>
-
-      <div style="padding:22px 56px 30px 56px;">
-        <div style="position:relative;">
-          <div style="position:absolute;left:249px;top:6px;bottom:0;
-                      border-left:2px dotted ${NAVY};pointer-events:none;"></div>
-          <div style="display:grid;grid-template-columns:230px 474px;">
-            <div style="padding-right:24px;box-sizing:border-box;">${contactHTML}</div>
-            <div style="padding-left:64px;box-sizing:border-box;position:relative;">${profileHTML}</div>
-          </div>
-          <div style="display:flex;align-items:stretch;">
-            <aside style="width:230px;flex-shrink:0;padding-right:24px;box-sizing:border-box;
-                          display:flex;flex-direction:column;">
-              ${skillsHTML}${languagesHTML}${referencesHTML}
-            </aside>
-            <main style="position:relative;width:474px;flex-shrink:0;padding-left:64px;box-sizing:border-box;">
-              ${experienceHTML}${educationHTML}
-            </main>
-          </div>
-        </div>
-      </div>
-    </div>`;
-
-  return container;
-}
-
-async function renderModernResumePDF(parsed, filename) {
-  const container = buildModernResumeElement(parsed);
-  document.body.appendChild(container);
-
-  if (document.fonts && document.fonts.ready) {
-    try { await document.fonts.ready; } catch (e) {}
-  }
-  await new Promise(r => setTimeout(r, 1500));
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
-
-  await new Promise((resolve) => {
-    doc.html(container, {
-      callback: () => resolve(),
-      x: 0, y: 0,
-            width: 612,
-    windowWidth: 816,
-    autoPaging: 'text',
-    margin: 0,
-            html2canvas: { scale: 612 / 816, useCORS: true, letterRendering: true, backgroundColor: '#ffffff', logging: false, allowTaint: true }
-    });
   });
-  
-  container.remove();
-  doc.save(filename);
+
+  return { name, subtitle, contact, sections };
 }
 
-function minimalEscapeHTML(str) {
-  if (str == null) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+function findSection(sections, regex) {
+  return Object.keys(sections).find(k => regex.test(k.toUpperCase()));
 }
 
-function minimalIsBullet(line) {
-  return /^\s*[-•▸◆▪·]\s+/.test(String(line || ''));
-}
-
-function minimalStripBullet(line) {
-  return String(line || '').replace(/^\s*[-•▸◆▪·]\s+/, '').trim();
-}
-
-// Convert whatever shape `contact` is into an array of strings.
-function minimalSplitContact(contact) {
-  if (!contact) return [];
-  if (Array.isArray(contact)) return contact.map(s => String(s).trim()).filter(Boolean);
-  if (typeof contact === 'object') {
-    return [contact.phone, contact.email, contact.location, contact.linkedin, contact.website, contact.github]
-      .map(v => v ? String(v).trim() : '')
-      .filter(Boolean);
-  }
-  return String(contact)
+function splitContact(contact) {
+  return String(contact || '')
     .split(/\s*[|·•]\s*/)
     .map(s => s.trim())
     .filter(Boolean);
 }
 
-// Route section to sidebar (right column small list) or main (left big timeline)
-function minimalRouteSection(name) {
-  const n = String(name || '').toUpperCase();
-  if (/\b(SKILL|LANGUAGE|HOBB|INTEREST|REFEREN|CERTIF|AWARD)/.test(n)) return 'side';
-  return 'main';
+function splitSkills(lines) {
+  const out = [];
+  (lines || []).forEach(line => {
+    String(line || '').replace(/^[-•▸◆]\s*/, '').split(/[,;|]/).forEach(s => {
+      const t = fixGluedSkills(s.trim());
+      if (t) out.push(t);
+    });
+  });
+  return out;
 }
 
-function minimalIsSummary(name) {
-  return /SUMMARY|PROFILE|ABOUT|OBJECTIVE/i.test(String(name || ''));
-}
+const DATE_ONLY_RE = /^[\s,()|·]*(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+)?\d{4}\s*[-–—]?\s*(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+)?(?:\d{4}|present|now|current)?[\s,()|·]*$/i;
 
-// Parse main-column lines into items. Each item: { title, dates, meta, bullets }.
-// Heuristic: a non-bullet line starts a new item; the next non-bullet line is meta (e.g. company); bullets attach to current.
-function minimalParseMainItems(lines) {
+function parseEntries(lines) {
   const items = [];
-  let current = null;
-  const flush = () => { if (current) { items.push(current); current = null; } };
+  let cur = null;
+  const flush = () => { if (cur) { items.push(cur); cur = null; } };
+  const isBullet = l => /^\s*[-•▸◆▪]\s+/.test(l);
 
   for (const raw of (lines || [])) {
     const line = String(raw || '').trim();
     if (!line) continue;
 
-    if (minimalIsBullet(line)) {
-      if (!current) current = { title: '', dates: '', meta: '', bullets: [] };
-      current.bullets.push(minimalStripBullet(line));
+    if (isBullet(line)) {
+      if (!cur) cur = { title: '', dates: '', metaLines: [], bullets: [] };
+      cur.bullets.push(line.replace(/^\s*[-•▸◆▪]\s+/, '').trim());
       continue;
     }
 
-    // Non-bullet line
-    if (!current || current.bullets.length > 0) {
+    const justDate = DATE_ONLY_RE.test(line);
+
+    if (!cur || cur.bullets.length > 0) {
       flush();
-      current = { title: '', dates: '', meta: '', bullets: [] };
-      // Try to peel dates off the end. Look for ` | dates` or ` — dates` containing a 4-digit year.
+      cur = { title: '', dates: '', metaLines: [], bullets: [] };
       const m = line.match(/^(.+?)\s*(?:\||—|–)\s*([^|—–]*\d{4}[^|—–]*)\s*$/);
-      if (m) {
-        current.title = m[1].trim();
-        current.dates = m[2].trim();
-      } else {
-        current.title = line;
-      }
-       } else {
-      if (!current.metaLines) current.metaLines = [];
-      current.metaLines.push(line);
-      current.meta = current.metaLines.join(' · '); // backward compat
+      if (m) { cur.title = m[1].trim(); cur.dates = m[2].trim(); }
+      else if (justDate) { cur.dates = line; }
+      else { cur.title = line; }
+    } else if (justDate && !cur.dates) {
+      cur.dates = line.replace(/[()]/g, '').trim();
+    } else {
+      cur.metaLines.push(line);
     }
   }
   flush();
   return items;
 }
 
-// Pre-rasterized to PNG base64 — see PHASE2-FINDINGS.md §1 and Issue #8. SVG-base64 images fail Image.load (no xmlns) or fail jsPDF addImage ("UNKNOWN" type); PNG embeds cleanly via the context2d shim.
-const MINIMAL_ICONS = {
-  brief: '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAA0CAYAAADFeBvrAAADA0lEQVR4AeyZPWgUQRTHcxYqKGphxMIv0BA0oJZ+oJ6WCuJXsNBCiJWW2ggWio2tIKZQG0ULMWdjK55RRBtjY6UYEFQk4heCWMj5e7C3zL2d3dxuJruzyYb3Y+fNvLfzf/tyd7t3c3pm2F9VkO8NrTrUTYdardYeOA8PoKlo4Mvajm7OlTbGaYcQughGEPEILsEB2KU4iC9ro8TehoX4zsxZQQhbgKpXcAi6teMEjgW5DKduzgpCylVYC2ltHQlXwIk5KYgrvBw1J0DbOyaeKGSOqQ4b4hxLO2YyOk4KYu/doG1LrVbrg7qij8CtoK2uJ7L4rgraqTYfpYiXai50WXuB8xxM86og/e/yxVQaM/6k5pcpP5PrqkOZNp+OpMSCeKGehIfwHWINYUfAtMHY4GCB4LQ5okG0DJEba9aC2HMNvCHrOuyDJVC0iQbRckO0wWqbIGtBBN6BDeCriTbRGNEXKYjK9xO1DXy37Wjdq0VGCiJgM5j2DWcQ5LMmCXlNnCLuMCTFmWtpco5y3l9gmtbaYyuo38xg/IzPjfvQnIQR1oehAZPFttfT5NxDy1Mwbb3pyNhW0FxZMPhrjJ0OM5zsj8qZp3xrh3RMqXxbh0pVgBY7Kwvq5e2x7gN0oxcSzdahxSpD7oIfM+cD8jiPlNC0Vuubwqow3P/BCi3R1qF/OqhMvq2g8RIV8F5rtRWkP7yaJJm3K0WO5fsJ5ISmtVpfQ2F0MJhIcSvTvqWZliN6JiDRbB1KTPB9sSqo6lDOV6D6l8v5gqferupQ6kuWc8Ls7VDOFzrzdrYOfVZn26j8QlweMOez8SYw7aPpyNhW0GtZMOjnZB9A//ibq4+etyC/LXEIbSwcBQNbQfKj749gvX1YyUCeFotEP8x9RVMDOixSEHfWP4k4C77bGbT+1iIjBUkAgTc5yte6kecN5os20XQajbdsQqwFSSAJwxwH4Bicg4sFIxpEywDarqHFarEFSTSJ43AXLsOFghENoiXxK4LEgqSoslEV5HvHqg753qH/AAAA//8pm9pvAAAABklEQVQDAD7Hc4dFuFiPAAAAAElFTkSuQmCC" width="13" height="13" alt="">',
-  cap:   '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAA0CAYAAADFeBvrAAAF3ElEQVR4AeyZ24tVVRzHZ3qosBdf01ATC4qSxETHysjBnCZTiUJ6qId60JpudtX+gO5qYBfqoaCkByEsL6mlUjQ1YoORlpEPUaZZWVCgqJWcPp/h7MOe2Wud2ftcZiKO/D6utX9r7d/6fffaZ++115zV9j/71xL0X5/Q1gy1ZmiEr0DrlhvhC154uBGZoVKpNLEEhbOr4YSmCkLELNhJXt8L9R0wi3rTrCmCSHou7CLrPpgLiXVS6bMNrqbecGuoIJJUyMdk6axcRxkz2z6h/0dgPdavsL8hgkhqHvQyukLmUOa1a+m4i3MVl55J3LVZXYJIZAF4W33A8FdByP7EubKMdaoZ8/bbSaxeWJBpLeCoSRCDdsFnjLMJYj/y32hTyPj29vanhePx8AT8DiHzomwi9qdwfajDcL5CghikG3YTdCt0QMiO4XwcJigCTlAfMOvwFAcTYQUomiJjs/FsZywfIF3Uc1suQQT21tpD1C0wE0L2K85HYSJJPwsnqQeNthPwDI0T4DHwXIqMOftbGX83dGdaA46qggiyEPo5z1trBmXIfsH5MCjkeRKNCqHPILMvPIdzEjwCxqLImBdxC7nsgaq/saAgTloMewn7HkyHkB3FuRwmkdRqOEW9JuPck7CKkxXmxfmZesi8qP7G+snvplCHQYLoNB++pOMGmAYhU0gPCYyDF6BmIUODGwtW478Q7oeYMC/yRnL9AgY9PCqCaLiDANtgKoTsCM5EyMvUm2aIOgVr4XwG6QEvIkXGrsDjw+N2ygGrCOLobojZGoJfAE0VEhrcMWEcbWshZrckDWlBBxJnoFzODL4NlwfamupyTFjPIPdBzCq3fVqQ74WXYmfgvw32EdynTUOWKcSLGuN0wvt02Ae3Qsx8si5JGiuCmNZjcC8NTq+31l/UQ+b7wGXKdwzY8BkzJvzAwDvgBgiZuZmjDybffZU+FUGJB1FHwR/iZHyvwd8QMp9Ezti7JFC3MGPARgZyRnzhUs2YuZjTZHOEzMMiIygJQecjsJTjKfAG/AMhW4RTYT5GCwtDxDTYbAwIvlvwO/brlFPMCXzicpi1qKCkKycfgjs5vhGqmckobDMJxt5hlfPtA/5GfIEPF7ubHO6CQ5UAkcqwglLnRa9Kqo9Vk9trspARhu9K8H2nkNhvxDhp8o7dVkRQeoCkvj2pBEqTVdg2BChC/G76nL7zIWQlnK7kKWqzegU9xLCuLN6hjJnJK0LmxTrh913jb3DQUwt/IatXUBv39X7wTa0wV+WFEqCzC+CpxFgCX3Ncl9UtKBmdZBS2kGNXxH43Ua1qPqKnc95i2F+1Z4HGhglKxiS5fvCbRWEfJv5U6e9uBn0WgQ+GVFP91YYLSlIiWYW5tL8Gn58j0oG/C/xoxN14a5qgJFWS74Wby7gfkTQ1pSwi6Ewgg3MCvnpdZwcChMYOdGsr9B5yf9r3RDrQm7xjXPOlfTXXieUn+LohAVyIOvYQd/gw9wxxy/jN4e8gHekyDlzuLKOsyxDzIAG+gUshbRsY+3TaUa2eW1A5iKvwP8r1pDiPyiskdBBWgJ/NuIY3+8JKOEjvNXAupM19uwfSjuHqhQRxpdy08KmVWbYz0EXgJuJhEnRn5h5K/5wyBv+AcTwGOqAHXJgepuFJ8FyKQfYTR3MYM7a1RXPWCgnydAb4itINQP/KQDVjxvQ95Nev+97HSf4AfEvP4+AW8ouUrvXsSzVj/ilmJmN5C2YaqzliAaud43LHZbx/BvELN7ZPncRop3IJXAzWKaLmLbYUIZ3g7EU7xhpqEmQwBiyBs+AGvNtIzoZNteC5bqO5s+QXaS0xBs6pWdDA2fyHqNOwDtxgd4H6Km5vLYqqZh/7ujCdzflvQe6nWSxy3YLSgUnIBaqP8LH4/QuDIt2Rcd/aLV7r+twzGEv/ZdCwhSljFnqx2j8XJHkG/HTvo1wPq8D9b+v6fuQ499s/16DlTg2doXLMUS1agkb18ucYvDVDOS7SqHb5FwAA//9yREzsAAAABklEQVQDAGe4IIc9hjldAAAAAElFTkSuQmCC" width="13" height="13" alt="">',
-  bulb:  '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAA0CAYAAADFeBvrAAAEvUlEQVR4AeyaWahVVRjH72mAbCRKQurNxyK53aKBJt/CaLRMu2E9VUQFERRB0fTQQBhB9ZDRIOKAM6LihFd9dgIRFZznAVQU8cnj7w/rHNb+3PvutdZeV0SufH/W+r71Tf+9991nr729ruca+zdM6Go/ocNnKPQMtdvtMe12exL4Hix00Fy2B0PzxPplPUM0PRL8As7RyGYwA3wJXnLQXLYt+JwFP4GRrGWTLIRoahT4ja72gU/BLaBObsXhM7CX2CngHuaNpTEhGnmCLnaAj8EIECs3E/AJ2EmuRxkbSSNCNDCO6qvBbaBKLrCwAWwEmjOUyu1Y15DzOcZkSSZE4X6qLgE3ASvzMaixe1ut1gjwMOgDOoP3sfY8kA9DQbS+jNwTC9YIJYkQBXWXml5SZx620TQ+HiwHh9ELgu0QWArGszAaLAJWZlLjAWsM0ZMIkfhvYGUaTb4GdtuFKt35vsr6LGDlD2sI0aMJceTeIvEjwJepNPe2bwidE3cRTMJ/GvDlaWq94RtC5lGEKKBr/GeTeCcNvWtsKeo7BO0Bvvzqavq2QedRhMj0MhgFfPnBV1LnHJQ2sTaXar2IPVhiCT1mMh+jkf+MLVkl11SCTwJfbE1/7bJ5LKHHTYalRs+h6qfAzzM0hLiWr6dKL/Blna9kmq83efqofYOxVaoxZ+hustjEa7HlFnuQbqSAniIY6iWG0PGSdEdLbMGmCsdjJfZTJbZSUzAh/mB1F7LPYsFHrrR6udHmPOtql3sbazAhF3fajZ3hjs4k42hz2pqDlmpK6MlBs6ct2pxDSmib6fFDo+dQPzJJtNcypmo19gz9ZVL1cku1z3XGJVwllzaL95sIW9MsF9UoQvxxLid8P/DlXxqx172/HjR3OWzzu6i5MiiBc4oi5GLsY72O6Eoa0oOrc4kbXKwaVy4/+E9fCZmnEPqdxFuBL7rs5vqGyLl2r8rhh23h7EzxDSHzaEIUOU9ivZY6w+jLOI70V74hZE7MN/hpu87QFeV+oatFTKIJKTektCt9U3OD72hQW2tjLlfx1buDr0tWtfM9UGKvNSURUlZI6Un7W80N/qHRO43tMhWfuzBqu8BQkC/IvapgiVCSCakGhXW52JccenT5XOs1kI9eNvpui8n5o2+InTci5Ipp63zCzTvD+5yBytxu7b2OsxuPME4GjaSyaGhWjqgeTfTixA/R79JTvsHMx6LrTDJ0ZaLL1TWkTBoTUlEaWcGo99oMXZnAmXi2DHi8DnzRixa7D/LXg+dZCLlqltAH2NdUwF5u9umDsDTJSUi38rQuenqaxBZqZiHEZTWGrPYywhQs/S5HcECVYxZCJNebz5BvQriWimJfKV2JNAYTqslrt+Y17kO3nIuQXt7rE2Rqp4pVjtT4blwWQty2DwK9s+sjs35jYqDvRr3EHyS2sWQh1OmCpjaCgUjoy14nReMxKyHuVC0wGSwAAzWQj3xbjVl4CbISIq8++v7PqK8UzzAOBvnIV7d8XPNIbkJqMrYzu7mLjS/45yYU+2lFb2NnFzpqqGQlxM1gO/08BOaAgRrof5ToDme/2hGWLlkJqQ1IbQITwNga9LO+STE5kZ1QzuZScg0TSjlqVzLmEgAAAP//nomqMQAAAAZJREFUAwBEKn14U4GZhwAAAABJRU5ErkJggg==" width="13" height="13" alt="">',
-  user:  '<img src="data:image/png;base64,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" width="13" height="13" alt="">',
-  key:   '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAA0CAYAAADFeBvrAAAE4ElEQVR4AeyYWahVVRjH75HSisLmLFKiOSwoK8rKZigsKhqeynsje4ikhKR6C3qriILMh0gfHEGcQHHkIhecRXGeEEVRnHHGCfX6+x/2Oaz93bXX3sdz7jkbOZf//35rfevba33//e21z967R8s19tcUlPeCNivUiAp1dnb2gN/BqXBQKIfcVwgB1yFgBvwHfgIX4uuH9SLXgkhcYqaQ+QewBPm+KnWsza2gSMw0Ev4IurhEZwz0IpeCIjHLyNitDN2Wy/xrKxQKe7Be5E5QJGYn2T4HXUhMK2Imuk7bzpWgSMw8kuwLLYamidEBuREUidGeeUuJedhGTC+PP+bKhSAS1Z1rAZnZPYOrjNdpzSE2KKrhgkhQYraT7BvQhfaM7miu70068zgmUVRDBZGYxHSQ5APQhcS04vgQXoQuVKlEUQ0TFInRnnnZzTZqH8S2cxOYjdXTga2URM1ljp6Mx9AQQSSiykhM0p65lywXE9cHUTNp+yqlS3QoYzHUXRBJpokpJfgwjSXE34MoVepj+rZSL+KLoa6CSC5JjPbMz2R2DLp4kM5SjpOoWbQl6hxWkP1dDZd1E0RSXcREiUiMngD+oK9Xg5AoXX79ifsP9qdym7Ex1EVQBjHFxxkS3ER22hvHsS5UKd0ECCns5N83UI9HbkyxXZUgEu0FH4cDYT/YZT58aZUpiilmwz8SXYd5FdpKPYPvPRhElwSC0QyS4KPwX6hy6zregnsp3A3P4O+AP8EbYUViOL4IRG2gYS+/C/hWwSAyCyK5G+AoZpOAYdgnoIV+wV/Dqc26C7sc2ltzac/EKkNcDIjS5fcSzsVwL/wC3wFsEJkEIeQhZlkLv4WZjiHubvgsdNFJ50sSC4ohpgjitsJBsC/Um2vRH/qXmhxiejPBfPgYrAaqzBASG1/NJGnHpgpigklQFcLEsJBeG3wS3gK1kX/AHoI+jERMpsr4Ds7qCwqiOoOZSMSUcZ7WCPg2CY6Dm+BpuAj+jV+/E/plpxnDZ8x3U8zTDZ2gINb7BVoMI/G/oPaDHWvBfwS+z0A7dHEfncSvNYzVBImCOJt3ssIL0MV8kk384uIG0tbleBLrwn7Bccdq0k4UxOzaE5gYfov1Ah2E72N4MnSh3xa3X/N2SFAfs5ruUiuML61r43tS+dvTDqpmPCToVjPxXs76WeNL6270BNzm8dXMFRJkn6Xu5+xeX+HKj3jij3p8NXOFBNnfE8U+XeHKA0z8RapsT5QJqa6rJJNmWO0Z+NHj87qopu6SQ8yg3VNmuPpuoiDOpB4uV5ol9ONokzQh5e4EWhKFKSPT81g5+ioaiYKiuX6NrGtGc/ZHwILrLLXx3wHn0n8HuthP53/YrQgKokpzWN0+xujT0Z/420m8FT4Fb4avQD0S6fXiXcYthjPfGeusdT8oKFrsc+wOaKGvmGNxroen4CIooXdhLUYhptsvNy2aKohEThCoV9/UlyvifJiOczisC1IFKQtEbcM+D1UNTGaMJPJTjrff03B3DzIJ0tIkpddgfaj4mr5ejzFe6PVCN4UBHPM99D6Ve4+sgTOzIK1FcpfhGKiXOr1i65OTy4HE9WZ8MFxDu+6oSJCbHQkfhh2Gy+mrQm5oXdtXLaiuWVawWFNQBSerIaHNCjXktFewaLNCFZyshoReAQAA//8ZNTBdAAAABklEQVQDAM9keXh3sc1zAAAAAElFTkSuQmCC" width="13" height="13" alt="">',
-  mon:   '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAA0CAYAAADFeBvrAAACbElEQVR4AeyZPUtcQRSGvSlDUqYwTYp0MSFYpBACMSkCgQTy0UkK8wtSpM6HRbrkL/hRiCJiq6CiFtr6hZWiYiHa2IpYrM+ri8yc3ZXdnXt1VkbO470zc+b4vnN2Wbl7p+2W/SRDsTc0dSh16JpP4MqXXKlU6oIf8CcSpKXrqjOqMITwDL7BPhuX4B/8jgRpWZI26IUMXV5UGGK1D/qhHWINaRtA3C/wwjOE405Wf0KrhN4Kz1yxniEWPoCNFSYWImENHTbeuxPWkOeWxMksyzqzLOuOhOdomgE3PM3W0AM3k/sdiC02jaCH7tgactda8j4Zir1tqUOpQ9d8Ajf6kivCazJUxKnmWTN1KM/TLKJW6lARp5pnzdShPE+ziFqpQ0Wcap41U4fyPM0iat36Dp2YU7trxjEM7xkRnmbboQ2T/IWHj3rk2s01BNURITW0txd9n8CNdXdgDa26i9zfBz1yneMawjj7RUgN7ZUW26Flal+GNTTGyi60SmwhdAIuwzPE09FjVj7CAcQehwj8XNbM7UV4hjRFgl52HdwPwzbEFtI0gqgnaPXeP8y1VRjSJIlH8BUew3k084taT8FGRzO1nD3S1MP4yBbWuKohLbQqyVDsnQvqEB+27dAHszBvwbw+N7h4MWjzymPVUC193ehtaGQQZIg/9B30Pecbrq+q8II5G5qrlqsaqqWadk/d41BD+syq+4/VmRhUM9TQaJ0iG0kbbCTZ5oYa+ktB/cM4zXW+BovM75XRfa28KXJ64D80HUGG+HA7hSF4C69r8JL5R2V0XyvvHTkjcNq0GzYGGWJ/dJEMRdcSI+gMAAD//9p0Z/MAAAAGSURBVAMAacveeCzTu9kAAAAASUVORK5CYII=" width="13" height="13" alt="">',
-  flag:  '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAA0CAYAAADFeBvrAAACTUlEQVR4AeyYzyttURTH331v8AbvD3ij13u9gaEiJkYYSRlgZsDA2MDIyM+RiCIlM0VRMvAX+JWJATMJxVSiEClxfXahY+Xs7tl739VJW+vbuWvba33Xd3/vOdz7/dsX+4mC8m5odCg6pHwC1rdcsVisA6tgHgyDoTKgj55VoXSnCoKkBpId0Aa6wAAYLANG6bkHXyNX70gVROdeoBktIchsgp5CEGTocZ1hb+pWm6BTUXVPvhkA2/SQ8cDCLPAOm6Ci6H5aKBTqfUHPOSBjhr7nctEltwly6Wet4cY3fCNi0x25eTBw8Q9D4N+l9A7maflfbJ/CnUux5pyqCcKdH0w5DJJh3BlLLvi+VhPEoN3gD0jGOO4Eebq9NdUU1PNG+nq94joJgoamoL9i8l3cuRVr3qmmoDUxbRP3Va1Y8041BZkHwoe/bUw/BIKGmiDeXidMvgKS0YxLwf7TNo3VBBky8JlLZo1fhQlVQbh0wNirIBktIV3KIugXxPW+QMkWkNEvF1xzm6Cfouk/8vUAmKaHjFYOqlIuuuQ2QRUuDT1q2j1q30ttgh7fd+m8+B2CxiboKARBiT2O2RfkPrIJeoYkGWckDWVCDU/AC3p7h02QbH4H6UaZcCPJXPMsglw5VOuiINXjdiCLDjkcmmpJdEj1uB3IokMOh6ZaUrJDqlN5kEVBHoenUhodUjlmD5LokMfhqZTaHFoWEyyKPJdpqiA+mR4ycTVYAB1gAuQ+UgWZyRG1DzrBEtD+FsiMkBlWQZm75aAgCsqBCdYRXgAAAP//8ZScjgAAAAZJREFUAwDwyyF4f7/ohQAAAABJRU5ErkJggg==" width="13" height="13" alt="">',
-};
-
-// ===== MINIMAL TEMPLATE — Franklin Briggs design =====
-function buildMinimalResumeElement(parsed) {
-  const { name, subtitle, contact, sections } = parsed;
-
-  // Colors
-  const BLUE      = '#3B82F6';
-  const INK       = '#111827';
-  const INK_SOFT  = '#374151';
-  const MUTED     = '#6B7280';
-  const RULE      = '#D1D5DB';
-  const CIRCLE_BG = '#E5E7EB';
-  const WHITE     = '#FFFFFF';
-
-  // Initials: first letter of first word + first letter of last word
-  const nameWords = String(name || '').trim().split(/\s+/).filter(Boolean);
-  const initials = nameWords.length === 0 ? '?'
-    : nameWords.length === 1 ? nameWords[0][0].toUpperCase()
-    : (nameWords[0][0] + nameWords[nameWords.length - 1][0]).toUpperCase();
-
-  const contactList = minimalSplitContact(contact);
-
-  // Section discovery
-  const findKey = (re) => Object.keys(sections).find(k => re.test(k.toUpperCase()));
-  const summaryKey = findKey(/SUMMARY|PROFILE|ABOUT|OBJECTIVE/);
-  const expKey     = findKey(/EXPERIENCE/);
-  const eduKey     = findKey(/EDUCATION/);
-  const projKey    = findKey(/PROJECT/);
-  const skillsKey  = findKey(/SKILL/);
-  const langKey    = findKey(/LANGUAGE/);
-
-  const summary = summaryKey
-    ? (sections[summaryKey] || []).join(' ').replace(/\s+/g, ' ').trim()
-    : '';
-
-  const experiences = expKey  ? minimalParseMainItems(sections[expKey])  : [];
-  const education   = eduKey  ? minimalParseMainItems(sections[eduKey])  : [];
-  const projects    = projKey ? minimalParseMainItems(sections[projKey]) : [];
-
-  const splitSkillsFlat = (lines) => {
-    const out = [];
-    (lines || []).forEach(line => {
-      String(line || '')
-        .split(/[,;|]/)
-        .map(s => s.trim())
-        .filter(Boolean)
-        .forEach(s => out.push(fixGluedSkills(s)));
-    });
-    return out;
-  };
-  const skills    = skillsKey ? splitSkillsFlat(sections[skillsKey]) : [];
-  const languages = langKey   ? (sections[langKey] || []).map(s => String(s).trim()).filter(Boolean) : [];
-
-  const sectionHead = (label) => `
-    <div style="margin:0 0 12px 0;padding-bottom:5px;border-bottom:1px solid ${RULE};">
-      <h2 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;
-                 color:${MUTED};text-transform:uppercase;letter-spacing:2px;margin:0;line-height:1.1;">
-        ${minimalEscapeHTML(label)}
-      </h2>
-    </div>`;
-
-  const entryBlock = (item, metaColor) => `
-    <div style="margin-bottom:14px;page-break-inside:avoid;">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
-        <div style="flex:1;min-width:0;">
-          <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;
-                     color:${INK};margin:0 0 2px 0;line-height:1.3;">
-            ${minimalEscapeHTML(item.title || '')}
-          </h3>
-          ${(item.metaLines && item.metaLines.length)
-    ? item.metaLines.map(m => `<div style="font-size:12px;color:${metaColor};font-weight:600;line-height:1.4;margin-top:4px;">${minimalEscapeHTML(m)}</div>`).join('')
-    : (item.meta ? `<div style="font-size:12px;color:${metaColor};font-weight:600;line-height:1.3;margin-top:6px;">${minimalEscapeHTML(item.meta)}</div>` : '')}
-        </div>
-        ${item.dates ? `<div style="font-size:11px;color:${MUTED};white-space:nowrap;font-weight:500;">
-          ${minimalEscapeHTML(item.dates)}
-        </div>` : ''}
-      </div>
-      ${item.bullets.length ? `<ul style="margin:6px 0 0 0;padding:0;list-style:none;">
-        ${item.bullets.map(b => `
-          <li style="position:relative;padding-left:12px;margin-bottom:4px;
-                     font-size:11.5px;line-height:1.55;color:${INK_SOFT};">
-            <span style="position:absolute;left:0;top:8px;width:3px;height:3px;
-                         background:${MUTED};border-radius:50%;"></span>
-            ${minimalEscapeHTML(b)}
-          </li>`).join('')}
-      </ul>` : ''}
-    </div>`;
-
-  const summaryHTML = summary ? `
-    <section style="margin-bottom:20px;">
-      ${sectionHead('Summary')}
-      <p style="margin:0;font-size:12px;line-height:1.6;color:${INK_SOFT};">
-        ${minimalEscapeHTML(summary)}
-      </p>
-    </section>` : '';
-
-  const experienceHTML = experiences.length ? `
-    <section style="margin-bottom:20px;">
-      ${sectionHead('Experience')}
-      ${experiences.map(e => entryBlock(e, BLUE)).join('')}
-    </section>` : '';
-
-  const educationHTML = education.length ? `
-    <section style="margin-bottom:20px;">
-      ${sectionHead('Education')}
-      ${education.map(e => entryBlock(e, INK_SOFT)).join('')}
-    </section>` : '';
-
-  const projectsHTML = projects.length ? `
-    <section style="margin-bottom:20px;">
-      ${sectionHead('Projects')}
-      ${projects.map(e => entryBlock(e, BLUE)).join('')}
-    </section>` : '';
-
-  const skillsHTML = skills.length ? `
-    <section style="margin-bottom:20px;">
-      ${sectionHead('Skills')}
-           <div style="font-size:11.5px;color:${INK_SOFT};line-height:1.6;">
-        ${skills.map(s => minimalEscapeHTML(s)).join(', ')}
-      </div>
-    </section>` : '';
-
-  const levelToDots = (text) => {
-    const t = String(text || '').toLowerCase();
-    if (/native|fluent|c2/.test(t)) return 5;
-    if (/advanced|c1/.test(t))      return 4;
-    if (/intermediate|b2|b1/.test(t)) return 3;
-    if (/conversational|a2/.test(t)) return 2;
-    if (/basic|beginner|a1/.test(t)) return 1;
-    return 3;
-  };
-  const renderLangRow = (langStr) => {
-    let label = langStr;
-    let level = '';
-    const parenMatch = langStr.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
-    const dashMatch  = langStr.match(/^(.+?)\s*[—–\-:|]\s*(.+)$/);
-    if (parenMatch) { label = parenMatch[1].trim(); level = parenMatch[2].trim(); }
-    else if (dashMatch) { label = dashMatch[1].trim(); level = dashMatch[2].trim(); }
-    const dots = levelToDots(level);
-    return `
-      <div style="margin-bottom:10px;font-size:12px;color:${INK};">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-          <span style="font-weight:500;">${minimalEscapeHTML(label)}</span>
-          <span style="display:flex;gap:3px;flex-shrink:0;">
-            ${[1,2,3,4,5].map(i => `
-              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;
-                           background:${i <= dots ? INK : RULE};"></span>`).join('')}
-          </span>
-        </div>
-        ${level ? `<div style="font-size:10.5px;color:${MUTED};margin-top:2px;">
-          ${minimalEscapeHTML(level)}
-        </div>` : ''}
-      </div>`;
-  };
-  const languagesHTML = languages.length ? `
-    <section style="margin-bottom:20px;">
-      ${sectionHead('Languages')}
-      ${languages.map(renderLangRow).join('')}
-    </section>` : '';
+async function renderResumePDF(template, parsed, filename) {
+  let html;
+  switch (String(template || '').toLowerCase()) {
+    case 'minimal':   html = buildMinimalHTML(parsed); break;
+    case 'executive': html = buildExecutiveHTML(parsed, selectedExecVariant); break;
+    case 'detailed':
+    case 'elegant':   html = buildElegantHTML(parsed, selectedElegantVariant); break;
+    case 'modern':
+    default:          html = buildModernHTML(parsed);
+  }
 
   const container = document.createElement('div');
-  container.id = 'minimal-resume-pdf-container';
-  container.style.cssText = 'position:fixed;left:0;top:0;width:816px;background:#ffffff;z-index:-9999;opacity:0.001;pointer-events:none;';
+  container.style.cssText =
+    'position:fixed;left:-9999px;top:0;width:816px;background:#fff;' +
+    'z-index:-1;opacity:0;pointer-events:none;';
+  container.innerHTML = html;
+  document.body.appendChild(container);
 
-  container.innerHTML = `
-  <div style="width:816px;background:${WHITE};
-                font-family:Helvetica,Arial,sans-serif;color:${INK_SOFT};
-                font-size:12px;line-height:1.5;
-                -webkit-font-smoothing:antialiased;box-sizing:border-box;
-                padding:48px 56px;">
+  if (document.fonts && document.fonts.ready) {
+    try { await document.fonts.ready; } catch (e) {}
+  }
+  await new Promise(r => setTimeout(r, 600));
 
-      <header style="display:flex;justify-content:space-between;align-items:flex-start;
-                     gap:32px;margin-bottom:28px;">
-        <div style="flex:1;min-width:0;">
-          <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:32px;font-weight:700;
-                     color:${INK};margin:0 0 4px 0;line-height:1.15;">
-            ${minimalEscapeHTML(name || '')}
-          </h1>
-          ${subtitle ? `<p style="font-size:16px;font-weight:500;color:${BLUE};
-                                   margin:0 0 12px 0;line-height:1.2;">
-            ${minimalEscapeHTML(subtitle)}
-          </p>` : ''}
-          ${contactList.length ? `<div style="font-size:11.5px;color:${INK_SOFT};line-height:1.5;">
-            ${contactList.map(c => minimalEscapeHTML(c)).join(' &nbsp;·&nbsp; ')}
-          </div>` : ''}
-        </div>
-        <div style="flex-shrink:0;width:90px;height:90px;border-radius:50%;
-                    background:${CIRCLE_BG};display:flex;align-items:center;justify-content:center;
-                    font-family:Helvetica,Arial,sans-serif;font-size:32px;font-weight:700;
-                    color:${INK};letter-spacing:1px;">
-          ${minimalEscapeHTML(initials)}
-        </div>
-      </header>
-
-      <div style="display:flex;gap:36px;">
-        <main style="flex:0 0 60%;min-width:0;overflow-wrap:anywhere;">
-          ${summaryHTML}${experienceHTML}${projectsHTML}
-        </main>
-        <aside style="flex:0 0 calc(40% - 36px);min-width:0;overflow-wrap:anywhere;">
-          ${skillsHTML}${languagesHTML}${educationHTML}
-        </aside>
-      </div>
-    </div>`;
-
-  return container;
-}
-
-async function renderMinimalResumePDF({ name, subtitle, contact, sections, filename }) {
-  const el = buildMinimalResumeElement({ name, subtitle, contact, sections });
-  const hider = document.createElement('div');
-  hider.style.cssText = 'position:fixed;left:-9999px;top:0;width:816px;height:auto;z-index:-1;opacity:0;pointer-events:none;';
-  hider.appendChild(el);
-  document.body.appendChild(hider);
   try {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
-    await pdf.html(el, {
-      html2canvas: { scale: 612 / 816, useCORS: true, backgroundColor: '#ffffff', letterRendering: true },
-      x: 0, y: 0, width: 612, windowWidth: 816,
-      autoPaging: false
+
+    await new Promise(resolve => {
+      pdf.html(container, {
+        callback: () => resolve(),
+        x: 0, y: 0,
+        width: 612,
+        windowWidth: 816,
+        autoPaging: 'text',
+        margin: 0,
+        html2canvas: {
+          scale: 612 / 816,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          letterRendering: true,
+          logging: false,
+          allowTaint: true
+        }
+      });
     });
-    pdf.save((filename || 'resume-minimal') + '.pdf');
+
+    pdf.save(filename);
+  } catch (err) {
+    console.error('PDF render failed:', err);
+    alert('PDF render failed. Please try again.');
   } finally {
-    hider.remove();
+    container.remove();
   }
 }
 
 async function downloadPDF(elementId, filename) {
-  const source = document.getElementById(elementId);
-  if (!source || !source.innerText.trim()) { alert("Please generate your resume first."); return; }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF("p", "pt", "letter");
-  const rawText = source.innerText || source.textContent;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-
-  // Parse resume into structured sections
-  const rawLines = rawText.split("\n").map(l => l.trim()).filter(l => l !== "");
-  const SECTION_HEADERS = ["PROFESSIONAL SUMMARY","TECHNICAL SKILLS","SKILLS","TECHNICAL EXPERIENCE","WORK EXPERIENCE","EXPERIENCE","PROJECTS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING","SUMMARY","LANGUAGES","LANGUAGE","REFERENCES","REFERENCE","PROFILE","ABOUT ME","ABOUT"];
-  const isHeading = l => SECTION_HEADERS.includes(l.toUpperCase().replace(/[^A-Z &]/g,'').trim());
-  const isBullet = l => /^[-•▸◆]/.test(l);
-
-  // Extract name (line 0), subtitle (line 1 if not heading/contact), contact
-  const name = rawLines[0] || "Your Name";
-  let subtitleIdx = -1;
-  let contactIdx = -1;
-  for (let i = 1; i < Math.min(5, rawLines.length); i++) {
-    const l = rawLines[i];
-    if (!isHeading(l) && !l.includes("|") && !l.includes("@") && !l.match(/^\+?\d/) && subtitleIdx === -1) subtitleIdx = i;
-    else if (!isHeading(l) && (l.includes("|") || l.includes("@") || l.match(/^\+?\d/)) && contactIdx === -1) contactIdx = i;
-  }
-  const subtitle = subtitleIdx > -1 ? rawLines[subtitleIdx] : "";
-  const contact = contactIdx > -1 ? rawLines[contactIdx] : (subtitleIdx > -1 ? rawLines[2] || "" : rawLines[1] || "");
-  const bodyStartIdx = Math.max(subtitleIdx, contactIdx) + 1 || 2;
-  const bodyLines = rawLines.slice(bodyStartIdx);
-
-  // Parse body into sections object
-  const sections = {};
-  let currentSection = null;
-  bodyLines.forEach(line => {
-    if (isHeading(line)) { currentSection = line.toUpperCase(); sections[currentSection] = []; }
-    else if (currentSection) sections[currentSection].push(line);
-  });
-
-  const SIDEBAR_SECTIONS = ["TECHNICAL SKILLS","SKILLS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING"];
-  const MAIN_SECTIONS = ["PROFESSIONAL SUMMARY","SUMMARY","TECHNICAL EXPERIENCE","WORK EXPERIENCE","EXPERIENCE","PROJECTS"];
-
-  // ══════════════════════════════════════════
-  // TEMPLATE 1: MODERN
-  // Dark header · Gold filled section bars · Clean body
-  // ══════════════════════════════════════════
-    if (false) {  // disabled — modern routes to executive
-
-    const L = 50, R = pageWidth - 50, W = R - L;
-
-    // Dark header
-    doc.setFillColor(22, 22, 26);
-    doc.rect(0, 0, pageWidth, 108, "F");
-    doc.setFillColor(201, 168, 76);
-    doc.rect(0, 104, pageWidth, 4, "F");
-
-    // Name — auto size
-    doc.setTextColor(255,255,255);
-    doc.setFont("helvetica","bold");
-    const nSize = name.length > 24 ? 18 : name.length > 18 ? 21 : 24;
-    doc.setFontSize(nSize);
-    doc.text(name.toUpperCase(), L, 44);
-
-    // Subtitle
-    if (subtitle) {
-      doc.setFont("helvetica","normal");
-      doc.setFontSize(9);
-      doc.setTextColor(201,168,76);
-      doc.text(subtitle, L, 62);
-    }
-
-    // Contact
-    doc.setFont("helvetica","normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(160,155,145);
-    doc.text(contact, L, subtitle ? 78 : 64);
-
-    let y = 128;
-
-    const allSections = [...MAIN_SECTIONS, ...SIDEBAR_SECTIONS];
-    allSections.forEach(sKey => {
-      const content = sections[sKey];
-      if (!content || content.length === 0) return;
-      if (y > 720) { doc.addPage(); y = 40; }
-
-      // Gold filled section bar
-      y += 10;
-      doc.setFillColor(201,168,76);
-      doc.rect(L, y-13, W, 20, "F");
-      doc.setFont("helvetica","bold");
-      doc.setFontSize(9);
-      doc.setTextColor(22,22,26);
-      doc.text(sKey, L+8, y+1);
-      y += 18;
-
-      content.forEach(line => {
-        if (y > 730) { doc.addPage(); y = 40; }
-        if (isBullet(line)) {
-          const bt = line.replace(/^[-•▸◆]\s*/,"");
-          doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(45,45,45);
-          const wrapped = doc.splitTextToSize(bt, W-16);
-          wrapped.forEach((wl,i) => {
-            if (y > 730) { doc.addPage(); y = 40; }
-            if (i===0) { doc.setFillColor(201,168,76); doc.rect(L+2, y-5.5, 5, 5, "F"); doc.text(wl, L+12, y); }
-            else doc.text(wl, L+12, y);
-            y += 13;
-          });
-          y += 2;
-        } else {
-          const bold = line.includes("—") || line.includes("|") || (line.length < 60 && !line.includes(",") && content.indexOf(line) === 0);
-          doc.setFont("helvetica", bold ? "bold" : "normal");
-          doc.setFontSize(9); doc.setTextColor(bold ? 20 : 50, bold ? 20 : 50, bold ? 20 : 50);
-          const wrapped = doc.splitTextToSize(line, W);
-          wrapped.forEach(wl => {
-            if (y > 730) { doc.addPage(); y = 40; }
-            doc.text(wl, L, y); y += 13;
-          });
-          y += bold ? 1 : 2;
-        }
-      });
-      y += 4;
-    });
-
-  // ══════════════════════════════════════════
-  // TEMPLATE 2: MINIMAL
-  // Pure white · Large spaced name · Thin gold rule · Clean typography
-  // ══════════════════════════════════════════
-            } else if (selectedTemplate === "modern") {
-          try {
-            await renderModernResumePDF({ name, subtitle, contact, sections }, filename);
-          } catch (err) {
-            console.error('Modern PDF render failed:', err);
-            alert('PDF render failed. Please try again.');
-          }
-          return;
-
-  } else if (String(selectedTemplate || '').toLowerCase().trim() === 'minimal') {
-    try {
-      await renderMinimalResumePDF({ name, subtitle, contact, sections }, filename);
-    } catch (err) {
-      console.error('Minimal PDF render failed:', err);
-      alert('PDF render failed. Please try again.');
-    }
+  const src = document.getElementById(elementId);
+  if (!src || !src.innerText.trim()) {
+    alert("Please generate your resume first.");
     return;
-
-  // ══════════════════════════════════════════
-  // TEMPLATE 3: EXECUTIVE (Premium)
-  // Deep navy sidebar · Gold initials circle · Skill pills · Premium two-column
-  // ══════════════════════════════════════════
-      } else if (selectedTemplate === "executive") {
-            const variant = colorVariants.executive.navy;
-    const [sr,sg,sb] = variant.sidebar;
-    const [tr,tg,tb] = variant.sidebarText;
-    const [ar,ag,ab] = variant.accent;
-
-    const SIDE_W = 200;
-    const SIDE_L = pageWidth - SIDE_W;
-    const BODY_L = 36;
-    const BODY_R = SIDE_L - 24;
-    const BODY_W = BODY_R - BODY_L;
-    const SIDE_PAD = 18;
-    const SIDE_INNER = SIDE_W - SIDE_PAD*2;
-
-    const drawSidebar = () => {
-      doc.setFillColor(sr,sg,sb);
-      doc.rect(SIDE_L, 0, SIDE_W, pageHeight, "F");
-      doc.setFillColor(ar,ag,ab);
-      doc.rect(SIDE_L, 0, 4, pageHeight, "F");
-      doc.rect(0, 0, pageWidth, 5, "F");
-    };
-    drawSidebar();
-
-    let y = 64;
-    doc.setTextColor(sr,sg,sb);
-    doc.setFont("times","bold");
-    const nSize = name.length > 26 ? 24 : name.length > 18 ? 28 : 32;
-    doc.setFontSize(nSize);
-    doc.text(name.toUpperCase(), BODY_L, y);
-    y += 6;
-
-    if (subtitle) {
-      doc.setFont("helvetica","normal"); doc.setFontSize(11);
-      doc.setTextColor(ar,ag,ab);
-      doc.text(subtitle, BODY_L, y+10);
-      y += 20;
-    } else { y += 10; }
-
-    doc.setFillColor(ar,ag,ab);
-    doc.rect(BODY_L, y, 70, 2, "F");
-    y += 16;
-
-    if (contact.trim()) {
-      doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
-      doc.setTextColor(110,110,110);
-      const contactLine = contact.replace(/\s*\|\s*/g, "  ·  ");
-      const cw = doc.splitTextToSize(contactLine, BODY_W);
-      cw.forEach(cl => { doc.text(cl, BODY_L, y); y += 12; });
-    }
-    y += 6;
-
-    let sy = 64;
-    const initials = name.split(" ").map(w=>w[0]).filter(Boolean).slice(0,2).join("").toUpperCase();
-    doc.setFillColor(ar,ag,ab);
-    doc.circle(SIDE_L + SIDE_W/2, sy + 22, 24, "F");
-    doc.setTextColor(sr,sg,sb);
-    doc.setFont("helvetica","bold"); doc.setFontSize(16);
-    const iW = doc.getTextWidth(initials);
-    doc.text(initials, SIDE_L + SIDE_W/2 - iW/2, sy + 28);
-    sy += 64;
-
-    const sbHead = (label, yp) => {
-      doc.setFont("helvetica","bold"); doc.setFontSize(9);
-      doc.setTextColor(255,255,255);
-      doc.text(label.toUpperCase(), SIDE_L + SIDE_PAD, yp);
-      doc.setFillColor(ar,ag,ab);
-      doc.rect(SIDE_L + SIDE_PAD, yp+4, 28, 1.4, "F");
-      return yp + 16;
-    };
-
-    const skillsKey = Object.keys(sections).find(k => k.includes("SKILL"));
-    if (skillsKey) {
-      sy = sbHead("Expertise", sy);
-      doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(tr,tg,tb);
-      sections[skillsKey].forEach(skill => {
-        const s = skill.replace(/^[-•]\s*/,"").trim();
-        if (!s || sy+12 > pageHeight-40) return;
-        doc.setFillColor(ar,ag,ab);
-        doc.circle(SIDE_L + SIDE_PAD + 2, sy-2.5, 1.4, "F");
-        doc.setTextColor(tr,tg,tb);
-        const sl = s.length > 28 ? s.substring(0,28)+"..." : s;
-        doc.text(sl, SIDE_L + SIDE_PAD + 9, sy);
-        sy += 12;
-      });
-      sy += 10;
-    }
-
-    const eduKey = Object.keys(sections).find(k => k === "EDUCATION");
-    if (eduKey && sy < pageHeight-60) {
-      sy = sbHead("Education", sy);
-      doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(tr,tg,tb);
-      sections[eduKey].forEach(line => {
-        if (!line.trim() || sy > pageHeight-30) return;
-        const lw = doc.splitTextToSize(line, SIDE_INNER);
-        lw.forEach(ll => { if(sy<pageHeight-25){doc.text(ll, SIDE_L + SIDE_PAD, sy); sy+=11;} });
-        sy += 3;
-      });
-      sy += 8;
-    }
-
-    const certKey = Object.keys(sections).find(k => k.includes("CERT"));
-    if (certKey && sy < pageHeight-50) {
-      sy = sbHead("Certifications", sy);
-      doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(tr,tg,tb);
-      sections[certKey].forEach(line => {
-        if (!line.trim() || sy > pageHeight-25) return;
-        const lt = line.replace(/^[-•]\s*/,"");
-        const lw = doc.splitTextToSize(lt, SIDE_INNER - 8);
-        lw.forEach((ll,i) => {
-          if (sy >= pageHeight-20) return;
-          if (i===0) { doc.setFillColor(ar,ag,ab); doc.circle(SIDE_L + SIDE_PAD + 2, sy-2.5, 1.4, "F"); }
-          doc.text(ll, SIDE_L + SIDE_PAD + 9, sy);
-          sy += 11;
-        });
-        sy += 3;
-      });
-    }
-
-    const bodyHead = (label, yp) => {
-      doc.setFont("times","bold"); doc.setFontSize(13);
-      doc.setTextColor(sr,sg,sb);
-      doc.text(label.toUpperCase(), BODY_L, yp);
-      doc.setFillColor(ar,ag,ab);
-      doc.rect(BODY_L, yp+5, BODY_W-30, 1.5, "F");
-      return yp + 20;
-    };
-
-    MAIN_SECTIONS.forEach(sKey => {
-      const content = sections[sKey];
-      if (!content || content.length === 0) return;
-      if (y > 740) { doc.addPage(); drawSidebar(); y = 64; }
-      y += 8; y = bodyHead(sKey, y);
-      content.forEach(line => {
-        if (y > 740) { doc.addPage(); drawSidebar(); y = 64; }
-        if (isBullet(line)) {
-          const bt = line.replace(/^[-•▸◆]\s*/,"");
-          doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(40,40,40);
-          const wrapped = doc.splitTextToSize(bt, BODY_W-18);
-          wrapped.forEach((wl,i) => {
-            if (y>740) { doc.addPage(); drawSidebar(); y=64; }
-            if (i===0) { doc.setFillColor(ar,ag,ab); doc.rect(BODY_L+2, y-5, 4, 4, "F"); doc.text(wl, BODY_L+12, y); }
-            else doc.text(wl, BODY_L+12, y);
-            y += 13;
-          });
-          y += 3;
-        } else {
-          const bold = line.includes("—") || line.includes("|");
-          doc.setFont("helvetica", bold?"bold":"normal"); doc.setFontSize(9.5);
-          doc.setTextColor(bold?sr:45, bold?sg:45, bold?sb:45);
-          const wrapped = doc.splitTextToSize(line, BODY_W);
-          wrapped.forEach(wl => { if(y>740){doc.addPage(); drawSidebar(); y=64;} doc.text(wl, BODY_L, y); y += 13; });
-          y += bold?2:3;
-        }
-      });
-      y += 8;
-    });
-
-   } else if (selectedTemplate === "modern") {
-
-        const variant = colorVariants.executive[selectedTemplate === "modern" ? "navy" : selectedExecVariant] || colorVariants.executive.navy;
-
-    const [sr,sg,sb] = variant.sidebar;
-    const [tr,tg,tb] = variant.sidebarText;
-    const [ar,ag,ab] = variant.accent;
-
-    const SIDE_W = 200;
-    const BODY_L = SIDE_W + 28;
-    const BODY_R = pageWidth - 28;
-    const BODY_W = BODY_R - BODY_L;
-    const SIDE_PAD = 16;
-    const SIDE_INNER = SIDE_W - SIDE_PAD*2;
-
-    const drawSidebar = () => {
-      doc.setFillColor(sr,sg,sb);
-      doc.rect(0,0,SIDE_W,pageHeight,"F");
-      doc.setFillColor(ar,ag,ab);
-      doc.rect(SIDE_W-3,0,3,pageHeight,"F");
-    };
-    drawSidebar();
-
-    // Initials circle
-    const initials = name.split(" ").map(w=>w[0]).filter(Boolean).slice(0,2).join("").toUpperCase();
-    doc.setFillColor(ar,ag,ab);
-    doc.circle(SIDE_W/2, 46, 26, "F");
-    doc.setTextColor(sr,sg,sb);
-    doc.setFont("helvetica","bold"); doc.setFontSize(16);
-    const iW = doc.getTextWidth(initials);
-    doc.text(initials, SIDE_W/2 - iW/2, 52);
-
-    // Name in sidebar
-    doc.setTextColor(255,255,255);
-    doc.setFont("helvetica","bold");
-    const sNameSize = name.length > 20 ? 9 : name.length > 15 ? 10 : 11;
-    doc.setFontSize(sNameSize);
-    const sNameLines = doc.splitTextToSize(name.toUpperCase(), SIDE_INNER);
-    let sy = 86;
-    sNameLines.forEach(l => { const lw=doc.getTextWidth(l); doc.text(l, SIDE_W/2-lw/2, sy); sy+=14; });
-
-    // Gold divider
-    doc.setFillColor(ar,ag,ab); doc.rect(SIDE_PAD, sy+2, SIDE_INNER, 1.5, "F"); sy += 16;
-
-    // Sidebar section helper
-    const sbHead = (label, yp) => {
-      doc.setFillColor(ar,ag,ab);
-      doc.rect(SIDE_PAD, yp-9, SIDE_INNER, 15, "F");
-      doc.setFont("helvetica","bold"); doc.setFontSize(7.5);
-      doc.setTextColor(sr,sg,sb);
-      doc.text(label.toUpperCase(), SIDE_PAD+4, yp+1);
-      return yp + 18;
-    };
-
-    // Contact
-    sy = sbHead("Contact", sy);
-    doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(tr,tg,tb);
-    contact.split("|").map(p=>p.trim()).filter(Boolean).forEach(p => {
-      if (sy > pageHeight-20) return;
-      const pw = doc.splitTextToSize(p, SIDE_INNER);
-      pw.forEach(pl => { doc.text(pl, SIDE_PAD, sy); sy+=12; });
-      sy += 2;
-    });
-    sy += 6;
-
-    // Skills in sidebar as pills
-    const skillsKey = Object.keys(sections).find(k => k.includes("SKILL"));
-    if (skillsKey && sy < pageHeight-80) {
-      sy = sbHead("Skills", sy);
-      doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(tr,tg,tb);
-      sections[skillsKey].forEach(skill => {
-        const s = skill.replace(/^[-•]\s*/,"").trim();
-        if (!s || sy+14 > pageHeight-60) return;
-        doc.setFillColor(sr+12,sg+18,sb+26);
-        const sw = Math.min(doc.getTextWidth(s)+14, SIDE_INNER);
-        doc.roundedRect(SIDE_PAD, sy-8, sw, 13, 3, 3, "F");
-        doc.setFillColor(ar,ag,ab); doc.circle(SIDE_PAD+7, sy-1.5, 2.5, "F");
-        doc.setTextColor(tr,tg,tb);
-        const sl = s.length > 28 ? s.substring(0,28)+"..." : s;
-        doc.text(sl, SIDE_PAD+14, sy); sy += 17;
-      });
-      sy += 4;
-    }
-
-    // Education in sidebar
-    const eduKey = Object.keys(sections).find(k => k === "EDUCATION");
-    if (eduKey && sy < pageHeight-60) {
-      sy = sbHead("Education", sy);
-      doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(tr,tg,tb);
-      sections[eduKey].forEach(line => {
-        if (!line.trim() || sy > pageHeight-20) return;
-        const lw = doc.splitTextToSize(line, SIDE_INNER);
-        lw.forEach(ll => { if(sy<pageHeight-15){doc.text(ll,SIDE_PAD,sy);sy+=12;} });
-        sy += 2;
-      });
-    }
-
-    // Body right side
-    let y = 28;
-    // Top gold accent bar
-    doc.setFillColor(ar,ag,ab); doc.rect(BODY_L,0,BODY_W,5,"F");
-
-    // Name in body — large
-    doc.setFont("helvetica","bold");
-    const bNameSize = name.length > 24 ? 16 : name.length > 18 ? 19 : 22;
-    doc.setFontSize(bNameSize);
-    doc.setTextColor(sr,sg,sb);
-    doc.text(name.toUpperCase(), BODY_L, 38);
-
-    // Subtitle
-    if (subtitle) {
-      doc.setFont("helvetica","normal"); doc.setFontSize(10);
-      doc.setTextColor(ar,ag,ab);
-      doc.text(subtitle, BODY_L, 54); y = 72;
-    } else y = 54;
-
-    // Gold rule
-    doc.setFillColor(ar,ag,ab); doc.rect(BODY_L, y, BODY_W, 2, "F"); y += 16;
-
-    // Body section heading
-    const bodyHead = (label, yp) => {
-      doc.setFillColor(240,243,250);
-      doc.rect(BODY_L, yp-12, BODY_W, 19, "F");
-      doc.setFillColor(ar,ag,ab); doc.rect(BODY_L, yp-12, 4, 19, "F");
-      doc.setFont("helvetica","bold"); doc.setFontSize(9);
-      doc.setTextColor(sr,sg,sb);
-      doc.text(label.toUpperCase(), BODY_L+10, yp);
-      return yp + 20;
-    };
-
-    const skipInBody = new Set(["TECHNICAL SKILLS","SKILLS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING"]);
-    MAIN_SECTIONS.forEach(sKey => {
-      const content = sections[sKey];
-      if (!content || content.length === 0) return;
-      if (y > 740) { doc.addPage(); drawSidebar(); y = 30; }
-      y += 8; y = bodyHead(sKey, y);
-
-      content.forEach(line => {
-        if (y > 740) { doc.addPage(); drawSidebar(); y = 30; }
-        if (isBullet(line)) {
-          const bt = line.replace(/^[-•▸◆]\s*/,"");
-          doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(40,40,40);
-          const wrapped = doc.splitTextToSize(bt, BODY_W-16);
-          wrapped.forEach((wl,i) => {
-            if (y>740){doc.addPage();drawSidebar();y=30;}
-            if(i===0){doc.setFillColor(ar,ag,ab);doc.rect(BODY_L+3,y-5,4,4,"F");doc.text(wl,BODY_L+13,y);}
-            else doc.text(wl,BODY_L+13,y);
-            y+=13;
-          });
-          y+=3;
-        } else {
-          const bold = line.includes("—")||line.includes("|");
-          doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(9);
-          doc.setTextColor(bold?sr:45, bold?sg:45, bold?sb:45);
-          const wrapped = doc.splitTextToSize(line, BODY_W);
-          wrapped.forEach(wl=>{if(y>740){doc.addPage();drawSidebar();y=30;}doc.text(wl,BODY_L,y);y+=13;});
-          y+=bold?2:3;
-        }
-      });
-      y+=5;
-    });
-
-  // ══════════════════════════════════════════
-  // TEMPLATE 4: ELEGANT (Premium)
-  // Rich dark header · Centered name · Two-column body · Skill pills
-  // ══════════════════════════════════════════
-  } else {
-    const variant = colorVariants.elegant[selectedElegantVariant] || colorVariants.elegant.brown;
-    const [hr,hg,hb] = variant.header;
-    const [ar,ag,ab] = variant.accent;
-    const [pr,pg,pb] = variant.pillBg;
-
-    const COL1_L = 40, COL1_W = 180, COL1_R = COL1_L+COL1_W;
-    const COL2_L = COL1_R+18, COL2_R = pageWidth-30, COL2_W = COL2_R-COL2_L;
-    const HEADER_H = 122;
-
-    // Rich header
-    doc.setFillColor(hr,hg,hb);
-    doc.rect(0,0,pageWidth,HEADER_H,"F");
-    doc.setFillColor(ar,ag,ab); doc.rect(0,0,pageWidth,5,"F");
-    doc.setFillColor(ar,ag,ab); doc.rect(0,HEADER_H-4,pageWidth,4,"F");
-
-    // Decorative dots flanking name
-    const nameText = name.toUpperCase();
-    doc.setFont("helvetica","bold");
-    const nSize = name.length > 24 ? 20 : name.length > 18 ? 24 : 28;
-    doc.setFontSize(nSize);
-    const nameW = doc.getTextWidth(nameText);
-    const nameX = (pageWidth-nameW)/2;
-    doc.setTextColor(255,248,230);
-    doc.text(nameText, nameX, 52);
-    doc.setFillColor(ar,ag,ab);
-    doc.circle(nameX-12, 49, 3, "F");
-    doc.circle(nameX+nameW+12, 49, 3, "F");
-
-    // Subtitle
-    if (subtitle) {
-      doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(ar,ag,ab);
-      const stW = doc.getTextWidth(subtitle);
-      doc.text(subtitle, (pageWidth-stW)/2, 68);
-    }
-
-    // Contact
-    doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(185,175,150);
-    const ctW = doc.getTextWidth(contact);
-    if (ctW < pageWidth-60) doc.text(contact, (pageWidth-ctW)/2, subtitle ? 86 : 70);
-    else {
-      const parts = contact.split("|").map(p=>p.trim());
-      const joined = parts.slice(0,3).join("  |  ");
-      const jW = doc.getTextWidth(joined);
-      doc.text(joined, (pageWidth-jW)/2, subtitle ? 86 : 70);
-    }
-
-    // Vertical divider in body
-    doc.setDrawColor(ar,ag,ab); doc.setLineWidth(0.5);
-    doc.line(COL1_R+9, HEADER_H+10, COL1_R+9, pageHeight-20);
-
-    let y1 = HEADER_H+16;
-    let y2 = HEADER_H+16;
-
-    // Left column heading
-    const lHead = (label, yp) => {
-      doc.setFillColor(ar,ag,ab);
-      doc.rect(COL1_L, yp-10, COL1_W, 16, "F");
-      doc.setFont("helvetica","bold"); doc.setFontSize(8);
-      doc.setTextColor(hr,hg,hb);
-      doc.text(label.toUpperCase(), COL1_L+5, yp+1);
-      return yp+20;
-    };
-
-    // Right column heading
-    const rHead = (label, yp) => {
-      doc.setFillColor(hr,hg,hb);
-      doc.rect(COL2_L, yp-11, COL2_W, 18, "F");
-      doc.setFillColor(ar,ag,ab); doc.rect(COL2_L, yp-11, 3, 18, "F");
-      doc.setFont("helvetica","bold"); doc.setFontSize(9);
-      doc.setTextColor(255,255,255);
-      doc.text(label.toUpperCase(), COL2_L+9, yp);
-      return yp+22;
-    };
-
-    // Left column content
-    const leftOrder = ["TECHNICAL SKILLS","SKILLS","EDUCATION","CERTIFICATIONS","CERTIFICATIONS & TRAINING"];
-    leftOrder.forEach(sKey => {
-      const content = sections[sKey];
-      if (!content || content.length === 0 || y1 > 720) return;
-      y1 = lHead(sKey, y1);
-      doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(50,45,35);
-      content.forEach(line => {
-        const s = line.replace(/^[-•]\s*/,"").trim();
-        if (!s || y1 > 730) return;
-        if (sKey.includes("SKILL")) {
-          doc.setFillColor(pr,pg,pb);
-          doc.roundedRect(COL1_L, y1-8, COL1_W, 13, 2, 2, "F");
-          doc.setDrawColor(ar,ag,ab); doc.setLineWidth(0.5);
-          doc.roundedRect(COL1_L, y1-8, COL1_W, 13, 2, 2, "S");
-          doc.setFillColor(ar,ag,ab); doc.circle(COL1_L+8, y1-1.5, 2.5, "F");
-          doc.setTextColor(hr+10,hg+10,hb+10);
-          const sl = s.length > 22 ? s.substring(0,22)+"..." : s;
-          doc.text(sl, COL1_L+15, y1); y1+=17;
-        } else {
-          const lw = doc.splitTextToSize(s, COL1_W-4);
-          lw.forEach(ll=>{if(y1<730){doc.text(ll,COL1_L+2,y1);y1+=12;}});
-          y1+=3;
-        }
-      });
-      y1+=6;
-    });
-
-    // Right column content
-    const rightOrder = ["PROFESSIONAL SUMMARY","SUMMARY","TECHNICAL EXPERIENCE","WORK EXPERIENCE","EXPERIENCE","PROJECTS"];
-    rightOrder.forEach(sKey => {
-      const content = sections[sKey];
-      if (!content || content.length === 0 || y2 > 730) return;
-      y2+=6; y2 = rHead(sKey, y2);
-      content.forEach(line => {
-        if (y2 > 730) return;
-        if (isBullet(line)) {
-          const bt = line.replace(/^[-•▸◆]\s*/,"");
-          doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(40,38,30);
-          const wrapped = doc.splitTextToSize(bt, COL2_W-14);
-          wrapped.forEach((wl,i)=>{
-            if(y2>730)return;
-            if(i===0){doc.setFillColor(ar,ag,ab);doc.rect(COL2_L+2,y2-5,4,4,"F");doc.text(wl,COL2_L+11,y2);}
-            else doc.text(wl,COL2_L+11,y2);
-            y2+=13;
-          });
-          y2+=3;
-        } else {
-          const bold = line.includes("—")||line.includes("|");
-          doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(9);
-          doc.setTextColor(bold?20:50, bold?20:50, bold?15:35);
-          const wrapped = doc.splitTextToSize(line, COL2_W);
-          wrapped.forEach(wl=>{if(y2>730)return;doc.text(wl,COL2_L,y2);y2+=13;});
-          y2+=bold?3:2;
-        }
-      });
-      y2+=5;
-    });
   }
+  const parsed = parseResumeText(src.innerText);
+  await renderResumePDF(selectedTemplate, parsed, filename);
+}
 
-  doc.save(filename);
+/* ---------- MODERN: Navy + dotted timeline ---------- */
+function buildModernHTML(parsed) {
+  const { name, subtitle, contact, sections } = parsed;
+  const NAVY = '#1c2e4a', INK = '#334155', MUTED = '#64748b';
+
+  const contactItems = splitContact(contact);
+  const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
+  const langs  = splitSkills(sections[findSection(sections, /LANGUAGE/)] || []);
+  const edu    = parseEntries(sections[findSection(sections, /^EDUCATION$/)] || []);
+  const exp    = parseEntries(sections[findSection(sections, /EXPERIENCE|PROJECT/)] || []);
+  const summary = (sections[findSection(sections, /SUMMARY|PROFILE|ABOUT/)] || []).join(' ').trim();
+  const refsRaw = sections[findSection(sections, /REFERENCE/)] || [];
+
+  const nameLen = (name || '').length;
+  const nameSize = nameLen > 30 ? 26 : nameLen > 24 ? 30 : nameLen > 18 ? 34 : 40;
+
+  const sideHead = label => `
+    <div style="margin:0 0 10px 0;padding-bottom:5px;border-bottom:1.5px solid ${NAVY};">
+      <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:800;color:${NAVY};
+                 text-transform:uppercase;letter-spacing:2.5px;margin:0;">${label}</h3>
+    </div>`;
+
+  const mainHead = label => `
+    <div style="margin:0 0 11px 0;padding-bottom:6px;border-bottom:1.5px solid ${NAVY};">
+      <h2 style="font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:800;color:${NAVY};
+                 text-transform:uppercase;letter-spacing:3px;margin:0;">${label}</h2>
+    </div>`;
+
+  const renderEntry = (item) => `
+    <div style="margin-bottom:13px;page-break-inside:avoid;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px;">
+        <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;
+                   color:${NAVY};margin:0;line-height:1.3;">${escapeHTML(item.title)}</h3>
+        ${item.dates ? `<span style="font-size:10px;color:${MUTED};white-space:nowrap;font-weight:500;">${escapeHTML(item.dates)}</span>` : ''}
+      </div>
+      ${item.metaLines.map(m => `<div style="font-size:10.5px;color:${INK};font-weight:500;line-height:1.4;margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
+      ${item.bullets.length ? `<ul style="margin:5px 0 0 0;padding:0;list-style:none;">
+        ${item.bullets.map(b => `
+          <li style="position:relative;padding-left:12px;margin-bottom:3px;font-size:10.5px;line-height:1.55;color:${INK};">
+            <span style="position:absolute;left:0;top:7px;width:4px;height:4px;background:${NAVY};border-radius:50%;"></span>
+            ${cleanInline(b)}
+          </li>`).join('')}
+      </ul>` : ''}
+    </div>`;
+
+  return `
+    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+                color:${INK};font-size:11px;line-height:1.5;box-sizing:border-box;">
+      <header style="padding:38px 56px 14px 56px;">
+        <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:${nameSize}px;font-weight:800;color:${NAVY};
+                   text-transform:uppercase;letter-spacing:0.05em;margin:0 0 6px 0;line-height:1;">
+          ${escapeHTML(name)}</h1>
+        ${subtitle ? `<p style="font-size:13px;font-weight:500;color:${NAVY};text-transform:uppercase;
+                                letter-spacing:0.2em;margin:0 0 12px 0;">${escapeHTML(subtitle)}</p>` : ''}
+        <div style="height:1.5px;background:${NAVY};width:100%;"></div>
+      </header>
+
+      <div style="padding:22px 56px 30px 56px;display:flex;gap:36px;">
+        <aside style="width:220px;flex-shrink:0;">
+          ${contactItems.length ? `
+            <section style="margin-bottom:20px;">${sideHead('Contact')}
+              ${contactItems.map(c => `<div style="font-size:10.5px;color:${INK};line-height:1.5;margin-bottom:5px;word-break:break-word;">${escapeHTML(c)}</div>`).join('')}
+            </section>` : ''}
+          ${skills.length ? `
+            <section style="margin-bottom:20px;">${sideHead('Skills')}
+              ${skills.map(s => `
+                <div style="display:flex;gap:7px;margin-bottom:4px;font-size:10.5px;color:${INK};line-height:1.45;">
+                  <span style="display:inline-block;width:4px;height:4px;background:${NAVY};border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
+                  <span>${escapeHTML(s)}</span>
+                </div>`).join('')}
+            </section>` : ''}
+          ${langs.length ? `
+            <section style="margin-bottom:20px;">${sideHead('Languages')}
+              ${langs.map(l => `
+                <div style="display:flex;gap:7px;margin-bottom:4px;font-size:10.5px;color:${INK};line-height:1.45;">
+                  <span style="display:inline-block;width:4px;height:4px;background:${NAVY};border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
+                  <span>${escapeHTML(l)}</span>
+                </div>`).join('')}
+            </section>` : ''}
+          ${refsRaw.length ? `
+            <section>${sideHead('Reference')}
+              <div style="font-size:10.5px;color:${INK};line-height:1.5;">
+                ${refsRaw.map(r => `<div style="margin-bottom:3px;">${escapeHTML(r)}</div>`).join('')}
+              </div>
+            </section>` : ''}
+        </aside>
+
+        <main style="flex:1;min-width:0;">
+          ${summary ? `
+            <section style="margin-bottom:20px;page-break-inside:avoid;">
+              ${mainHead('Profile')}
+              <p style="margin:0;font-size:11px;line-height:1.6;color:${INK};">${cleanInline(summary)}</p>
+            </section>` : ''}
+          ${exp.length ? `
+            <section style="margin-bottom:20px;">
+              ${mainHead('Experience')}
+              ${exp.map(renderEntry).join('')}
+            </section>` : ''}
+          ${edu.length ? `
+            <section style="page-break-inside:avoid;">
+              ${mainHead('Education')}
+              ${edu.map(renderEntry).join('')}
+            </section>` : ''}
+        </main>
+      </div>
+    </div>`;
+}
+
+/* ---------- MINIMAL: Franklin Briggs style, blue accent ---------- */
+function buildMinimalHTML(parsed) {
+  const { name, subtitle, contact, sections } = parsed;
+  const BLUE = '#3B82F6', INK = '#111827', INK_SOFT = '#374151';
+  const MUTED = '#6B7280', RULE = '#D1D5DB', CIRCLE_BG = '#E5E7EB';
+
+  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+  const initials = words.length === 0 ? '?'
+    : words.length === 1 ? words[0][0].toUpperCase()
+    : (words[0][0] + words[words.length - 1][0]).toUpperCase();
+
+  const contactItems = splitContact(contact);
+  const summary = (sections[findSection(sections, /SUMMARY|PROFILE|ABOUT/)] || []).join(' ').trim();
+  const exp = parseEntries(sections[findSection(sections, /EXPERIENCE/)] || []);
+  const edu = parseEntries(sections[findSection(sections, /^EDUCATION$/)] || []);
+  const proj = parseEntries(sections[findSection(sections, /PROJECT/)] || []);
+  const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
+  const langs  = (sections[findSection(sections, /LANGUAGE/)] || []).map(s => s.trim()).filter(Boolean);
+  const refsRaw = sections[findSection(sections, /REFERENCE/)] || [];
+
+  const head = label => `
+    <div style="margin:0 0 11px 0;padding-bottom:5px;border-bottom:1px solid ${RULE};">
+      <h2 style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;
+                 color:${MUTED};text-transform:uppercase;letter-spacing:2px;margin:0;">${label}</h2>
+    </div>`;
+
+  const entry = (item, metaColor) => `
+    <div style="margin-bottom:13px;page-break-inside:avoid;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
+        <div style="flex:1;min-width:0;">
+          <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;
+                     color:${INK};margin:0 0 2px 0;line-height:1.3;">${escapeHTML(item.title)}</h3>
+          ${item.metaLines.map(m => `<div style="font-size:11.5px;color:${metaColor};font-weight:600;line-height:1.4;margin-top:3px;">${escapeHTML(m)}</div>`).join('')}
+        </div>
+        ${item.dates ? `<div style="font-size:11px;color:${MUTED};white-space:nowrap;font-weight:500;">${escapeHTML(item.dates)}</div>` : ''}
+      </div>
+      ${item.bullets.length ? `<ul style="margin:5px 0 0 0;padding:0;list-style:none;">
+        ${item.bullets.map(b => `
+          <li style="position:relative;padding-left:12px;margin-bottom:3px;font-size:11px;line-height:1.55;color:${INK_SOFT};">
+            <span style="position:absolute;left:0;top:7px;width:3px;height:3px;background:${MUTED};border-radius:50%;"></span>
+            ${escapeHTML(b)}
+          </li>`).join('')}
+      </ul>` : ''}
+    </div>`;
+
+  const langRow = str => {
+    const m = str.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
+    const label = m ? m[1].trim() : str;
+    const level = m ? m[2].trim() : '';
+    const lv = level.toLowerCase();
+    const dots = /native|fluent|c2/.test(lv) ? 5
+               : /advanced|c1/.test(lv) ? 4
+               : /intermediate|b/.test(lv) ? 3
+               : /conversational|a2/.test(lv) ? 2
+               : /basic|beginner|a1/.test(lv) ? 1 : 3;
+    return `
+      <div style="margin-bottom:9px;font-size:11.5px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span style="font-weight:500;color:${INK};">${escapeHTML(label)}</span>
+          <span style="display:flex;gap:3px;flex-shrink:0;">
+            ${[1,2,3,4,5].map(i => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${i <= dots ? INK : RULE};"></span>`).join('')}
+          </span>
+        </div>
+        ${level ? `<div style="font-size:10px;color:${MUTED};margin-top:2px;">${escapeHTML(level)}</div>` : ''}
+      </div>`;
+  };
+
+  return `
+    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+                color:${INK_SOFT};font-size:11.5px;line-height:1.5;
+                box-sizing:border-box;padding:48px 56px;">
+      <header style="display:flex;justify-content:space-between;align-items:flex-start;
+                     gap:32px;margin-bottom:28px;">
+        <div style="flex:1;min-width:0;">
+          <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:30px;font-weight:700;
+                     color:${INK};margin:0 0 4px 0;line-height:1.15;">${escapeHTML(name)}</h1>
+          ${subtitle ? `<p style="font-size:15px;font-weight:500;color:${BLUE};margin:0 0 11px 0;line-height:1.2;">${escapeHTML(subtitle)}</p>` : ''}
+          ${contactItems.length ? `<div style="font-size:11px;color:${INK_SOFT};line-height:1.5;">
+            ${contactItems.map(c => escapeHTML(c)).join(' &nbsp;·&nbsp; ')}
+          </div>` : ''}
+        </div>
+        <div style="flex-shrink:0;width:86px;height:86px;border-radius:50%;background:${CIRCLE_BG};
+                    display:flex;align-items:center;justify-content:center;font-size:30px;
+                    font-weight:700;color:${INK};letter-spacing:1px;">${escapeHTML(initials)}</div>
+      </header>
+
+      <div style="display:flex;gap:34px;">
+        <main style="flex:0 0 58%;min-width:0;">
+          ${summary ? `<section style="margin-bottom:18px;page-break-inside:avoid;">${head('Summary')}
+            <p style="margin:0;font-size:11.5px;line-height:1.6;color:${INK_SOFT};">${escapeHTML(summary)}</p>
+          </section>` : ''}
+          ${exp.length ? `<section style="margin-bottom:18px;">${head('Experience')}
+            ${exp.map(e => entry(e, BLUE)).join('')}
+          </section>` : ''}
+          ${proj.length ? `<section style="margin-bottom:18px;">${head('Projects')}
+            ${proj.map(e => entry(e, BLUE)).join('')}
+          </section>` : ''}
+        </main>
+        <aside style="flex:0 0 calc(42% - 34px);min-width:0;">
+          ${skills.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">${head('Skills')}
+            <div style="font-size:11px;color:${INK_SOFT};line-height:1.65;">${skills.map(escapeHTML).join(', ')}</div>
+          </section>` : ''}
+          ${langs.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">${head('Languages')}
+            ${langs.map(langRow).join('')}
+          </section>` : ''}
+          ${edu.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">${head('Education')}
+            ${edu.map(e => entry(e, INK_SOFT)).join('')}
+          </section>` : ''}
+          ${refsRaw.length ? `<section style="page-break-inside:avoid;">${head('Reference')}
+            <div style="font-size:11px;color:${INK_SOFT};line-height:1.55;">
+              ${refsRaw.map(r => `<div style="margin-bottom:3px;">${escapeHTML(r)}</div>`).join('')}
+            </div>
+          </section>` : ''}
+        </aside>
+      </div>
+    </div>`;
+}
+
+/* ---------- EXECUTIVE: dark sidebar + initials circle ---------- */
+function buildExecutiveHTML(parsed, variant) {
+  const { name, subtitle, contact, sections } = parsed;
+  const palettes = {
+    navy:     { sidebar:'#121a2e', text:'#b0bcd4', accent:'#c9a84c' },
+    crimson:  { sidebar:'#7d192d', text:'#dcc3c8', accent:'#dcb46e' },
+    forest:   { sidebar:'#122e1a', text:'#b0d4bc', accent:'#64b464' },
+    charcoal: { sidebar:'#1c1c20', text:'#b9b9c3', accent:'#c9a84c' }
+  };
+  const p = palettes[variant] || palettes.navy;
+
+  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+  const initials = words.length === 0 ? '?'
+    : (words[0][0] + (words[words.length - 1][0] || '')).toUpperCase();
+
+  const contactItems = splitContact(contact);
+  const summary = (sections[findSection(sections, /SUMMARY|PROFILE|ABOUT/)] || []).join(' ').trim();
+  const exp = parseEntries(sections[findSection(sections, /EXPERIENCE|PROJECT/)] || []);
+  const edu = parseEntries(sections[findSection(sections, /^EDUCATION$/)] || []);
+  const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
+  const langs  = splitSkills(sections[findSection(sections, /LANGUAGE/)] || []);
+  const refsRaw = sections[findSection(sections, /REFERENCE/)] || [];
+
+  const sideHead = label => `
+    <div style="margin:0 0 9px 0;">
+      <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:800;color:#fff;
+                 text-transform:uppercase;letter-spacing:2.5px;margin:0;padding-bottom:5px;
+                 border-bottom:1.5px solid ${p.accent};display:inline-block;">${label}</h3>
+    </div>`;
+
+  const mainHead = label => `
+    <div style="margin:0 0 10px 0;padding-bottom:5px;border-bottom:2px solid ${p.sidebar};">
+      <h2 style="font-family:'Times New Roman',serif;font-size:14px;font-weight:700;color:${p.sidebar};
+                 text-transform:uppercase;letter-spacing:3px;margin:0;">${label}</h2>
+    </div>`;
+
+  const entry = item => `
+    <div style="margin-bottom:13px;page-break-inside:avoid;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+        <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;
+                   color:${p.sidebar};margin:0;">${escapeHTML(item.title)}</h3>
+        ${item.dates ? `<span style="font-size:10px;color:${p.accent};font-weight:600;font-style:italic;white-space:nowrap;">${escapeHTML(item.dates)}</span>` : ''}
+      </div>
+      ${item.metaLines.map(m => `<div style="font-size:10.5px;color:#555;font-weight:500;line-height:1.4;margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
+      ${item.bullets.length ? `<ul style="margin:5px 0 0 0;padding:0;list-style:none;">
+        ${item.bullets.map(b => `
+          <li style="position:relative;padding-left:13px;margin-bottom:3px;font-size:10.5px;line-height:1.55;color:#333;">
+            <span style="position:absolute;left:0;top:4px;width:5px;height:5px;background:${p.accent};"></span>
+            ${escapeHTML(b)}
+          </li>`).join('')}
+      </ul>` : ''}
+    </div>`;
+
+  const nameLen = (name || '').length;
+  const nameSize = nameLen > 26 ? 22 : nameLen > 18 ? 26 : 30;
+
+  return `
+    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+                color:#333;font-size:11px;line-height:1.5;box-sizing:border-box;
+                display:flex;min-height:1056px;">
+
+      <main style="flex:1;min-width:0;padding:44px 30px 30px 50px;">
+        <header style="margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid ${p.sidebar};">
+          <h1 style="font-family:'Times New Roman',serif;font-size:${nameSize}px;font-weight:700;
+                     color:${p.sidebar};text-transform:uppercase;letter-spacing:0.04em;
+                     margin:0 0 4px 0;line-height:1.05;">${escapeHTML(name)}</h1>
+          ${subtitle ? `<p style="font-size:12px;font-weight:600;color:${p.accent};text-transform:uppercase;
+                                  letter-spacing:0.18em;margin:0;">${escapeHTML(subtitle)}</p>` : ''}
+          ${contactItems.length ? `<div style="font-size:10px;color:#666;line-height:1.5;margin-top:8px;">
+            ${contactItems.map(escapeHTML).join('  ·  ')}
+          </div>` : ''}
+        </header>
+
+        ${summary ? `<section style="margin-bottom:18px;page-break-inside:avoid;">
+          ${mainHead('Profile')}
+          <p style="margin:0;font-size:11px;line-height:1.6;color:#333;text-align:justify;">${escapeHTML(summary)}</p>
+        </section>` : ''}
+
+        ${exp.length ? `<section style="margin-bottom:18px;">
+          ${mainHead('Experience')}
+          ${exp.map(entry).join('')}
+        </section>` : ''}
+      </main>
+
+      <aside style="width:220px;flex-shrink:0;background:${p.sidebar};color:${p.text};
+                    padding:44px 22px 30px 22px;border-left:4px solid ${p.accent};">
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="display:inline-block;width:74px;height:74px;border-radius:50%;background:${p.accent};
+                      color:${p.sidebar};font-family:Helvetica,Arial,sans-serif;font-size:26px;font-weight:800;
+                      line-height:74px;text-align:center;letter-spacing:1px;">${escapeHTML(initials)}</div>
+        </div>
+
+        ${skills.length ? `<section style="margin-bottom:20px;">${sideHead('Expertise')}
+          ${skills.map(s => `
+            <div style="display:flex;gap:7px;margin-bottom:5px;font-size:10px;color:${p.text};line-height:1.4;">
+              <span style="display:inline-block;width:4px;height:4px;background:${p.accent};border-radius:50%;margin-top:5px;flex-shrink:0;"></span>
+              <span>${escapeHTML(s)}</span>
+            </div>`).join('')}
+        </section>` : ''}
+
+        ${edu.length ? `<section style="margin-bottom:20px;">${sideHead('Education')}
+          ${edu.map(e => `
+            <div style="margin-bottom:10px;font-size:10px;color:${p.text};line-height:1.45;">
+              <div style="font-weight:700;color:#fff;">${escapeHTML(e.title)}</div>
+              ${e.metaLines.map(m => `<div style="margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
+              ${e.dates ? `<div style="color:${p.accent};font-style:italic;margin-top:2px;">${escapeHTML(e.dates)}</div>` : ''}
+            </div>`).join('')}
+        </section>` : ''}
+
+        ${langs.length ? `<section style="margin-bottom:20px;">${sideHead('Languages')}
+          ${langs.map(l => `
+            <div style="display:flex;gap:7px;margin-bottom:4px;font-size:10px;color:${p.text};line-height:1.4;">
+              <span style="display:inline-block;width:4px;height:4px;background:${p.accent};border-radius:50%;margin-top:5px;flex-shrink:0;"></span>
+              <span>${escapeHTML(l)}</span>
+            </div>`).join('')}
+        </section>` : ''}
+
+        ${contactItems.length ? `<section style="margin-bottom:20px;">${sideHead('Contact')}
+          ${contactItems.map(c => `<div style="font-size:9.5px;color:${p.text};line-height:1.5;margin-bottom:4px;word-break:break-word;">${escapeHTML(c)}</div>`).join('')}
+        </section>` : ''}
+
+        ${refsRaw.length ? `<section>${sideHead('Reference')}
+          <div style="font-size:9.5px;color:${p.text};line-height:1.5;">
+            ${refsRaw.map(r => `<div style="margin-bottom:3px;">${escapeHTML(r)}</div>`).join('')}
+          </div>
+        </section>` : ''}
+      </aside>
+    </div>`;
+}
+
+/* ---------- ELEGANT: full-width header + 2-column body ---------- */
+function buildElegantHTML(parsed, variant) {
+  const { name, subtitle, contact, sections } = parsed;
+  const palettes = {
+    brown:    { header:'#231c14', accent:'#c9a84c', pill:'#faf6ec', pillText:'#3a2f1a' },
+    burgundy: { header:'#2a0d1a', accent:'#c86482', pill:'#faecf2', pillText:'#3a1326' },
+    midnight: { header:'#0d1a2a', accent:'#64a0dc', pill:'#ecf2fa', pillText:'#13263a' }
+  };
+  const p = palettes[variant] || palettes.brown;
+
+  const contactItems = splitContact(contact);
+  const summary = (sections[findSection(sections, /SUMMARY|PROFILE|ABOUT/)] || []).join(' ').trim();
+  const exp = parseEntries(sections[findSection(sections, /EXPERIENCE|PROJECT/)] || []);
+  const edu = parseEntries(sections[findSection(sections, /^EDUCATION$/)] || []);
+  const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
+  const langs  = splitSkills(sections[findSection(sections, /LANGUAGE/)] || []);
+  const refsRaw = sections[findSection(sections, /REFERENCE/)] || [];
+
+  const leftHead = label => `
+    <div style="background:${p.accent};padding:6px 10px;margin-bottom:10px;">
+      <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:800;
+                 color:${p.header};text-transform:uppercase;letter-spacing:2.5px;margin:0;">${label}</h3>
+    </div>`;
+
+  const rightHead = label => `
+    <div style="background:${p.header};padding:7px 12px;margin-bottom:11px;border-left:4px solid ${p.accent};">
+      <h2 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:800;color:#fff;
+                 text-transform:uppercase;letter-spacing:3px;margin:0;">${label}</h2>
+    </div>`;
+
+  const entry = item => `
+    <div style="margin-bottom:13px;page-break-inside:avoid;">
+      <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;
+                 color:${p.header};margin:0;line-height:1.3;">${escapeHTML(item.title)}</h3>
+      ${item.dates ? `<div style="font-size:10px;color:${p.accent};font-weight:600;font-style:italic;margin-top:2px;">${escapeHTML(item.dates)}</div>` : ''}
+      ${item.metaLines.map(m => `<div style="font-size:10.5px;color:#555;font-weight:500;margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
+      ${item.bullets.length ? `<ul style="margin:5px 0 0 0;padding:0;list-style:none;">
+        ${item.bullets.map(b => `
+          <li style="position:relative;padding-left:13px;margin-bottom:3px;font-size:10.5px;line-height:1.55;color:#333;">
+            <span style="position:absolute;left:0;top:4px;width:5px;height:5px;background:${p.accent};"></span>
+            ${escapeHTML(b)}
+          </li>`).join('')}
+      </ul>` : ''}
+    </div>`;
+
+  const nameLen = (name || '').length;
+  const nameSize = nameLen > 28 ? 26 : nameLen > 20 ? 30 : 34;
+
+  return `
+    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+                color:#333;font-size:11px;line-height:1.5;box-sizing:border-box;">
+
+      <header style="background:${p.header};padding:36px 56px 30px 56px;border-top:5px solid ${p.accent};
+                     border-bottom:4px solid ${p.accent};text-align:center;">
+        <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:${nameSize}px;font-weight:800;
+                   color:#fff8e6;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 6px 0;
+                   line-height:1.1;">${escapeHTML(name)}</h1>
+        ${subtitle ? `<p style="font-size:12px;font-weight:600;color:${p.accent};text-transform:uppercase;
+                                letter-spacing:0.25em;margin:0 0 10px 0;">${escapeHTML(subtitle)}</p>` : ''}
+        ${contactItems.length ? `<div style="font-size:10px;color:#b9af96;line-height:1.5;">
+          ${contactItems.map(escapeHTML).join('  |  ')}
+        </div>` : ''}
+      </header>
+
+      <div style="display:flex;gap:24px;padding:28px 36px 30px 36px;">
+        <aside style="width:200px;flex-shrink:0;">
+          ${skills.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">
+            ${leftHead('Skills')}
+            ${skills.map(s => `
+              <div style="background:${p.pill};border:1px solid ${p.accent};padding:5px 10px;margin-bottom:5px;
+                          font-size:10px;color:${p.pillText};border-radius:2px;">
+                <span style="display:inline-block;width:5px;height:5px;background:${p.accent};border-radius:50%;margin-right:6px;vertical-align:middle;"></span>
+                ${escapeHTML(s)}
+              </div>`).join('')}
+          </section>` : ''}
+          ${edu.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">
+            ${leftHead('Education')}
+            ${edu.map(e => `
+              <div style="margin-bottom:10px;font-size:10.5px;line-height:1.45;">
+                <div style="font-weight:700;color:${p.header};">${escapeHTML(e.title)}</div>
+                ${e.metaLines.map(m => `<div style="color:#555;margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
+                ${e.dates ? `<div style="color:${p.accent};font-style:italic;margin-top:2px;">${escapeHTML(e.dates)}</div>` : ''}
+              </div>`).join('')}
+          </section>` : ''}
+          ${langs.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">
+            ${leftHead('Languages')}
+            ${langs.map(l => `<div style="font-size:10.5px;color:#444;margin-bottom:4px;">
+              <span style="display:inline-block;width:5px;height:5px;background:${p.accent};border-radius:50%;margin-right:6px;vertical-align:middle;"></span>
+              ${escapeHTML(l)}
+            </div>`).join('')}
+          </section>` : ''}
+          ${refsRaw.length ? `<section style="page-break-inside:avoid;">
+            ${leftHead('References')}
+            <div style="font-size:10px;color:#444;line-height:1.55;">
+              ${refsRaw.map(r => `<div style="margin-bottom:3px;">${escapeHTML(r)}</div>`).join('')}
+            </div>
+          </section>` : ''}
+        </aside>
+
+        <main style="flex:1;min-width:0;">
+          ${summary ? `<section style="margin-bottom:18px;page-break-inside:avoid;">
+            ${rightHead('Profile')}
+            <p style="margin:0;font-size:11px;line-height:1.65;color:#333;text-align:justify;">${escapeHTML(summary)}</p>
+          </section>` : ''}
+          ${exp.length ? `<section>
+            ${rightHead('Experience')}
+            ${exp.map(entry).join('')}
+          </section>` : ''}
+        </main>
+      </div>
+    </div>`;
 }
 
 
