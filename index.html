@@ -1195,6 +1195,7 @@ function getDeviceFingerprint() {
 
 // Check device limit — separate from email limit
 function checkDeviceLimit(prefix) {
+  if (premiumUnlocked) return true;
   const deviceId = getDeviceFingerprint();
   const deviceData = JSON.parse(localStorage.getItem('aiJobSuiteDeviceData') || '{}');
   const count = deviceData[deviceId] || 0;
@@ -1329,6 +1330,7 @@ function getAccessEmail(prefix) {
 }
 
 async function checkUsage(email, prefix) {
+  if (premiumUnlocked) return true;
   if (!email) return false;
 
   try {
@@ -2898,7 +2900,7 @@ function toggleAnswer(answerId, btn) {
 }
 
 function unlockPremium() {
-  const code = document.getElementById("unlock-code").value.trim();
+  const code = document.getElementById("unlock-code").value.trim().toUpperCase();
   if (code === "AIJOBPRO") {
     premiumUnlocked = true;
     localStorage.setItem("premiumUnlocked", "true");
