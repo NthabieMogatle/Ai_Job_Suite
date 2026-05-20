@@ -2894,7 +2894,7 @@ function toggleAnswer(answerId, btn) {
 }
 
 function unlockPremium() {
-  const code = document.getElementById("unlock-code").value.trim();
+  const code = document.getElementById("unlock-code").value.trim().toUpperCase();
   if (code === "AIJOBPRO") {
     premiumUnlocked = true;
     localStorage.setItem("premiumUnlocked", "true");
