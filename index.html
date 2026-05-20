@@ -2212,7 +2212,7 @@ function buildModernHTML(parsed) {
     </div>`;
 
   return `
-    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;-webkit-text-size-adjust:100%;text-size-adjust:100%;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:${INK};font-size:11px;line-height:1.5;box-sizing:border-box;">
       <header style="padding:38px 56px 14px 56px;">
         <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:${nameSize}px;font-weight:800;color:${NAVY};
@@ -2362,7 +2362,7 @@ function buildMinimalHTML(parsed) {
   };
 
   return `
-    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;-webkit-text-size-adjust:100%;text-size-adjust:100%;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:${INK_SOFT};font-size:11.5px;line-height:1.5;
                 box-sizing:border-box;padding:48px 56px;">
       <header style="display:flex;justify-content:space-between;align-items:flex-start;
@@ -2469,7 +2469,7 @@ function buildExecutiveHTML(parsed, variant) {
   const nameSize = nameLen > 26 ? 22 : nameLen > 18 ? 26 : 30;
 
   return `
-    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;-webkit-text-size-adjust:100%;text-size-adjust:100%;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:#333;font-size:11px;line-height:1.5;box-sizing:border-box;
                 display:flex;">
 
@@ -2594,7 +2594,7 @@ function buildElegantHTML(parsed, variant) {
   const nameSize = nameLen > 28 ? 26 : nameLen > 20 ? 30 : 34;
 
   return `
-    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;-webkit-text-size-adjust:100%;text-size-adjust:100%;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:#333;font-size:11px;line-height:1.5;box-sizing:border-box;">
 
       <header style="background:${p.header};padding:24px 56px 18px 56px;border-top:5px solid ${p.accent};
