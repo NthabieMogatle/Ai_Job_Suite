@@ -2223,7 +2223,7 @@ function buildModernHTML(parsed) {
                 ${contactItems.map(c => `<div style="font-size:10.5px;color:${INK};line-height:1.5;margin-bottom:5px;word-break:break-word;">${escapeHTML(c)}</div>`).join('')}
               </section>` : ''}
           </div>
-          <div style="flex:1;min-width:0;">
+          <div style="flex:0 0 448px;">
             ${summary ? `
               <section style="page-break-inside:avoid;">
                 ${mainHead('Profile')}
@@ -2251,7 +2251,7 @@ function buildModernHTML(parsed) {
                   </div>`).join('')}
               </section>` : ''}
           </div>
-          <div style="flex:1;min-width:0;">
+          <div style="flex:0 0 448px;">
             ${exp.length ? `
               <section>
                 ${mainHead('Experience')}
@@ -2272,7 +2272,7 @@ function buildModernHTML(parsed) {
                 </div>
               </section>` : ''}
           </div>
-          <div style="flex:1;min-width:0;">
+          <div style="flex:0 0 448px;">
             ${edu.length ? `
               <section style="page-break-inside:avoid;">
                 ${mainHead('Education')}
@@ -2464,7 +2464,7 @@ function buildExecutiveHTML(parsed, variant) {
                 color:#333;font-size:11px;line-height:1.5;box-sizing:border-box;
                 display:flex;">
 
-      <main style="flex:1;min-width:0;padding:44px 30px 30px 50px;">
+      <main style="flex:0 0 596px;padding:44px 30px 30px 50px;">
         <header style="margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid ${p.sidebar};">
           <h1 style="font-family:'Times New Roman',serif;font-size:${nameSize}px;font-weight:700;
                      color:${p.sidebar};text-transform:uppercase;letter-spacing:0.04em;
