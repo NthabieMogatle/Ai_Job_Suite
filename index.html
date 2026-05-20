@@ -2849,7 +2849,6 @@ async function resendVerificationCode() {
 }
 
 async function requireEmailVerification(email, prefix, callback) {
-  callback(); return; // TESTING BYPASS — remove before launch
   // Skip if already verified this email
   if (verifiedEmails.includes(email)) {
     callback();
