@@ -1188,6 +1188,7 @@ function getDeviceFingerprint() {
 
 // Check device limit — separate from email limit
 function checkDeviceLimit(prefix) {
+  if (premiumUnlocked) return true;
   const deviceId = getDeviceFingerprint();
   const deviceData = JSON.parse(localStorage.getItem('aiJobSuiteDeviceData') || '{}');
   const count = deviceData[deviceId] || 0;
