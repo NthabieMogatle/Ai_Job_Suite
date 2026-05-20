@@ -1154,7 +1154,7 @@ let selectedElegantVariant = 'brown';
 
 const SUPABASE_URL = "https://roqhmdqrgovnqjiuoewe.supabase.co";
 const SUPABASE_KEY = "sb_publishable_cC8Fx8q75VUwEXU_x4sx9g__Iw7aS79";
-const FREE_GENERATION_LIMIT = 99;
+const FREE_GENERATION_LIMIT = 2;
 const PAYWALL_URL = 'https://elevehired.gumroad.com/l/pllrsk';
 let userEmail = localStorage.getItem('aiJobSuiteUserEmail') || '';
 let usageData = JSON.parse(localStorage.getItem('aiJobSuiteUsageData') || '{}');
@@ -2849,7 +2849,6 @@ async function resendVerificationCode() {
 }
 
 async function requireEmailVerification(email, prefix, callback) {
-  callback(); return; // TESTING BYPASS — remove before launch
   // Skip if already verified this email
   if (verifiedEmails.includes(email)) {
     callback();
