@@ -2381,7 +2381,7 @@ function buildMinimalHTML(parsed) {
       </header>
 
       <div style="display:flex;gap:34px;">
-        <main style="flex:0 0 58%;min-width:0;">
+        <main style="flex:0 0 408px;min-width:0;">
           ${summary ? `<section style="margin-bottom:18px;page-break-inside:avoid;">${head('Summary')}
             <p style="margin:0;font-size:11.5px;line-height:1.6;color:${INK_SOFT};">${escapeHTML(summary)}</p>
           </section>` : ''}
@@ -2392,7 +2392,7 @@ function buildMinimalHTML(parsed) {
             ${proj.map(e => entry(e, BLUE)).join('')}
           </section>` : ''}
         </main>
-        <aside style="flex:0 0 calc(42% - 34px);min-width:0;">
+        <aside style="flex:0 0 262px;min-width:0;">
           ${skills.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">${head('Skills')}
             <div style="font-size:11px;color:${INK_SOFT};line-height:1.65;">${skills.map(escapeHTML).join(', ')}</div>
           </section>` : ''}
@@ -2647,7 +2647,7 @@ function buildElegantHTML(parsed, variant) {
           </section>` : ''}
         </aside>
 
-        <main style="flex:1;min-width:0;">
+        <main style="flex:0 0 520px;min-width:0;">
           ${summary ? `<section style="margin-bottom:18px;page-break-inside:avoid;">
             ${rightHead('Profile')}
             <p style="margin:0;font-size:11px;line-height:1.65;color:#333;text-align:justify;">${escapeHTML(summary)}</p>
