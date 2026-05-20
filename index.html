@@ -1323,6 +1323,7 @@ function getAccessEmail(prefix) {
 }
 
 async function checkUsage(email, prefix) {
+  if (premiumUnlocked) return true;
   if (!email) return false;
 
   try {
