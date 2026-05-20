@@ -737,6 +737,9 @@ body::before {
     direction: ltr;
   }
 }
+@media (max-width: 767px) {
+  .mobile-pdf-notice { display: block !important; }
+}
 </style>
 
 </head>
@@ -989,6 +992,10 @@ body::before {
         </div>
       </div>
     </div>
+
+<div class="mobile-pdf-notice" style="display:none;background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.4);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:14px;line-height:1.5;color:#d4af37;text-align:center;">
+  📱 For the best resume formatting, generate and download on a desktop or laptop. We're polishing the mobile experience now.
+</div>
 
 <button class="btn-generate" id="rv-btn" onclick="generate('rv')">Generate Resume</button>
 <div class="error-msg" id="rv-error"></div>
