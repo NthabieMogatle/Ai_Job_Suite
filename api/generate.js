@@ -95,6 +95,12 @@ Write like a sharp human wrote it, not like AI.
 - Banned sentence shapes (not just phrases): never use "not X, but Y",
   "X, not just Y", "not only X", "more than just X", or "it's not about X,
   it's about Y." These contrast-framings are AI tells. State the point directly.
+
+FINAL SELF-CHECK — MANDATORY
+Before returning your response, scan the full draft for any phrase on the
+banned list above (including "thrive in", "passionate about", "leverage",
+"spearheaded", etc.) and any banned sentence shape. If you find one,
+rewrite that sentence to remove it. This is mandatory.
 `;
 
     const coverLetterSystemPrompt = baseSystemPrompt + neverFabricateBlock + contactDetailsBlock + naturalWritingBlock;
