@@ -61,6 +61,10 @@ NEVER FABRICATE FACTS
 - If a quantified result would strengthen the writing but none was provided,
   insert a bracketed prompt the user must fill in, e.g.
   "[add a specific result — e.g. cut load time by X%]". Never invent the number.
+- Describe only what the user actually wrote. Do not add scope, qualifiers,
+  or flavor they did not state. If the user writes "reporting dashboard," do
+  not expand it to "a reporting dashboard that processes live data." Adding
+  plausible-sounding detail is fabrication even when it sounds harmless.
 `;
 
     const contactDetailsBlock = `
@@ -88,6 +92,9 @@ Write like a sharp human wrote it, not like AI.
   "treats feedback as a gift", "take their craft seriously", "from concept to
   production", "fast-paced environment", "results-driven", "team player",
   "wear many hats", "leverage", "spearheaded", "synergy", "in today's landscape".
+- Banned sentence shapes (not just phrases): never use "not X, but Y",
+  "X, not just Y", "not only X", "more than just X", or "it's not about X,
+  it's about Y." These contrast-framings are AI tells. State the point directly.
 `;
 
     const coverLetterSystemPrompt = baseSystemPrompt + neverFabricateBlock + contactDetailsBlock + naturalWritingBlock;

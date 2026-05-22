@@ -1688,6 +1688,11 @@ body::before {
       </div>
     </div>
     <button class="btn-generate" id="cl-btn" onclick="generate('cl')">Generate Cover Letter</button>
+    <div class="form-group" style="margin-top:1rem;">
+      <label>Have a premium code?</label>
+      <input id="cl-unlock-code" type="text" placeholder="Enter your code" style="width:100%;padding:10px;margin-top:5px;">
+      <button class="btn-action" onclick="unlockPremium('cl-unlock-code')" style="margin-top:10px;">Unlock Full Access</button>
+    </div>
     <div class="error-msg" id="cl-error"></div>
     <div class="loading" id="cl-loading"><div class="spinner"></div>Crafting your cover letter...</div>
     <div class="output-card" id="cl-output">
@@ -1819,7 +1824,7 @@ body::before {
             <div style="margin-top:20px; grid-column: span 2;">
               <label>Have a premium code?</label>
               <input id="unlock-code" type="text" placeholder="Enter your code" style="width:100%;padding:10px;margin-top:5px;">
-              <button class="btn-action" onclick="unlockPremium()" style="margin-top:10px;">Unlock Templates</button>
+              <button class="btn-action" onclick="unlockPremium('unlock-code')" style="margin-top:10px;">Unlock Full Access</button>
             </div>
           </div>
         </div>
@@ -1935,6 +1940,11 @@ body::before {
       </div>
     </div>
     <button class="btn-generate" id="li-btn" onclick="generate('li')">Generate LinkedIn Summary</button>
+    <div class="form-group" style="margin-top:1rem;">
+      <label>Have a premium code?</label>
+      <input id="li-unlock-code" type="text" placeholder="Enter your code" style="width:100%;padding:10px;margin-top:5px;">
+      <button class="btn-action" onclick="unlockPremium('li-unlock-code')" style="margin-top:10px;">Unlock Full Access</button>
+    </div>
     <div class="error-msg" id="li-error"></div>
     <div class="loading" id="li-loading"><div class="spinner"></div>Crafting your LinkedIn summary...</div>
     <div class="output-card" id="li-output">
@@ -1942,7 +1952,7 @@ body::before {
         <span>Your LinkedIn summary</span>
         <span class="output-badge">Ready</span>
       </div>
-      <div class="output-text" id="li-text"></div>
+      <div class="output-text" id="li-text" style="font-size:16px;"></div>
       <div class="output-actions">
         <button class="btn-action" onclick="copyOutput('li-text', this)">Copy</button>
         <button class="btn-action" onclick="generate('li')">↺ Regenerate</button>
@@ -3809,12 +3819,13 @@ function toggleAnswer(answerId, btn) {
   btn.textContent = isOpen ? '✦ Hide Answer Tips' : '✦ Show Answer Tips';
 }
 
-function unlockPremium() {
-  const code = document.getElementById("unlock-code").value.trim().toUpperCase();
+function unlockPremium(inputId) {
+  const input = document.getElementById(inputId || "unlock-code");
+  const code = (input?.value || "").trim().toUpperCase();
   if (code === "AIJOBPRO") {
     premiumUnlocked = true;
     localStorage.setItem("premiumUnlocked", "true");
-    alert("✅ Premium templates unlocked! You now have access to Executive and Elegant templates.");
+    alert("✅ Full access unlocked! Cover letter, resume, LinkedIn, and all premium templates are now unlimited.");
     document.querySelectorAll(".template-card.locked").forEach(card => card.classList.remove("locked"));
   } else {
     alert("❌ Invalid code. Check your Gumroad purchase.");
