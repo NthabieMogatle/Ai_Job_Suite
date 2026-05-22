@@ -25,13 +25,13 @@ module.exports = async function handler(req, res) {
         ? JSON.parse(req.body || '{}')
         : (req.body || {});
 
-    const { messages, max_tokens, system } = body;
+    const { messages, max_tokens, system, generator } = body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'Messages are required.' });
     }
 
-    const atsSystemPrompt = `
+    const baseSystemPrompt = `
 You are an expert resume and cover letter writer focused on helping job seekers get hired.
 
 Your job is to create ATS-friendly, realistic, and highly tailored resumes and cover letters for ANY industry.
@@ -51,6 +51,56 @@ Instructions:
 Goal:
 Help the user create job application documents that are relevant, honest, ATS-friendly, and strong enough to improve their chances of getting interviews.
 `;
+
+    const neverFabricateBlock = `
+NEVER FABRICATE FACTS
+- Use only information the user provided. Do not invent metrics, percentages,
+  achievements, employers, job titles, dates, or project details.
+- If the input is thin, write a strong piece from only what's given. Do not pad
+  it with made-up accomplishments.
+- If a quantified result would strengthen the writing but none was provided,
+  insert a bracketed prompt the user must fill in, e.g.
+  "[add a specific result — e.g. cut load time by X%]". Never invent the number.
+`;
+
+    const contactDetailsBlock = `
+CONTACT DETAILS — STRICT RULE
+Never invent contact information. Do not generate an email, phone number,
+LinkedIn URL, or address.
+- Use the applicant's name exactly as provided.
+- For any contact detail the user did NOT explicitly provide, output a visible
+  bracketed placeholder they must replace: [Your email] · [Your phone] · [Your LinkedIn]
+- A bracketed placeholder is correct. A realistic-looking fake value
+  (e.g. name@email.com or a 555 number) is a failure, because the user may send
+  it without noticing.
+`;
+
+    const naturalWritingBlock = `
+NATURAL WRITING RULES
+Write like a sharp human wrote it, not like AI.
+- Vary sentence length — mix short punchy lines with longer ones. No uniform rhythm.
+- Never use the "not X, but Y" / "it's not just X, it's Y" construction.
+- Don't stack three adjectives or phrases for effect ("clean, scalable, and
+  maintainable"). Pick the one specific thing that matters.
+- Lead with concrete specifics (named tools, real outcomes) over abstract praise.
+- Start with substance. No filler openers like "I am writing to express my interest."
+- Banned phrases — never use: "thrive in", "passionate about", "care deeply",
+  "treats feedback as a gift", "take their craft seriously", "from concept to
+  production", "fast-paced environment", "results-driven", "team player",
+  "wear many hats", "leverage", "spearheaded", "synergy", "in today's landscape".
+`;
+
+    const coverLetterSystemPrompt = baseSystemPrompt + neverFabricateBlock + contactDetailsBlock + naturalWritingBlock;
+    const resumeSystemPrompt = baseSystemPrompt + neverFabricateBlock + contactDetailsBlock + naturalWritingBlock;
+    const linkedinSystemPrompt = baseSystemPrompt + neverFabricateBlock + naturalWritingBlock;
+
+    const systemPromptByGenerator = {
+      cl: coverLetterSystemPrompt,
+      rv: resumeSystemPrompt,
+      li: linkedinSystemPrompt
+    };
+
+    const atsSystemPrompt = systemPromptByGenerator[generator] || baseSystemPrompt;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

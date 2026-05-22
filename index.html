@@ -2325,14 +2325,15 @@ function increaseUsage() {
   localStorage.setItem('aiJobSuiteUsageData', JSON.stringify(usageData));
 }
 
-async function callAPI(prompt) {
+async function callAPI(prompt, generator) {
   const res = await fetch('/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2500,
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{ role: 'user', content: prompt }],
+      generator
     })
   });
   if (!res.ok) {
@@ -2578,7 +2579,7 @@ async function runGeneration(prefix, prompt) {
   }
 
   try {
-    let text = await callAPI(prompt);
+    let text = await callAPI(prompt, prefix);
     if (!text) throw new Error('No output was returned.');
     
     // Strip em/en dashes — AI detector signal
