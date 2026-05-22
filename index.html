@@ -1677,6 +1677,16 @@ body::before {
           <input type="text" id="cl-job" placeholder="e.g. Software Dev Intern" />
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="text" id="cl-email" placeholder="email@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="text" id="cl-phone" placeholder="e.g. +1 555 0100" />
+        </div>
+      </div>
       <div class="form-group">
         <label>Company name</label>
         <input type="text" id="cl-company" placeholder="e.g. Google" />
@@ -2422,6 +2432,8 @@ Output ONLY the final LinkedIn summary text. No labels, no preamble.`;
 
   } else if (prefix === 'cl') {
     const name = getVal('cl-name'), job = getVal('cl-job'), company = getVal('cl-company'), desc = getVal('cl-desc'), skills = getVal('cl-skills');
+    const contactEmail = getVal('cl-email'), contactPhone = getVal('cl-phone');
+    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     if (!name || !job || !company || !skills) {
       errorEl.textContent = 'Please fill in all required cover letter fields.';
       errorEl.classList.add('visible');
@@ -2441,12 +2453,22 @@ IMPORTANT INSTRUCTIONS:
 - Focus on VALUE and impact, not just listing responsibilities
 - Use strong action verbs relevant to the ${job} industry (e.g. for tech: built, deployed, debugged; for healthcare: supported, assessed, coordinated; for finance: analysed, reconciled, forecasted)
 - Avoid fluff, repetition, and generic phrases
-- Do NOT include placeholders or brackets
 - Start with a strong, natural opening that immediately shows value or relevance to the role
 - Avoid common or overused phrases (e.g. "I am excited to apply", "I am writing to express", "I am passionate about")
 - Write like a real candidate speaking confidently
 - Naturally include relevant keywords from this job description: ${desc || 'not provided'}
-- Do NOT include placeholder text such as [Your Name], [Date], [Email]
+
+CONTACT HEADER — STRICT RULE (overrides any general bracket-placeholder rule):
+- Place the contact header at the top: name on the first line, then any provided contact lines below it, then the date, then a blank line before the salutation.
+- Use the EXACT values below verbatim. Do NOT bracket them, do NOT alter them, do NOT substitute placeholders like [Your email], [Your phone], or [Date] when a value is provided.
+- If a contact value below is shown as "(not provided)", OMIT that line entirely from the header — do not print a bracket placeholder for it.
+- Do NOT invent any contact item the user did not provide (no LinkedIn URL, no address, no portfolio link). Omit, don't bracket.
+
+CONTACT VALUES TO USE VERBATIM:
+- Name: ${name}
+- Email: ${contactEmail || '(not provided)'}
+- Phone: ${contactPhone || '(not provided)'}
+- Date: ${today}
 
 WRITING STYLE — CRITICAL FOR SOUNDING HUMAN:
 - Mix short punchy sentences with longer descriptive ones — vary the rhythm throughout
