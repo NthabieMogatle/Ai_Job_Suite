@@ -7,7 +7,7 @@ no<!DOCTYPE html>
   <title>Élève — AI Resume & Cover Letter Generator</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -15,34 +15,38 @@ no<!DOCTYPE html>
 
 <style>
 :root {
-  --bg: #0e0e0f;
-  --surface: #161618;
-  --surface2: #1e1e21;
+  --bg: #06070F;
+  --surface: #0C0E1A;
+  --surface2: #121528;
   --border: rgba(255,255,255,0.08);
   --border-hover: rgba(255,255,255,0.18);
-  --gold: #c9a84c;
-  --gold-light: #e8c97a;
-  --gold-dim: rgba(201,168,76,0.12);
-  --text: #f0ede6;
-  --muted: #888580;
-  --muted2: #555250;
-  --success: #4caf7d;
+  --violet: #7B6FFF;
+  --violet-light: #A892FF;
+  --violet-dim: rgba(123,111,255,0.12);
+  /* legacy aliases so existing var() references still resolve */
+  --gold: #7B6FFF;
+  --gold-light: #A892FF;
+  --gold-dim: rgba(123,111,255,0.12);
+  --text: #ECEBF5;
+  --muted: #7E7D9A;
+  --muted2: #4E4D6A;
+  --success: #4EE8B5;
   --radius: 12px;
   --radius-sm: 8px;
-  --type-display-size: clamp(2.5rem, 5.5vw, 3.5rem);
+  --type-display-size: clamp(2.75rem, 6vw, 4rem);
   --type-h1-size: clamp(1.625rem, 2.75vw, 2.125rem);
   --type-h2-size: 1.375rem;
   --type-h3-size: 1.0625rem;
   --type-body-size: 1rem;
   --type-small-size: 0.8125rem;
   --type-kicker-size: 0.75rem;
-  --type-wordmark-size: 2rem;
+  --type-wordmark-size: 2.5rem;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: var(--type-body-size);
   background: var(--bg);
   color: var(--text);
@@ -55,8 +59,8 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+    linear-gradient(rgba(123,111,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(123,111,255,0.035) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none;
   z-index: 0;
@@ -78,7 +82,7 @@ body::before {
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--gold);
-  border: 1px solid rgba(201,168,76,0.3);
+  border: 1px solid rgba(123,111,255,0.3);
   padding: 4px 14px;
   border-radius: 20px;
   margin-bottom: 1rem;
@@ -86,7 +90,7 @@ body::before {
 }
 
 .header h1 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: var(--type-display-size);
   font-weight: 600;
   color: var(--text);
@@ -98,7 +102,7 @@ body::before {
 .header p { font-size: var(--type-h3-size); color: var(--muted); font-weight: 300; line-height: 1.6; }
 
 .wordmark {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: var(--type-wordmark-size);
   font-weight: 600;
   line-height: 1;
@@ -107,7 +111,7 @@ body::before {
 }
 
 .hero-pricing {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: var(--type-kicker-size);
   font-weight: 500;
   color: var(--text);
@@ -125,7 +129,7 @@ body::before {
   font-size: 17px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   letter-spacing: 0.02em;
   transition: background 0.2s, transform 0.15s;
   box-shadow: 0 4px 20px rgba(255,107,107,0.35);
@@ -156,13 +160,13 @@ body::before {
   color: var(--muted);
   border: none;
   background: transparent;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .tab.active {
   background: var(--gold-dim);
   color: var(--gold);
-  border: 1px solid rgba(201,168,76,0.25);
+  border: 1px solid rgba(123,111,255,0.25);
 }
 
 .panel { display: none; animation: fadeUp 0.4s ease both; }
@@ -177,7 +181,7 @@ body::before {
 }
 
 .form-card h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: var(--type-h2-size);
   font-weight: 400;
   line-height: 1.4;
@@ -211,7 +215,7 @@ body::before {
   padding: 10px 14px;
   font-size: var(--type-body-size);
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   outline: none;
   transition: border-color 0.2s;
   resize: vertical;
@@ -234,12 +238,12 @@ body::before {
   cursor: pointer;
   background: transparent;
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   transition: all 0.2s;
 }
 
 .chip:hover { border-color: var(--gold); color: var(--gold-light); }
-.chip.active { background: var(--gold-dim); border-color: rgba(201,168,76,0.4); color: var(--gold-light); }
+.chip.active { background: var(--gold-dim); border-color: rgba(123,111,255,0.4); color: var(--gold-light); }
 
 .btn-generate {
   width: 100%;
@@ -250,7 +254,7 @@ body::before {
   color: #0e0e0f;
   font-size: 15px;
   font-weight: 500;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   cursor: pointer;
   transition: opacity 0.2s, transform 0.1s;
   letter-spacing: 0.02em;
@@ -263,7 +267,7 @@ body::before {
 .output-card {
   display: none;
   background: var(--surface);
-  border: 1px solid rgba(201,168,76,0.2);
+  border: 1px solid rgba(123,111,255,0.2);
   border-radius: var(--radius);
   padding: 1.75rem;
   animation: fadeUp 0.4s ease both;
@@ -325,7 +329,7 @@ body::before {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   transition: all 0.2s;
 }
 
@@ -368,7 +372,7 @@ body::before {
 .ats-card {
   display: none;
   background: var(--surface);
-  border: 1px solid rgba(201,168,76,0.2);
+  border: 1px solid rgba(123,111,255,0.2);
   border-radius: var(--radius);
   padding: 1.75rem;
   margin-top: 1.5rem;
@@ -440,7 +444,7 @@ body::before {
 .interview-card {
   display: none;
   background: var(--surface);
-  border: 1px solid rgba(201,168,76,0.2);
+  border: 1px solid rgba(123,111,255,0.2);
   border-radius: var(--radius);
   padding: 1.75rem;
   margin-top: 1.5rem;
@@ -491,7 +495,7 @@ body::before {
   height: 26px;
   border-radius: 50%;
   background: var(--gold-dim);
-  border: 1px solid rgba(201,168,76,0.3);
+  border: 1px solid rgba(123,111,255,0.3);
   color: var(--gold);
   font-size: 12px;
   font-weight: 600;
@@ -508,23 +512,23 @@ body::before {
   font-size: 12px;
   color: var(--gold);
   background: var(--gold-dim);
-  border: 1px solid rgba(201,168,76,0.25);
+  border: 1px solid rgba(123,111,255,0.25);
   border-radius: 20px;
   padding: 4px 12px;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   transition: all 0.2s;
   align-self: flex-start;
   margin-left: 38px;
 }
 
-.q-answer-btn:hover { background: rgba(201,168,76,0.2); }
+.q-answer-btn:hover { background: rgba(123,111,255,0.2); }
 
 .q-answer-box {
   display: none;
   margin-left: 38px;
-  background: rgba(201,168,76,0.05);
-  border: 1px solid rgba(201,168,76,0.15);
+  background: rgba(123,111,255,0.05);
+  border: 1px solid rgba(123,111,255,0.15);
   border-radius: var(--radius-sm);
   padding: 14px 16px;
   font-size: var(--type-body-size);
@@ -577,17 +581,17 @@ body::before {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
-.template-card h3 { margin: 0 0 8px; font-family: 'DM Sans', sans-serif; font-size: var(--type-h3-size); font-weight: 600; line-height: 1.4; }
+.template-card h3 { margin: 0 0 8px; font-family: 'Inter', sans-serif; font-size: var(--type-h3-size); font-weight: 600; line-height: 1.4; }
 .template-card p { margin: 0; font-size: var(--type-small-size); color: #aaa; }
 
 .template-card:hover {
   transform: translateY(-4px);
-  border-color: #c9a84c;
-  box-shadow: 0 12px 32px rgba(201, 168, 76, 0.18);
+  border-color: #7B6FFF;
+  box-shadow: 0 12px 32px rgba(123,111,255,0.18);
 }
 
 .template-card.active {
-  border: 2px solid #c9a84c;
+  border: 2px solid #7B6FFF;
   background: linear-gradient(145deg, #1f1a10, #111);
 }
 
@@ -692,7 +696,7 @@ body::before {
   gap: 1.5rem;
 }
 .feature-kicker {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: var(--type-kicker-size);
   font-weight: 500;
   color: var(--muted);
@@ -700,14 +704,14 @@ body::before {
   text-transform: uppercase;
 }
 .feature-heading {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: var(--type-h1-size);
   font-weight: 400;
   color: var(--text);
   line-height: 1.2;
 }
 .feature-body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: var(--type-body-size);
   font-weight: 400;
   color: var(--muted);
@@ -740,29 +744,168 @@ body::before {
 @media (max-width: 767px) {
   .mobile-pdf-notice { display: block !important; }
 }
+
+/* ── Hero redesign ────────────────────────────────── */
+.hero-section {
+  position: relative;
+  overflow: hidden;
+  padding: 7rem 1.5rem 4.5rem;
+  text-align: center;
+}
+
+.hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-orb-1 {
+  top: -160px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, rgba(123,111,255,0.16) 0%, transparent 65%);
+}
+
+.hero-orb-2 {
+  bottom: -60px;
+  right: -100px;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(168,146,255,0.07) 0%, transparent 70%);
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  animation: fadeUp 0.6s ease both;
+}
+
+.hero-wordmark {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+  display: block;
+}
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--violet);
+  border: 1px solid rgba(123,111,255,0.35);
+  background: rgba(123,111,255,0.08);
+  padding: 5px 14px 5px 12px;
+  border-radius: 20px;
+  margin-bottom: 1.75rem;
+}
+
+.hero-headline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: var(--type-display-size);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+}
+
+.hero-accent {
+  background: linear-gradient(135deg, #7B6FFF 0%, #A892FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: 1.0625rem;
+  color: var(--muted);
+  line-height: 1.65;
+  max-width: 520px;
+  margin: 0 auto 2rem;
+  font-weight: 400;
+}
+
+.hero-cta-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.hero-pricing-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.gumroad-cta button {
+  background: linear-gradient(135deg, #7B6FFF 0%, #A892FF 100%);
+  color: #fff;
+  padding: 14px 36px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.01em;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 28px rgba(123,111,255,0.38);
+}
+
+.gumroad-cta button:hover {
+  opacity: 0.92;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 36px rgba(123,111,255,0.5);
+}
+
+.gumroad-cta button:active { transform: translateY(0); }
+
+.hero-trust {
+  font-size: 11.5px;
+  color: var(--muted2);
+  letter-spacing: 0.04em;
+}
 </style>
 
 </head>
 <body>
 
-<div class="wrapper">
-
-  <!-- Header -->
-
-  <div class="header">
-    <div style="text-align:center; margin-bottom:30px;">
-      <div class="wordmark" style="padding:1.5rem 0;">Élève</div>
+<!-- ── Hero ─────────────────────────────────────── -->
+<section class="hero-section">
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+  <div class="hero-inner">
+    <span class="hero-wordmark">Élève</span>
+    <div class="hero-pill">✦ AI Job Suite</div>
+    <h1 class="hero-headline">The resume that gets you<span class="hero-accent"> in the room.</span></h1>
+    <p class="hero-sub">ATS-optimized resumes and cover letters in seconds. Designed to open doors, not get filtered out.</p>
+    <div class="hero-cta-wrap">
+      <div class="hero-pricing-label">$29 · One-time payment · Lifetime access</div>
+      <div class="gumroad-cta">
+        <a href="https://elevehired.gumroad.com/l/pllrsk" data-gumroad-single-product="true" style="text-decoration:none;">
+          <button>Get Instant Access →</button>
+        </a>
+      </div>
     </div>
-    <h1>The resume that gets you<span style="color:#c9a84c;"> in&nbsp;the&nbsp;room.</span></h1>
-    <p style="margin-top:10px; color:#aaa;">ATS-optimized resumes and cover letters in seconds. Designed to open doors, not get filtered out.</p>
-    <div class="gumroad-cta">
-      <div class="hero-pricing" style="margin-bottom:1rem;">$29 · One-time payment · Lifetime access</div>
-    <a href="https://elevehired.gumroad.com/l/pllrsk" data-gumroad-single-product="true" style="text-decoration:none;">
-        <button>Get Instant Access</button>
-      </a>
-    </div>
+    <div class="hero-trust">2 free generations included · No credit card required to start</div>
   </div>
-</div>
+</section>
 
 <section class="feature-section">
   <div class="feature-row">
@@ -1044,7 +1187,7 @@ body::before {
     </div>
     <div class="output-actions">
       <button class="btn-action" onclick="copyATS()">Copy ATS Report</button>
-      <button class="btn-action" onclick="improveResume()" id="rv-improve-btn" style="border-color:rgba(201,168,76,0.4);color:var(--gold);">✦ Improve My Resume</button>
+      <button class="btn-action" onclick="improveResume()" id="rv-improve-btn" style="border-color:rgba(123,111,255,0.4);color:var(--gold);">✦ Improve My Resume</button>
     </div>
   </div>
 </div>
@@ -1756,7 +1899,7 @@ Rules:
 
     const scoreEl = document.getElementById('rv-ats-score');
     if (parsed.overall >= 80) scoreEl.style.borderColor = '#4caf7d';
-    else if (parsed.overall >= 60) scoreEl.style.borderColor = '#c9a84c';
+    else if (parsed.overall >= 60) scoreEl.style.borderColor = '#7B6FFF';
     else scoreEl.style.borderColor = '#e07070';
 
     setTimeout(() => {
@@ -1822,7 +1965,7 @@ Output ONLY the 5 tips.`;
       const match = tip.match(/^(\d+\.?\s*)(.*)/);
       if (match) {
         return `<div style="display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);">
-          <span style="min-width:22px; height:22px; border-radius:50%; background:var(--gold-dim); border:1px solid rgba(201,168,76,0.3); color:var(--gold); font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;">${match[1].replace('.','').trim()}</span>
+          <span style="min-width:22px; height:22px; border-radius:50%; background:var(--gold-dim); border:1px solid rgba(123,111,255,0.3); color:var(--gold); font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;">${match[1].replace('.','').trim()}</span>
           <span style="font-size:13px; color:var(--text); line-height:1.7;">${match[2]}</span>
         </div>`;
       }
@@ -2914,11 +3057,11 @@ function unlockPremium() {
 <!-- Email Verification Modal -->
 
 <div id="verifyModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:#161618; border:1px solid rgba(201,168,76,0.3); border-radius:16px; padding:2rem; max-width:420px; width:90%; margin:auto; position:relative;">
+  <div style="background:#0C0E1A; border:1px solid rgba(123,111,255,0.3); border-radius:16px; padding:2rem; max-width:420px; width:90%; margin:auto; position:relative;">
     <div style="text-align:center; margin-bottom:1.5rem;">
       <div style="font-size:36px; margin-bottom:10px;">✉</div>
-      <h2 style="font-family:'Playfair Display',serif; font-size:22px; font-weight:400; line-height:1.4; color:#f0ede6; margin-bottom:8px;">Check your email</h2>
-      <p style="font-size:13px; color:#888580; line-height:1.5;" id="verifySubtitle">We sent a 6-digit code to <strong id="verifyEmailDisplay" style="color:#c9a84c;"></strong></p>
+      <h2 style="font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; line-height:1.4; color:#ECEBF5; margin-bottom:8px;">Check your email</h2>
+      <p style="font-size:13px; color:#888580; line-height:1.5;" id="verifySubtitle">We sent a 6-digit code to <strong id="verifyEmailDisplay" style="color:#7B6FFF;"></strong></p>
     </div>
 
 <div style="display:flex; gap:8px; justify-content:center; margin-bottom:1.25rem;" id="codeInputs">
@@ -2932,10 +3075,10 @@ function unlockPremium() {
 
 <div id="verifyError" style="display:none; font-size:13px; color:#e07070; text-align:center; margin-bottom:12px; background:rgba(224,112,112,0.08); border:1px solid rgba(224,112,112,0.2); border-radius:8px; padding:8px 12px;"></div>
 
-<button id="verifyBtn" onclick="submitVerificationCode()" style="width:100%; padding:13px; background:linear-gradient(135deg,#c9a84c,#e8c97a); border:none; border-radius:10px; color:#0e0e0f; font-size:15px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; margin-bottom:12px;">Verify & Generate</button>
+<button id="verifyBtn" onclick="submitVerificationCode()" style="width:100%; padding:13px; background:linear-gradient(135deg,#7B6FFF,#A892FF); border:none; border-radius:10px; color:#fff; font-size:15px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; margin-bottom:12px;">Verify & Generate</button>
 
 <div style="text-align:center;">
-  <button onclick="resendVerificationCode()" id="resendBtn" style="background:none; border:none; color:#888580; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif;">Didn't get the code? <span style="color:#c9a84c;">Resend</span></button>
+  <button onclick="resendVerificationCode()" id="resendBtn" style="background:none; border:none; color:#888580; font-size:13px; cursor:pointer; font-family:'Inter',sans-serif;">Didn't get the code? <span style="color:#7B6FFF;">Resend</span></button>
 </div>
 
   </div>
