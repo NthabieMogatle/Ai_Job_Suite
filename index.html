@@ -41,6 +41,12 @@
   --type-small-size: 0.8125rem;
   --type-kicker-size: 0.75rem;
   --type-wordmark-size: 2.5rem;
+
+  /* Standardized font for all generated-output body text
+     (cover letter, resume, LinkedIn summary, interview prep, ATS tips, profile tips) */
+  --output-font-family: 'Inter', sans-serif;
+  --output-font-size: 13px;
+  --output-line-height: 1.7;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -305,8 +311,9 @@ body::before {
 }
 
 .output-text {
-  font-size: var(--type-body-size);
-  line-height: 1.65;
+  font-family: var(--output-font-family);
+  font-size: var(--output-font-size);
+  line-height: var(--output-line-height);
   color: var(--text);
   white-space: pre-wrap;
   font-weight: 400;
@@ -438,7 +445,7 @@ body::before {
   transition: width 0.8s ease;
 }
 
-.ats-tips { font-size: var(--type-body-size); line-height: 1.65; color: var(--text); white-space: pre-wrap; }
+.ats-tips { font-family: var(--output-font-family); font-size: var(--output-font-size); line-height: var(--output-line-height); color: var(--text); white-space: pre-wrap; }
 
 /* ===== INTERVIEW PREP CARD ===== */
 .interview-card {
@@ -506,7 +513,7 @@ body::before {
   margin-top: 2px;
 }
 
-.q-text { flex: 1; line-height: 1.6; }
+.q-text { flex: 1; font-family: var(--output-font-family); font-size: var(--output-font-size); line-height: var(--output-line-height); }
 
 .q-answer-btn {
   font-size: 12px;
@@ -531,8 +538,9 @@ body::before {
   border: 1px solid rgba(224,182,92,0.15);
   border-radius: var(--radius-sm);
   padding: 14px 16px;
-  font-size: var(--type-body-size);
-  line-height: 1.65;
+  font-family: var(--output-font-family);
+  font-size: var(--output-font-size);
+  line-height: var(--output-line-height);
   color: var(--text);
 }
 
@@ -556,8 +564,16 @@ body::before {
 
 .q-answer-example {
   color: var(--text);
-  font-size: var(--type-body-size);
-  line-height: 1.65;
+  font-family: var(--output-font-family);
+  font-size: var(--output-font-size);
+  line-height: var(--output-line-height);
+}
+
+#li-tips-content {
+  font-family: var(--output-font-family);
+  font-size: var(--output-font-size);
+  line-height: var(--output-line-height);
+  color: var(--text);
 }
 
 .interview-loading {
@@ -1952,7 +1968,7 @@ body::before {
         <span>Your LinkedIn summary</span>
         <span class="output-badge">Ready</span>
       </div>
-      <div class="output-text" id="li-text" style="font-size:16px;"></div>
+      <div class="output-text" id="li-text"></div>
       <div class="output-actions">
         <button class="btn-action" onclick="copyOutput('li-text', this)">Copy</button>
         <button class="btn-action" onclick="generate('li')">↺ Regenerate</button>
@@ -1965,7 +1981,7 @@ body::before {
         <span class="output-badge">AI Generated</span>
       </div>
       <div class="interview-loading" id="li-tips-loading"><div class="spinner"></div>Generating profile tips...</div>
-      <div id="li-tips-content" style="font-size:16px; line-height:1.65; color:var(--text);"></div>
+      <div id="li-tips-content"></div>
       <div class="output-actions" id="li-tips-actions" style="display:none;">
         <button class="btn-action" onclick="copyOutput('li-tips-content', this)">Copy Tips</button>
       </div>
@@ -2743,16 +2759,16 @@ Output ONLY the 5 tips.`;
       if (match) {
         return `<div style="display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);">
           <span style="min-width:22px; height:22px; border-radius:50%; background:var(--gold-dim); border:1px solid rgba(224,182,92,0.3); color:var(--gold); font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;">${match[1].replace('.','').trim()}</span>
-          <span style="font-size:13px; color:var(--text); line-height:1.7;">${match[2]}</span>
+          <span>${match[2]}</span>
         </div>`;
       }
-      return `<div style="padding:8px 0; font-size:13px; color:var(--text); line-height:1.7;">${tip}</div>`;
+      return `<div style="padding:8px 0;">${tip}</div>`;
     }).join('');
 
     actionsEl.style.display = 'flex';
   } catch(e) {
     loadingEl.classList.remove('visible');
-    contentEl.innerHTML = '<span style="color:var(--muted); font-size:13px;">Could not generate tips. Please try again.</span>';
+    contentEl.innerHTML = '<span style="color:var(--muted);">Could not generate tips. Please try again.</span>';
   }
 }
 
