@@ -1055,6 +1055,18 @@ body::before {
 }
 .btn-ghost-v3:hover { border-color: rgba(224,182,92,0.5); background: rgba(224,182,92,0.05); }
 .hero-v3-trust { font-size: 13px; color: var(--muted2); }
+.hero-v3-promise {
+  margin-top: 0.75rem;
+  padding: 10px 14px;
+  background: rgba(78, 232, 181, 0.08);
+  border: 1px solid rgba(78, 232, 181, 0.28);
+  border-radius: 10px;
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.hero-v3-promise strong { color: var(--success); font-weight: 700; }
 
 /* Product preview card */
 .preview-card {
@@ -1264,6 +1276,10 @@ body::before {
   border-radius: 999px;
   padding: 6px 12px;
 }
+.bento-template-chip--soon {
+  color: var(--muted2);
+  border-style: dashed;
+}
 @media (max-width: 900px) {
   .bento-grid { grid-template-columns: repeat(2, 1fr); }
   .bento-card-large, .bento-card-wide, .bento-card-mid, .bento-card-small { grid-column: span 2; grid-row: auto; }
@@ -1427,6 +1443,73 @@ body::before {
 
 /* FAQ */
 .faq-section { max-width: 800px; margin: 0 auto; padding: 4rem 24px 6rem; }
+
+/* ===== Why Élève ===== */
+.why-eleve-section { max-width: 1100px; margin: 0 auto; padding: 5rem 24px; }
+.why-eleve-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 2rem;
+}
+@media (max-width: 768px) {
+  .why-eleve-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== Pay once comparison ===== */
+.pay-once-section { max-width: 1100px; margin: 0 auto; padding: 5rem 24px; }
+.pay-once-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 2rem;
+}
+.pay-once-col {
+  background: linear-gradient(180deg, rgba(18,21,40,0.6) 0%, rgba(12,14,26,0.6) 100%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 28px;
+}
+.pay-once-col--good { border-color: rgba(78,232,181,0.28); }
+.pay-once-col-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.pay-once-col--good .pay-once-col-label { color: var(--success); }
+.pay-once-col-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+.pay-once-list { list-style: none; padding: 0; margin: 0; }
+.pay-once-list li {
+  font-size: 14.5px;
+  color: var(--muted);
+  line-height: 1.55;
+  padding: 10px 0 10px 22px;
+  position: relative;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.pay-once-list li:last-child { border-bottom: none; }
+.pay-once-list li::before {
+  content: '✕';
+  position: absolute;
+  left: 0;
+  top: 11px;
+  color: var(--muted2);
+  font-size: 12px;
+}
+.pay-once-col--good .pay-once-list li { color: var(--text); }
+.pay-once-col--good .pay-once-list li::before { content: '✓'; color: var(--success); }
+@media (max-width: 768px) {
+  .pay-once-grid { grid-template-columns: 1fr; }
+}
 .faq-list { display: grid; gap: 12px; }
 .faq-item {
   background: rgba(12,14,26,0.5);
@@ -1546,7 +1629,7 @@ body::before {
         <a href="https://elevehired.gumroad.com/l/pllrsk" data-gumroad-single-product="true" class="btn-primary-v3">Get instant access →</a>
         <a href="#generator" class="btn-ghost-v3">Try 2 free →</a>
       </div>
-      <div class="hero-v3-trust">$29 one-time · Lifetime access · No subscription</div>
+      <div class="hero-v3-promise"><strong>$29 once.</strong> No subscription, ever — nothing to cancel, so we can't surprise-charge you later.</div>
     </div>
     <div class="hero-v3-right">
       <div class="preview-card">
@@ -1608,13 +1691,14 @@ body::before {
     </div>
     <div class="bento-card bento-card-wide">
       <div class="bento-card-kicker">Templates</div>
-      <h3>Four polished resume templates.</h3>
+      <h3>4 styles, choose the look and color for the role.</h3>
       <p>Each designed to read as professional, not generated.</p>
       <div class="bento-template-row">
         <span class="bento-template-chip">Modern</span>
         <span class="bento-template-chip">Minimal</span>
         <span class="bento-template-chip">Executive</span>
         <span class="bento-template-chip">Elegant</span>
+        <span class="bento-template-chip bento-template-chip--soon">More soon →</span>
       </div>
     </div>
     <div class="bento-card bento-card-small">
@@ -2008,6 +2092,31 @@ body::before {
 </div>
 </section><!-- /gen-section -->
 
+<!-- ═══════════ Why Élève ═══════════ -->
+<section id="why-eleve" class="why-eleve-section">
+  <div class="section-head">
+    <div class="section-kicker">Why Élève</div>
+    <h2 class="section-title section-title--small">Built differently from the AI tools you've seen.</h2>
+  </div>
+  <div class="why-eleve-grid">
+    <div class="bento-card">
+      <div class="bento-card-icon">⌀</div>
+      <h3>No fake numbers</h3>
+      <p>If you didn't give it a metric, it won't invent one. The generator refuses to fabricate stats, percentages, or results to sound impressive.</p>
+    </div>
+    <div class="bento-card">
+      <div class="bento-card-icon">✎</div>
+      <h3>Written like a human</h3>
+      <p>A banned-phrase list rules out AI tells like "leverage", "thrive in", and "passionate about". The output sounds like a person, not a chatbot.</p>
+    </div>
+    <div class="bento-card">
+      <div class="bento-card-icon">$</div>
+      <h3>One honest price</h3>
+      <p>$29 once. No tiers, no upsells, no later upgrades. The price you pay is the price you keep.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ═══════════ Pricing ═══════════ -->
 <section id="pricing" class="pricing-section">
   <div class="section-head">
@@ -2033,6 +2142,36 @@ body::before {
     </ul>
     <a href="https://elevehired.gumroad.com/l/pllrsk" data-gumroad-single-product="true" class="pricing-cta">Get Instant Access →</a>
     <div class="pricing-fine">Secured by Gumroad · Instant delivery</div>
+  </div>
+</section>
+
+<!-- ═══════════ Pay once ═══════════ -->
+<section id="pay-once" class="pay-once-section">
+  <div class="section-head">
+    <div class="section-kicker">No subscriptions</div>
+    <h2 class="section-title section-title--small">Pay once, that's the whole deal.</h2>
+  </div>
+  <div class="pay-once-grid">
+    <div class="pay-once-col">
+      <div class="pay-once-col-label">Subscription resume tools</div>
+      <div class="pay-once-col-title">Pay forever</div>
+      <ul class="pay-once-list">
+        <li>Monthly fee, charged forever</li>
+        <li>Card on file, billed automatically</li>
+        <li>Cancel flow buried in settings</li>
+        <li>Price hikes after year one</li>
+      </ul>
+    </div>
+    <div class="pay-once-col pay-once-col--good">
+      <div class="pay-once-col-label">Élève</div>
+      <div class="pay-once-col-title">Pay once</div>
+      <ul class="pay-once-list">
+        <li>$29 once, paid through Gumroad</li>
+        <li>No recurring charge — it's a one-time payment</li>
+        <li>Nothing to cancel — there's no subscription</li>
+        <li>The price you pay is the price you keep</li>
+      </ul>
+    </div>
   </div>
 </section>
 
