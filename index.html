@@ -7,7 +7,7 @@
   <title>Élève — AI Resume & Cover Letter Generator</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=Cormorant:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1906,36 +1906,31 @@ body::before {
         </div>
         <div style="margin-top:15px;">
           <label>Choose Resume Template</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+          <div style="display:flex;align-items:center;gap:10px;margin:10px 0 6px 0;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--muted);letter-spacing:0.05em;">PALETTE:</span>
+            <div class="color-swatch active" style="background:#2D2D2D;" title="Charcoal" onclick="setPalette('charcoal',this)"></div>
+            <div class="color-swatch" style="background:#1E3A5F;" title="Navy" onclick="setPalette('navy',this)"></div>
+            <div class="color-swatch" style="background:#6B1D2A;" title="Burgundy" onclick="setPalette('burgundy',this)"></div>
+            <div class="color-swatch" style="background:#1B4332;" title="Forest" onclick="setPalette('forest',this)"></div>
+            <div class="color-swatch" style="background:#6B4A2E;" title="Brown" onclick="setPalette('brown',this)"></div>
+            <span class="variant-name" id="palette-variant-name">Charcoal</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;">
             <div class="template-card active" onclick="setTemplate('modern')" id="tpl-modern">
               <h3>🖤 Modern</h3>
-              <p>Dark header · Gold section bars · Sharp & clean</p>
+              <p>Tinted header band · Accent left-bar headers · Clean</p>
             </div>
             <div class="template-card" onclick="setTemplate('minimal')" id="tpl-minimal">
               <h3>🤍 Minimal</h3>
-              <p>Ultra clean · Thin gold rule · Elegant spacing</p>
+              <p>Hairline rules · Small-caps headers · Max whitespace</p>
             </div>
             <div class="template-card locked" onclick="handleLockedTemplate('executive')" id="tpl-executive">
               <h3>🏆 Executive</h3>
-              <p>Navy sidebar · Gold initials · Skill pills · Premium</p>
-              <div class="variant-row" onclick="event.stopPropagation()">
-                <span style="font-size:10px;color:var(--muted);">Color:</span>
-                <div class="color-swatch active" style="background:#7d192d;" title="Crimson" onclick="setColorVariant('executive','crimson',this)"></div>
-                <div class="color-swatch" style="background:#1a2e1a;" title="Forest" onclick="setColorVariant('executive','forest',this)"></div>
-                <div class="color-swatch" style="background:#1e1e1e;" title="Charcoal" onclick="setColorVariant('executive','charcoal',this)"></div>
-                <span class="variant-name" id="exec-variant-name">Crimson</span>
-              </div>
+              <p>Centered · Formal · Fraunces headers · Double rules · Premium</p>
             </div>
             <div class="template-card locked" onclick="handleLockedTemplate('detailed')" id="tpl-detailed">
               <h3>✨ Elegant</h3>
-              <p>Two-column · Gold header · Skill pills · Premium</p>
-              <div class="variant-row" onclick="event.stopPropagation()">
-                <span style="font-size:10px;color:var(--muted);">Color:</span>
-                <div class="color-swatch active" style="background:#231c14;" title="Brown" onclick="setColorVariant('elegant','brown',this)"></div>
-                <div class="color-swatch" style="background:#2a0d1a;" title="Burgundy" onclick="setColorVariant('elegant','burgundy',this)"></div>
-                <div class="color-swatch" style="background:#0d1a2a;" title="Midnight" onclick="setColorVariant('elegant','midnight',this)"></div>
-                <span class="variant-name" id="elegant-variant-name">Brown</span>
-              </div>
+              <p>Cormorant headers · CV kicker · Airy spacing · Premium</p>
             </div>
             <div style="margin-top:20px; grid-column: span 2;">
               <label>Have a premium code?</label>
@@ -2231,23 +2226,15 @@ body::before {
 const tones = { cl: 'professional', rv: 'clean and professional', li: 'professional and approachable' };
 let selectedTemplate = "modern";
 
-// Color variants for premium templates
-const colorVariants = {
-  executive: {
-    navy:     { sidebar: [18, 26, 46],   sidebarText: [176, 188, 212], accent: [201, 168, 76] },
-    crimson:  { sidebar: [125, 25, 45],  sidebarText: [220, 195, 200], accent: [220, 180, 110] },
-    forest:   { sidebar: [18, 46, 26],   sidebarText: [176, 212, 188], accent: [100, 180, 100] },
-    charcoal: { sidebar: [28, 28, 32],   sidebarText: [185, 185, 195], accent: [201, 168, 76] }
-  },
-  elegant: {
-    brown:    { header: [35, 28, 20],  accent: [201, 168, 76], pillBg: [250, 246, 236] },
-    burgundy: { header: [42, 13, 26],  accent: [200, 100, 130], pillBg: [250, 236, 242] },
-    midnight: { header: [13, 26, 42],  accent: [100, 160, 220], pillBg: [236, 242, 250] }
-  }
+const RESUME_PALETTES = {
+  charcoal: { ink:'#111111', accent:'#2D2D2D', rule:'#D4D4D4', mute:'#6B6B6B', tint:'#F5F5F5' },
+  navy:     { ink:'#0F1B2D', accent:'#1E3A5F', rule:'#C8D3E0', mute:'#5B6A7E', tint:'#EDF1F7' },
+  burgundy: { ink:'#1C0F14', accent:'#6B1D2A', rule:'#D9CDD1', mute:'#7A5D64', tint:'#F5EDEF' },
+  forest:   { ink:'#0F1D14', accent:'#1B4332', rule:'#C8D5CD', mute:'#5A7064', tint:'#ECF2EE' },
+  brown:    { ink:'#21160D', accent:'#6B4A2E', rule:'#DDD2C6', mute:'#8A7058', tint:'#F3EEE9' }
 };
 
-let selectedExecVariant = 'crimson';
-let selectedElegantVariant = 'brown';
+let selectedPalette = 'charcoal';
 
 const SUPABASE_URL = "https://roqhmdqrgovnqjiuoewe.supabase.co";
 const SUPABASE_KEY = "sb_publishable_cC8Fx8q75VUwEXU_x4sx9g__Iw7aS79";
@@ -2314,30 +2301,12 @@ function setTemplate(template) {
   if (activeCard) activeCard.classList.add('active');
 }
 
-function setColorVariant(template, variant, el) {
-  // Check lock — only allow color change if premium unlocked
-  const cardId = template === 'elegant' ? 'tpl-detailed' : 'tpl-' + template;
-  const card = document.getElementById(cardId);
-  if (card && card.classList.contains('locked')) {
-    window.open("https://elevehired.gumroad.com/l/pllrsk", "_blank");
-
-    return;
-  }
-
-  // Update active swatch
-  el.closest('.variant-row').querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+function setPalette(name, el) {
+  selectedPalette = name;
+  el.closest('div').querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
   el.classList.add('active');
-
-  // Update variant name label
-  const label = document.getElementById(`${template}-variant-name`);
-  if (label) label.textContent = variant.charAt(0).toUpperCase() + variant.slice(1);
-
-  // Store selection
-  if (template === 'executive') selectedExecVariant = variant;
-  if (template === 'elegant') selectedElegantVariant = variant;
-
-  // Auto-select the template
-  setTemplate(template === 'elegant' ? 'detailed' : template);
+  const label = document.getElementById('palette-variant-name');
+  if (label) label.textContent = name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 function switchTab(name) {
@@ -3198,13 +3167,14 @@ function parseEntries(lines) {
 
 async function renderResumePDF(template, parsed, filename) {
   let html;
+  const pal = RESUME_PALETTES[selectedPalette] || RESUME_PALETTES.charcoal;
   switch (String(template || '').toLowerCase()) {
-    case 'minimal':   html = buildMinimalHTML(parsed); break;
-    case 'executive': html = buildExecutiveHTML(parsed, selectedExecVariant); break;
+    case 'minimal':   html = buildMinimalHTML(parsed, pal); break;
+    case 'executive': html = buildExecutiveHTML(parsed, pal); break;
     case 'detailed':
-    case 'elegant':   html = buildElegantHTML(parsed, selectedElegantVariant); break;
+    case 'elegant':   html = buildElegantHTML(parsed, pal); break;
     case 'modern':
-    default:          html = buildModernHTML(parsed);
+    default:          html = buildModernHTML(parsed, pal);
   }
 
   const container = document.createElement('div');
@@ -3259,11 +3229,9 @@ async function downloadPDF(elementId, filename) {
   await renderResumePDF(selectedTemplate, parsed, filename);
 }
 
-/* ---------- MODERN: Navy + dotted timeline ---------- */
-function buildModernHTML(parsed) {
+/* ---------- MODERN: tinted header band + accent left-bar ---------- */
+function buildModernHTML(parsed, p) {
   const { name, subtitle, contact, sections } = parsed;
-  const NAVY = '#1c2e4a', INK = '#334155', MUTED = '#64748b';
-
   const contactItems = splitContact(contact);
   const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
   const langs  = splitSkills(sections[findSection(sections, /LANGUAGE/)] || []);
@@ -3272,33 +3240,25 @@ function buildModernHTML(parsed) {
   const summary = (sections[findSection(sections, /SUMMARY|PROFILE|ABOUT/)] || []).join(' ').trim();
   const refsRaw = sections[findSection(sections, /REFERENCE/)] || [];
 
-  const nameLen = (name || '').length;
-  const nameSize = nameLen > 30 ? 26 : nameLen > 24 ? 30 : nameLen > 18 ? 34 : 40;
-
-  const sideHead = label => `
-    <div style="margin:0 0 10px 0;padding-bottom:5px;border-bottom:1.5px solid ${NAVY};">
-      <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:800;color:${NAVY};
-                 text-transform:uppercase;letter-spacing:2.5px;margin:0;">${label}</h3>
+  const head = label => `
+    <div style="display:flex;align-items:center;gap:10px;margin:0 0 10px 0;">
+      <div style="width:4px;height:18px;background:${p.accent};flex-shrink:0;"></div>
+      <h2 style="font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:${p.ink};
+                 text-transform:uppercase;margin:0;">${label}</h2>
     </div>`;
 
-  const mainHead = label => `
-    <div style="margin:0 0 11px 0;padding-bottom:6px;border-bottom:1.5px solid ${NAVY};">
-      <h2 style="font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:800;color:${NAVY};
-                 text-transform:uppercase;letter-spacing:3px;margin:0;">${label}</h2>
-    </div>`;
-
-  const renderEntry = (item) => `
+  const entry = item => `
     <div style="margin-bottom:13px;page-break-inside:avoid;">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
         <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;
-                   color:${NAVY};margin:0;line-height:1.3;">${escapeHTML(item.title)}</h3>
-        ${item.dates ? `<span style="font-size:10px;color:${MUTED};white-space:nowrap;font-weight:500;">${escapeHTML(item.dates)}</span>` : ''}
+                   color:${p.ink};margin:0;line-height:1.3;">${escapeHTML(item.title)}</h3>
+        ${item.dates ? `<span style="font-size:10px;color:${p.mute};white-space:nowrap;">${escapeHTML(item.dates)}</span>` : ''}
       </div>
-      ${item.metaLines.map(m => `<div style="font-size:10.5px;color:${INK};font-weight:500;line-height:1.4;margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
+      ${item.metaLines.map(m => `<div style="font-size:10.5px;color:${p.mute};font-weight:500;line-height:1.4;margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
       ${item.bullets.length ? `<ul style="margin:5px 0 0 0;padding:0;list-style:none;">
         ${item.bullets.map(b => `
-          <li style="position:relative;padding-left:12px;margin-bottom:3px;font-size:10.5px;line-height:1.55;color:${INK};">
-            <span style="position:absolute;left:0;top:7px;width:4px;height:4px;background:${NAVY};border-radius:50%;"></span>
+          <li style="position:relative;padding-left:12px;margin-bottom:3px;font-size:10.5px;line-height:1.55;color:${p.ink};">
+            <span style="position:absolute;left:0;top:7px;width:4px;height:4px;background:${p.accent};border-radius:50%;"></span>
             ${cleanInline(b)}
           </li>`).join('')}
       </ul>` : ''}
@@ -3306,450 +3266,313 @@ function buildModernHTML(parsed) {
 
   return `
     <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
-                color:${INK};font-size:11px;line-height:1.5;box-sizing:border-box;">
-      <header style="padding:38px 56px 14px 56px;">
-        <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:${nameSize}px;font-weight:800;color:${NAVY};
-                   text-transform:uppercase;letter-spacing:0.05em;margin:0 0 6px 0;line-height:1;">
-          ${escapeHTML(name)}</h1>
-        ${subtitle ? `<p style="font-size:13px;font-weight:500;color:${NAVY};text-transform:uppercase;
-                                letter-spacing:0.2em;margin:0 0 12px 0;">${escapeHTML(subtitle)}</p>` : ''}
-        <div style="height:1.5px;background:${NAVY};width:100%;"></div>
+                color:${p.ink};font-size:11px;line-height:1.5;box-sizing:border-box;">
+      <header style="background:${p.tint};padding:36px 56px 20px 56px;border-bottom:3px solid ${p.accent};">
+        <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:32px;font-weight:800;color:${p.ink};
+                   text-transform:uppercase;margin:0 0 4px 0;line-height:1.1;">${escapeHTML(name)}</h1>
+        ${subtitle ? `<p style="font-size:13px;font-weight:600;color:${p.accent};margin:0 0 10px 0;">${escapeHTML(subtitle)}</p>` : ''}
+        ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.5;">
+          ${contactItems.map(escapeHTML).join('  |  ')}
+        </div>` : ''}
       </header>
 
-      <div style="padding:22px 56px 30px 56px;">
-
-        <div style="display:flex;gap:36px;align-items:flex-start;">
-          <div style="width:220px;flex-shrink:0;">
-            ${contactItems.length ? `
-              <section>${sideHead('Contact')}
-                ${contactItems.map(c => `<div style="font-size:10.5px;color:${INK};line-height:1.5;margin-bottom:5px;word-break:break-word;">${escapeHTML(c)}</div>`).join('')}
-              </section>` : ''}
-          </div>
-          <div style="flex:1;min-width:0;">
-            ${summary ? `
-              <section style="page-break-inside:avoid;">
-                ${mainHead('Profile')}
-                <p style="margin:0;font-size:11px;line-height:1.6;color:${INK};">${cleanInline(summary)}</p>
-              </section>` : ''}
-          </div>
-        </div>
-
-        <div style="display:flex;gap:36px;align-items:flex-start;margin-top:22px;">
-          <div style="width:220px;flex-shrink:0;">
-            ${skills.length ? `
-              <section style="margin-bottom:20px;">${sideHead('Skills')}
-                ${skills.map(s => `
-                  <div style="display:flex;gap:7px;margin-bottom:4px;font-size:10.5px;color:${INK};line-height:1.45;">
-                    <span style="display:inline-block;width:4px;height:4px;background:${NAVY};border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
-                    <span>${escapeHTML(s)}</span>
-                  </div>`).join('')}
-              </section>` : ''}
-            ${langs.length ? `
-              <section>${sideHead('Languages')}
-                ${langs.map(l => `
-                  <div style="display:flex;gap:7px;margin-bottom:4px;font-size:10.5px;color:${INK};line-height:1.45;">
-                    <span style="display:inline-block;width:4px;height:4px;background:${NAVY};border-radius:50%;margin-top:6px;flex-shrink:0;"></span>
-                    <span>${escapeHTML(l)}</span>
-                  </div>`).join('')}
-              </section>` : ''}
-          </div>
-          <div style="flex:1;min-width:0;">
-            ${exp.length ? `
-              <section>
-                ${mainHead('Experience')}
-                ${exp.map(renderEntry).join('')}
-              </section>` : ''}
-          </div>
-        </div>
-
-        <div style="display:flex;gap:36px;align-items:flex-start;margin-top:22px;">
-          <div style="width:220px;flex-shrink:0;">
-            ${refsRaw.length ? `
-              <section>${sideHead('Reference')}
-                <div style="font-size:10.5px;color:${INK};line-height:1.5;">
-                  ${refsRaw.map((r, i) => {
-                    const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
-                    return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
-                  }).join('')}
-                </div>
-              </section>` : ''}
-          </div>
-          <div style="flex:1;min-width:0;">
-            ${edu.length ? `
-              <section style="page-break-inside:avoid;">
-                ${mainHead('Education')}
-                ${edu.map(renderEntry).join('')}
-              </section>` : ''}
-          </div>
-        </div>
-
-      </div>
-    </div>`;
-}
-
-/* ---------- MINIMAL: Franklin Briggs style, blue accent ---------- */
-function buildMinimalHTML(parsed) {
-  const { name, subtitle, contact, sections } = parsed;
-  const BLUE = '#3B82F6', INK = '#111827', INK_SOFT = '#374151';
-  const MUTED = '#6B7280', RULE = '#D1D5DB', CIRCLE_BG = '#E5E7EB';
-
-  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
-  const initials = words.length === 0 ? '?'
-    : words.length === 1 ? words[0][0].toUpperCase()
-    : (words[0][0] + words[words.length - 1][0]).toUpperCase();
-
-  const contactItems = splitContact(contact);
-  const summary = (sections[findSection(sections, /SUMMARY|PROFILE|ABOUT/)] || []).join(' ').trim();
-  const exp = parseEntries(sections[findSection(sections, /EXPERIENCE/)] || []);
-  const edu = parseEntries(sections[findSection(sections, /^EDUCATION$/)] || []);
-  const proj = parseEntries(sections[findSection(sections, /PROJECT/)] || []);
-  const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
-  const langs  = (sections[findSection(sections, /LANGUAGE/)] || []).map(s => s.trim()).filter(Boolean);
-  const refsRaw = sections[findSection(sections, /REFERENCE/)] || [];
-
-  const head = label => `
-    <div style="margin:0 0 11px 0;padding-bottom:5px;border-bottom:1px solid ${RULE};">
-      <h2 style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;
-                 color:${MUTED};text-transform:uppercase;letter-spacing:2px;margin:0;">${label}</h2>
-    </div>`;
-
-  const entry = (item, metaColor) => `
-    <div style="margin-bottom:13px;page-break-inside:avoid;">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
-        <div style="flex:1;min-width:0;">
-          <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;
-                     color:${INK};margin:0 0 2px 0;line-height:1.3;">${escapeHTML(item.title)}</h3>
-          ${item.metaLines.map(m => `<div style="font-size:11.5px;color:${metaColor};font-weight:600;line-height:1.4;margin-top:3px;">${escapeHTML(m)}</div>`).join('')}
-        </div>
-        ${item.dates ? `<div style="font-size:11px;color:${MUTED};white-space:nowrap;font-weight:500;">${escapeHTML(item.dates)}</div>` : ''}
-      </div>
-      ${item.bullets.length ? `<ul style="margin:5px 0 0 0;padding:0;list-style:none;">
-        ${item.bullets.map(b => `
-          <li style="position:relative;padding-left:12px;margin-bottom:3px;font-size:11px;line-height:1.55;color:${INK_SOFT};">
-            <span style="position:absolute;left:0;top:7px;width:3px;height:3px;background:${MUTED};border-radius:50%;"></span>
-            ${escapeHTML(b)}
-          </li>`).join('')}
-      </ul>` : ''}
-    </div>`;
-
-  const langRow = str => {
-    const m = str.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
-    const label = m ? m[1].trim() : str;
-    const level = m ? m[2].trim() : '';
-    const lv = level.toLowerCase();
-    const dots = /native|fluent|c2/.test(lv) ? 5
-               : /advanced|c1/.test(lv) ? 4
-               : /conversational|a2/.test(lv) ? 2
-               : /basic|beginner|a1/.test(lv) ? 1
-               : /intermediate|b1|b2/.test(lv) ? 3 : 3;
-    return `
-      <div style="margin-bottom:9px;font-size:11.5px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-          <span style="font-weight:500;color:${INK};">${escapeHTML(label)}</span>
-          <span style="display:flex;gap:3px;flex-shrink:0;">
-            ${[1,2,3,4,5].map(i => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${i <= dots ? INK : RULE};"></span>`).join('')}
-          </span>
-        </div>
-        ${level ? `<div style="font-size:10px;color:${MUTED};margin-top:2px;">${escapeHTML(level)}</div>` : ''}
-      </div>`;
-  };
-
-  return `
-    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
-                color:${INK_SOFT};font-size:11.5px;line-height:1.5;
-                box-sizing:border-box;padding:48px 56px;">
-      <header style="display:flex;justify-content:space-between;align-items:flex-start;
-                     gap:32px;margin-bottom:28px;">
-        <div style="flex:1;min-width:0;">
-          <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:30px;font-weight:700;
-                     color:${INK};margin:0 0 4px 0;line-height:1.15;">${escapeHTML(name)}</h1>
-          ${subtitle ? `<p style="font-size:15px;font-weight:500;color:${BLUE};margin:0 0 11px 0;line-height:1.2;">${escapeHTML(subtitle)}</p>` : ''}
-          ${contactItems.length ? `<div style="font-size:11px;color:${INK_SOFT};line-height:1.5;">
-            ${contactItems.map(c => escapeHTML(c)).join(' &nbsp;·&nbsp; ')}
-          </div>` : ''}
-        </div>
-        <div style="flex-shrink:0;width:86px;height:86px;border-radius:50%;background:${CIRCLE_BG};
-                    display:flex;align-items:center;justify-content:center;font-size:30px;
-                    font-weight:700;color:${INK};letter-spacing:1px;">${escapeHTML(initials)}</div>
-      </header>
-
-      <div style="display:flex;gap:34px;">
-        <main style="flex:0 0 58%;min-width:0;">
-          ${summary ? `<section style="margin-bottom:18px;page-break-inside:avoid;">${head('Summary')}
-            <p style="margin:0;font-size:11.5px;line-height:1.6;color:${INK_SOFT};">${escapeHTML(summary)}</p>
-          </section>` : ''}
-          ${exp.length ? `<section style="margin-bottom:18px;">${head('Experience')}
-            ${exp.map(e => entry(e, BLUE)).join('')}
-          </section>` : ''}
-          ${proj.length ? `<section style="margin-bottom:18px;">${head('Projects')}
-            ${proj.map(e => entry(e, BLUE)).join('')}
-          </section>` : ''}
-        </main>
-        <aside style="flex:0 0 calc(42% - 34px);min-width:0;">
-          ${skills.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">${head('Skills')}
-            <div style="font-size:11px;color:${INK_SOFT};line-height:1.65;">${skills.map(escapeHTML).join(', ')}</div>
-          </section>` : ''}
-          ${langs.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">${head('Languages')}
-            ${langs.map(langRow).join('')}
-          </section>` : ''}
-          ${edu.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">${head('Education')}
-            ${edu.map(e => entry(e, INK_SOFT)).join('')}
-          </section>` : ''}
-          ${refsRaw.length ? `<section style="page-break-inside:avoid;">${head('Reference')}
-            <div style="font-size:11px;color:${INK_SOFT};line-height:1.55;">
-              ${refsRaw.map(r => `<div style="margin-bottom:3px;">${escapeHTML(r)}</div>`).join('')}
-            </div>
-          </section>` : ''}
-        </aside>
-      </div>
-    </div>`;
-}
-
-/* ---------- EXECUTIVE: dark sidebar + initials circle ---------- */
-function buildExecutiveHTML(parsed, variant) {
-  const { name, subtitle, contact, sections } = parsed;
-  const palettes = {
-    navy:     { sidebar:'#121a2e', text:'#b0bcd4', accent:'#c9a84c' },
-    crimson:  { sidebar:'#7d192d', text:'#dcc3c8', accent:'#dcb46e' },
-    forest:   { sidebar:'#122e1a', text:'#b0d4bc', accent:'#64b464' },
-    charcoal: { sidebar:'#1c1c20', text:'#b9b9c3', accent:'#c9a84c' }
-  };
-  const p = palettes[variant] || palettes.navy;
-
-  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
-  const initials = words.length === 0 ? '?'
-    : (words[0][0] + (words[words.length - 1][0] || '')).toUpperCase();
-
-  const contactItems = splitContact(contact);
-  const summary = (sections[findSection(sections, /SUMMARY|PROFILE|ABOUT/)] || []).join(' ').trim();
-  const exp = parseEntries(sections[findSection(sections, /EXPERIENCE|PROJECT/)] || []);
-  const edu = parseEntries(sections[findSection(sections, /^EDUCATION$/)] || []);
-  const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
-  const langs  = splitSkills(sections[findSection(sections, /LANGUAGE/)] || []);
-  const refsRaw = sections[findSection(sections, /REFERENCE/)] || [];
-
-  const sideHead = label => `
-    <div style="margin:0 0 9px 0;">
-      <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:800;color:#fff;
-                 text-transform:uppercase;letter-spacing:2.5px;margin:0;padding-bottom:5px;
-                 border-bottom:1.5px solid ${p.accent};display:inline-block;">${label}</h3>
-    </div>`;
-
-  const mainHead = label => `
-    <div style="margin:0 0 10px 0;padding-bottom:5px;border-bottom:2px solid ${p.sidebar};">
-      <h2 style="font-family:'Times New Roman',serif;font-size:14px;font-weight:700;color:${p.sidebar};
-                 text-transform:uppercase;letter-spacing:3px;margin:0;">${label}</h2>
-    </div>`;
-
-  const entry = item => `
-    <div style="margin-bottom:13px;page-break-inside:avoid;">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
-        <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;
-                   color:${p.sidebar};margin:0;">${escapeHTML(item.title)}</h3>
-        ${item.dates ? `<span style="font-size:10px;color:${p.accent};font-weight:600;font-style:italic;white-space:nowrap;">${escapeHTML(item.dates)}</span>` : ''}
-      </div>
-      ${item.metaLines.map(m => `<div style="font-size:10.5px;color:#555;font-weight:500;line-height:1.4;margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
-      ${item.bullets.length ? `<ul style="margin:5px 0 0 0;padding:0;list-style:none;">
-        ${item.bullets.map(b => `
-          <li style="position:relative;padding-left:13px;margin-bottom:3px;font-size:10.5px;line-height:1.55;color:#333;">
-            <span style="position:absolute;left:0;top:4px;width:5px;height:5px;background:${p.accent};"></span>
-            ${escapeHTML(b)}
-          </li>`).join('')}
-      </ul>` : ''}
-    </div>`;
-
-  const nameLen = (name || '').length;
-  const nameSize = nameLen > 26 ? 22 : nameLen > 18 ? 26 : 30;
-
-  return `
-    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
-                color:#333;font-size:11px;line-height:1.5;box-sizing:border-box;
-                display:flex;">
-
-      <main style="flex:1;min-width:0;padding:44px 30px 30px 50px;">
-        <header style="margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid ${p.sidebar};">
-          <h1 style="font-family:'Times New Roman',serif;font-size:${nameSize}px;font-weight:700;
-                     color:${p.sidebar};text-transform:uppercase;letter-spacing:0.04em;
-                     margin:0 0 4px 0;line-height:1.05;">${escapeHTML(name)}</h1>
-          ${subtitle ? `<p style="font-size:12px;font-weight:600;color:${p.accent};text-transform:uppercase;
-                                  letter-spacing:0.18em;margin:0;">${escapeHTML(subtitle)}</p>` : ''}
-          ${contactItems.length ? `<div style="font-size:10px;color:#666;line-height:1.5;margin-top:8px;">
-            ${contactItems.map(escapeHTML).join('  ·  ')}
-          </div>` : ''}
-        </header>
-
-        ${summary ? `<section style="margin-bottom:18px;page-break-inside:avoid;">
-          ${mainHead('Profile')}
-          <p style="margin:0;font-size:11px;line-height:1.6;color:#333;text-align:justify;">${escapeHTML(summary)}</p>
+      <div style="padding:24px 56px 30px 56px;">
+        ${summary ? `<section style="margin-bottom:20px;page-break-inside:avoid;">
+          ${head('Profile')}
+          <p style="margin:0;font-size:11px;line-height:1.6;color:${p.ink};">${cleanInline(summary)}</p>
         </section>` : ''}
 
-        ${exp.length ? `<section style="margin-bottom:18px;">
-          ${mainHead('Experience')}
+        ${skills.length ? `<section style="margin-bottom:20px;page-break-inside:avoid;">
+          ${head('Skills')}
+          <div style="font-size:10.5px;color:${p.ink};line-height:1.65;">${skills.map(escapeHTML).join(', ')}</div>
+        </section>` : ''}
+
+        ${exp.length ? `<section style="margin-bottom:20px;">
+          ${head('Experience')}
           ${exp.map(entry).join('')}
         </section>` : ''}
-      </main>
 
-      <aside style="width:220px;flex-shrink:0;background:${p.sidebar};color:${p.text};
-                    padding:44px 22px 30px 22px;border-left:4px solid ${p.accent};">
-        <div style="text-align:center;margin-bottom:20px;">
-          <div style="display:inline-block;width:74px;height:74px;border-radius:50%;background:${p.accent};
-                      color:${p.sidebar};font-family:Helvetica,Arial,sans-serif;font-size:26px;font-weight:800;
-                      line-height:74px;text-align:center;letter-spacing:1px;">${escapeHTML(initials)}</div>
-        </div>
-
-        ${skills.length ? `<section style="margin-bottom:20px;">${sideHead('Expertise')}
-          ${skills.map(s => `
-            <div style="display:flex;gap:7px;margin-bottom:5px;font-size:10px;color:${p.text};line-height:1.4;">
-              <span style="display:inline-block;width:4px;height:4px;background:${p.accent};border-radius:50%;margin-top:5px;flex-shrink:0;"></span>
-              <span>${escapeHTML(s)}</span>
-            </div>`).join('')}
+        ${edu.length ? `<section style="margin-bottom:20px;page-break-inside:avoid;">
+          ${head('Education')}
+          ${edu.map(entry).join('')}
         </section>` : ''}
 
-        ${edu.length ? `<section style="margin-bottom:20px;">${sideHead('Education')}
-          ${edu.map(e => `
-            <div style="margin-bottom:10px;font-size:10px;color:${p.text};line-height:1.45;">
-              <div style="font-weight:700;color:#fff;">${escapeHTML(e.title)}</div>
-              ${e.metaLines.map(m => `<div style="margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
-              ${e.dates ? `<div style="color:${p.accent};font-style:italic;margin-top:2px;">${escapeHTML(e.dates)}</div>` : ''}
-            </div>`).join('')}
+        ${langs.length ? `<section style="margin-bottom:20px;page-break-inside:avoid;">
+          ${head('Languages')}
+          <div style="font-size:10.5px;color:${p.ink};line-height:1.65;">${langs.map(escapeHTML).join(', ')}</div>
         </section>` : ''}
 
-        ${langs.length ? `<section style="margin-bottom:20px;">${sideHead('Languages')}
-          ${langs.map(l => `
-            <div style="display:flex;gap:7px;margin-bottom:4px;font-size:10px;color:${p.text};line-height:1.4;">
-              <span style="display:inline-block;width:4px;height:4px;background:${p.accent};border-radius:50%;margin-top:5px;flex-shrink:0;"></span>
-              <span>${escapeHTML(l)}</span>
-            </div>`).join('')}
-        </section>` : ''}
-
-        ${contactItems.length ? `<section style="margin-bottom:20px;">${sideHead('Contact')}
-          ${contactItems.map(c => `<div style="font-size:9.5px;color:${p.text};line-height:1.5;margin-bottom:4px;word-break:break-word;">${escapeHTML(c)}</div>`).join('')}
-        </section>` : ''}
-
-        ${refsRaw.length ? `<section>${sideHead('Reference')}
-          <div style="font-size:9.5px;color:${p.text};line-height:1.5;">
+        ${refsRaw.length ? `<section style="page-break-inside:avoid;">
+          ${head('References')}
+          <div style="font-size:10.5px;color:${p.ink};line-height:1.55;">
             ${refsRaw.map((r, i) => {
               const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
               return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
             }).join('')}
           </div>
         </section>` : ''}
-      </aside>
+      </div>
     </div>`;
 }
 
-/* ---------- ELEGANT: full-width header + 2-column body ---------- */
-function buildElegantHTML(parsed, variant) {
+/* ---------- MINIMAL: hairline rules, small-caps headers, max whitespace ---------- */
+function buildMinimalHTML(parsed, p) {
   const { name, subtitle, contact, sections } = parsed;
-  const palettes = {
-    brown:    { header:'#231c14', accent:'#c9a84c', pill:'#faf6ec', pillText:'#3a2f1a' },
-    burgundy: { header:'#2a0d1a', accent:'#c86482', pill:'#faecf2', pillText:'#3a1326' },
-    midnight: { header:'#0d1a2a', accent:'#64a0dc', pill:'#ecf2fa', pillText:'#13263a' }
-  };
-  const p = palettes[variant] || palettes.brown;
-
   const contactItems = splitContact(contact);
-  const summary = (sections[findSection(sections, /SUMMARY|PROFILE|ABOUT/)] || []).join(' ').trim();
-  const exp = parseEntries(sections[findSection(sections, /EXPERIENCE|PROJECT/)] || []);
-  const edu = parseEntries(sections[findSection(sections, /^EDUCATION$/)] || []);
   const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
   const langs  = splitSkills(sections[findSection(sections, /LANGUAGE/)] || []);
+  const edu    = parseEntries(sections[findSection(sections, /^EDUCATION$/)] || []);
+  const exp    = parseEntries(sections[findSection(sections, /EXPERIENCE|PROJECT/)] || []);
+  const summary = (sections[findSection(sections, /SUMMARY|PROFILE|ABOUT/)] || []).join(' ').trim();
   const refsRaw = sections[findSection(sections, /REFERENCE/)] || [];
 
-  const leftHead = label => `
-    <div style="background:${p.accent};padding:6px 10px;margin-bottom:10px;">
-      <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:800;
-                 color:${p.header};text-transform:uppercase;letter-spacing:2.5px;margin:0;">${label}</h3>
-    </div>`;
-
-  const rightHead = label => `
-    <div style="background:${p.header};padding:7px 12px;margin-bottom:11px;border-left:4px solid ${p.accent};">
-      <h2 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:800;color:#fff;
-                 text-transform:uppercase;letter-spacing:3px;margin:0;">${label}</h2>
+  const head = label => `
+    <div style="margin:0 0 10px 0;padding-bottom:6px;border-bottom:1px solid ${p.rule};">
+      <h2 style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:600;color:${p.mute};
+                 text-transform:uppercase;margin:0;">${label}</h2>
     </div>`;
 
   const entry = item => `
-    <div style="margin-bottom:13px;page-break-inside:avoid;">
-      <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;
-                 color:${p.header};margin:0;line-height:1.3;">${escapeHTML(item.title)}</h3>
-      ${item.dates ? `<div style="font-size:10px;color:${p.accent};font-weight:600;font-style:italic;margin-top:2px;">${escapeHTML(item.dates)}</div>` : ''}
-      ${item.metaLines.map(m => `<div style="font-size:10.5px;color:#555;font-weight:500;margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
+    <div style="margin-bottom:14px;page-break-inside:avoid;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
+        <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;
+                   color:${p.ink};margin:0;line-height:1.3;">${escapeHTML(item.title)}</h3>
+        ${item.dates ? `<span style="font-size:10px;color:${p.mute};white-space:nowrap;">${escapeHTML(item.dates)}</span>` : ''}
+      </div>
+      ${item.metaLines.map(m => `<div style="font-size:10.5px;color:${p.mute};font-weight:500;line-height:1.4;margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
       ${item.bullets.length ? `<ul style="margin:5px 0 0 0;padding:0;list-style:none;">
         ${item.bullets.map(b => `
-          <li style="position:relative;padding-left:13px;margin-bottom:3px;font-size:10.5px;line-height:1.55;color:#333;">
-            <span style="position:absolute;left:0;top:4px;width:5px;height:5px;background:${p.accent};"></span>
-            ${escapeHTML(b)}
+          <li style="position:relative;padding-left:12px;margin-bottom:3px;font-size:11px;line-height:1.55;color:${p.ink};">
+            <span style="position:absolute;left:0;top:7px;width:3px;height:3px;background:${p.mute};border-radius:50%;"></span>
+            ${cleanInline(b)}
           </li>`).join('')}
       </ul>` : ''}
     </div>`;
 
-  const nameLen = (name || '').length;
-  const nameSize = nameLen > 28 ? 26 : nameLen > 20 ? 30 : 34;
-
   return `
-    <div style="width:816px;max-height:1056px;overflow:hidden;background:#fff;font-family:Helvetica,Arial,sans-serif;
-                color:#333;font-size:11px;line-height:1.5;box-sizing:border-box;">
-
-      <header style="background:${p.header};padding:24px 56px 18px 56px;border-top:5px solid ${p.accent};
-                     border-bottom:4px solid ${p.accent};text-align:center;">
-        <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:${nameSize}px;font-weight:800;
-                   color:#fff8e6;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 6px 0;
-                   line-height:1.1;">${escapeHTML(name)}</h1>
-        ${subtitle ? `<p style="font-size:12px;font-weight:600;color:${p.accent};text-transform:uppercase;
-                                letter-spacing:0.25em;margin:0 0 10px 0;">${escapeHTML(subtitle)}</p>` : ''}
-        ${contactItems.length ? `<div style="font-size:10px;color:#b9af96;line-height:1.5;">
+    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+                color:${p.ink};font-size:11px;line-height:1.55;box-sizing:border-box;
+                padding:48px 60px;">
+      <header style="margin-bottom:28px;">
+        <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:700;color:${p.ink};
+                   margin:0 0 4px 0;line-height:1.15;">${escapeHTML(name)}</h1>
+        ${subtitle ? `<p style="font-size:13px;font-weight:500;color:${p.accent};margin:0 0 10px 0;">${escapeHTML(subtitle)}</p>` : ''}
+        ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.5;">
           ${contactItems.map(escapeHTML).join('  |  ')}
         </div>` : ''}
+        <div style="height:1px;background:${p.rule};margin-top:16px;"></div>
       </header>
 
-      <div style="display:flex;gap:24px;padding:16px 36px 8px 36px;">
-        <aside style="width:200px;flex-shrink:0;">
-          ${skills.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">
-            ${leftHead('Skills')}
-            ${skills.map(s => `
-              <div style="background:${p.pill};border:1px solid ${p.accent};padding:5px 10px;margin-bottom:5px;
-                          font-size:10px;color:${p.pillText};border-radius:2px;">
-                <span style="display:inline-block;width:5px;height:5px;background:${p.accent};border-radius:50%;margin-right:6px;vertical-align:middle;"></span>
-                ${escapeHTML(s)}
-              </div>`).join('')}
-          </section>` : ''}
-          ${edu.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">
-            ${leftHead('Education')}
-            ${edu.map(e => `
-              <div style="margin-bottom:10px;font-size:10.5px;line-height:1.45;">
-                <div style="font-weight:700;color:${p.header};">${escapeHTML(e.title)}</div>
-                ${e.metaLines.map(m => `<div style="color:#555;margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
-                ${e.dates ? `<div style="color:${p.accent};font-style:italic;margin-top:2px;">${escapeHTML(e.dates)}</div>` : ''}
-              </div>`).join('')}
-          </section>` : ''}
-          ${langs.length ? `<section style="margin-bottom:18px;page-break-inside:avoid;">
-            ${leftHead('Languages')}
-            ${langs.map(l => `<div style="font-size:10.5px;color:#444;margin-bottom:4px;">
-              <span style="display:inline-block;width:5px;height:5px;background:${p.accent};border-radius:50%;margin-right:6px;vertical-align:middle;"></span>
-              ${escapeHTML(l)}
-            </div>`).join('')}
-          </section>` : ''}
-          ${refsRaw.length ? `<section style="page-break-inside:avoid;">
-            ${leftHead('References')}
-            <div style="font-size:10px;color:#444;line-height:1.55;">
-              ${refsRaw.map((r, i) => {
-                const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
-                return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
-              }).join('')}
-            </div>
-          </section>` : ''}
-        </aside>
+      ${summary ? `<section style="margin-bottom:22px;page-break-inside:avoid;">
+        ${head('Summary')}
+        <p style="margin:0;font-size:11px;line-height:1.65;color:${p.ink};">${cleanInline(summary)}</p>
+      </section>` : ''}
 
-        <main style="flex:1;min-width:0;">
-          ${summary ? `<section style="margin-bottom:18px;page-break-inside:avoid;">
-            ${rightHead('Profile')}
-            <p style="margin:0;font-size:11px;line-height:1.65;color:#333;text-align:justify;">${escapeHTML(summary)}</p>
-          </section>` : ''}
-          ${exp.length ? `<section>
-            ${rightHead('Experience')}
-            ${exp.map(entry).join('')}
-          </section>` : ''}
-        </main>
+      ${skills.length ? `<section style="margin-bottom:22px;page-break-inside:avoid;">
+        ${head('Skills')}
+        <div style="font-size:10.5px;color:${p.ink};line-height:1.65;">${skills.map(escapeHTML).join(', ')}</div>
+      </section>` : ''}
+
+      ${exp.length ? `<section style="margin-bottom:22px;">
+        ${head('Experience')}
+        ${exp.map(entry).join('')}
+      </section>` : ''}
+
+      ${edu.length ? `<section style="margin-bottom:22px;page-break-inside:avoid;">
+        ${head('Education')}
+        ${edu.map(entry).join('')}
+      </section>` : ''}
+
+      ${langs.length ? `<section style="margin-bottom:22px;page-break-inside:avoid;">
+        ${head('Languages')}
+        <div style="font-size:10.5px;color:${p.ink};line-height:1.65;">${langs.map(escapeHTML).join(', ')}</div>
+      </section>` : ''}
+
+      ${refsRaw.length ? `<section style="page-break-inside:avoid;">
+        ${head('References')}
+        <div style="font-size:10.5px;color:${p.ink};line-height:1.55;">
+          ${refsRaw.map((r, i) => {
+            const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
+            return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
+          }).join('')}
+        </div>
+      </section>` : ''}
+    </div>`;
+}
+
+/* ---------- EXECUTIVE: centered, formal, Fraunces headers, double rules ---------- */
+function buildExecutiveHTML(parsed, p) {
+  const { name, subtitle, contact, sections } = parsed;
+  const contactItems = splitContact(contact);
+  const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
+  const langs  = splitSkills(sections[findSection(sections, /LANGUAGE/)] || []);
+  const edu    = parseEntries(sections[findSection(sections, /^EDUCATION$/)] || []);
+  const exp    = parseEntries(sections[findSection(sections, /EXPERIENCE|PROJECT/)] || []);
+  const summary = (sections[findSection(sections, /SUMMARY|PROFILE|ABOUT/)] || []).join(' ').trim();
+  const refsRaw = sections[findSection(sections, /REFERENCE/)] || [];
+
+  const head = label => `
+    <div style="text-align:center;margin:0 0 12px 0;padding:6px 0;
+                border-top:1px solid ${p.accent};border-bottom:1px solid ${p.accent};">
+      <h2 style="font-family:'Fraunces',Georgia,serif;font-size:13px;font-weight:600;color:${p.accent};
+                 text-transform:uppercase;margin:0;">${label}</h2>
+    </div>`;
+
+  const entry = item => `
+    <div style="margin-bottom:13px;page-break-inside:avoid;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
+        <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;
+                   color:${p.ink};margin:0;line-height:1.3;">${escapeHTML(item.title)}</h3>
+        ${item.dates ? `<span style="font-size:10px;color:${p.mute};white-space:nowrap;font-style:italic;">${escapeHTML(item.dates)}</span>` : ''}
+      </div>
+      ${item.metaLines.map(m => `<div style="font-size:10.5px;color:${p.mute};font-weight:500;line-height:1.4;margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
+      ${item.bullets.length ? `<ul style="margin:5px 0 0 0;padding:0;list-style:none;">
+        ${item.bullets.map(b => `
+          <li style="position:relative;padding-left:12px;margin-bottom:3px;font-size:10.5px;line-height:1.55;color:${p.ink};">
+            <span style="position:absolute;left:0;top:7px;width:4px;height:4px;background:${p.accent};border-radius:50%;"></span>
+            ${cleanInline(b)}
+          </li>`).join('')}
+      </ul>` : ''}
+    </div>`;
+
+  return `
+    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+                color:${p.ink};font-size:11px;line-height:1.5;box-sizing:border-box;">
+      <header style="text-align:center;padding:40px 56px 20px 56px;">
+        <div style="height:2px;background:${p.accent};margin-bottom:18px;"></div>
+        <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:30px;font-weight:800;color:${p.ink};
+                   text-transform:uppercase;margin:0 0 4px 0;line-height:1.1;">${escapeHTML(name)}</h1>
+        ${subtitle ? `<p style="font-size:12px;font-weight:600;color:${p.accent};text-transform:uppercase;margin:0 0 10px 0;">${escapeHTML(subtitle)}</p>` : ''}
+        ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.5;">
+          ${contactItems.map(escapeHTML).join('  |  ')}
+        </div>` : ''}
+        <div style="height:2px;background:${p.accent};margin-top:18px;"></div>
+      </header>
+
+      <div style="padding:20px 56px 30px 56px;">
+        ${summary ? `<section style="margin-bottom:20px;page-break-inside:avoid;">
+          ${head('Profile')}
+          <p style="margin:0;font-size:11px;line-height:1.65;color:${p.ink};text-align:center;">${cleanInline(summary)}</p>
+        </section>` : ''}
+
+        ${skills.length ? `<section style="margin-bottom:20px;page-break-inside:avoid;">
+          ${head('Skills')}
+          <div style="font-size:10.5px;color:${p.ink};line-height:1.65;text-align:center;">${skills.map(escapeHTML).join(', ')}</div>
+        </section>` : ''}
+
+        ${exp.length ? `<section style="margin-bottom:20px;">
+          ${head('Experience')}
+          ${exp.map(entry).join('')}
+        </section>` : ''}
+
+        ${edu.length ? `<section style="margin-bottom:20px;page-break-inside:avoid;">
+          ${head('Education')}
+          ${edu.map(entry).join('')}
+        </section>` : ''}
+
+        ${langs.length ? `<section style="margin-bottom:20px;page-break-inside:avoid;">
+          ${head('Languages')}
+          <div style="font-size:10.5px;color:${p.ink};line-height:1.65;text-align:center;">${langs.map(escapeHTML).join(', ')}</div>
+        </section>` : ''}
+
+        ${refsRaw.length ? `<section style="page-break-inside:avoid;">
+          ${head('References')}
+          <div style="font-size:10.5px;color:${p.ink};line-height:1.55;">
+            ${refsRaw.map((r, i) => {
+              const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
+              return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
+            }).join('')}
+          </div>
+        </section>` : ''}
+      </div>
+    </div>`;
+}
+
+/* ---------- ELEGANT: Cormorant headers, CV kicker, airy spacing ---------- */
+function buildElegantHTML(parsed, p) {
+  const { name, subtitle, contact, sections } = parsed;
+  const contactItems = splitContact(contact);
+  const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
+  const langs  = splitSkills(sections[findSection(sections, /LANGUAGE/)] || []);
+  const edu    = parseEntries(sections[findSection(sections, /^EDUCATION$/)] || []);
+  const exp    = parseEntries(sections[findSection(sections, /EXPERIENCE|PROJECT/)] || []);
+  const summary = (sections[findSection(sections, /SUMMARY|PROFILE|ABOUT/)] || []).join(' ').trim();
+  const refsRaw = sections[findSection(sections, /REFERENCE/)] || [];
+
+  const head = label => `
+    <div style="margin:0 0 12px 0;padding-bottom:6px;border-bottom:1px solid ${p.rule};">
+      <h2 style="font-family:'Cormorant',Georgia,serif;font-size:15px;font-weight:600;color:${p.accent};
+                 font-style:italic;margin:0;">${label}</h2>
+    </div>`;
+
+  const entry = item => `
+    <div style="margin-bottom:14px;page-break-inside:avoid;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
+        <h3 style="font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;
+                   color:${p.ink};margin:0;line-height:1.3;">${escapeHTML(item.title)}</h3>
+        ${item.dates ? `<span style="font-size:10px;color:${p.mute};white-space:nowrap;font-style:italic;">${escapeHTML(item.dates)}</span>` : ''}
+      </div>
+      ${item.metaLines.map(m => `<div style="font-size:10.5px;color:${p.mute};font-weight:500;line-height:1.4;margin-top:2px;">${escapeHTML(m)}</div>`).join('')}
+      ${item.bullets.length ? `<ul style="margin:5px 0 0 0;padding:0;list-style:none;">
+        ${item.bullets.map(b => `
+          <li style="position:relative;padding-left:12px;margin-bottom:3px;font-size:10.5px;line-height:1.55;color:${p.ink};">
+            <span style="position:absolute;left:0;top:7px;width:4px;height:4px;background:${p.accent};border-radius:50%;"></span>
+            ${cleanInline(b)}
+          </li>`).join('')}
+      </ul>` : ''}
+    </div>`;
+
+  return `
+    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+                color:${p.ink};font-size:11px;line-height:1.55;box-sizing:border-box;
+                border-top:4px solid ${p.accent};">
+      <header style="padding:40px 60px 20px 60px;">
+        <div style="font-family:'Cormorant',Georgia,serif;font-size:11px;font-weight:400;
+                    color:${p.mute};font-style:italic;margin-bottom:6px;">Curriculum Vitae</div>
+        <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:30px;font-weight:700;color:${p.ink};
+                   margin:0 0 4px 0;line-height:1.1;">${escapeHTML(name)}</h1>
+        ${subtitle ? `<p style="font-size:13px;font-weight:500;color:${p.accent};margin:0 0 10px 0;">${escapeHTML(subtitle)}</p>` : ''}
+        ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.5;">
+          ${contactItems.map(escapeHTML).join('  |  ')}
+        </div>` : ''}
+        <div style="height:1px;background:${p.rule};margin-top:18px;"></div>
+      </header>
+
+      <div style="padding:10px 60px 30px 60px;">
+        ${summary ? `<section style="margin-bottom:24px;page-break-inside:avoid;">
+          ${head('Profile')}
+          <p style="margin:0;font-size:11px;line-height:1.7;color:${p.ink};">${cleanInline(summary)}</p>
+        </section>` : ''}
+
+        ${skills.length ? `<section style="margin-bottom:24px;page-break-inside:avoid;">
+          ${head('Skills')}
+          <div style="font-size:10.5px;color:${p.ink};line-height:1.65;">${skills.map(escapeHTML).join(', ')}</div>
+        </section>` : ''}
+
+        ${exp.length ? `<section style="margin-bottom:24px;">
+          ${head('Experience')}
+          ${exp.map(entry).join('')}
+        </section>` : ''}
+
+        ${edu.length ? `<section style="margin-bottom:24px;page-break-inside:avoid;">
+          ${head('Education')}
+          ${edu.map(entry).join('')}
+        </section>` : ''}
+
+        ${langs.length ? `<section style="margin-bottom:24px;page-break-inside:avoid;">
+          ${head('Languages')}
+          <div style="font-size:10.5px;color:${p.ink};line-height:1.65;">${langs.map(escapeHTML).join(', ')}</div>
+        </section>` : ''}
+
+        ${refsRaw.length ? `<section style="page-break-inside:avoid;">
+          ${head('References')}
+          <div style="font-size:10.5px;color:${p.ink};line-height:1.55;">
+            ${refsRaw.map((r, i) => {
+              const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
+              return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
+            }).join('')}
+          </div>
+        </section>` : ''}
       </div>
     </div>`;
 }
