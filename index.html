@@ -2658,38 +2658,37 @@ Output only the final cover letter text.`;
     const allowed = await checkUsage(accessEmail, prefix);
     if (!allowed) return;
 
-    prompt = `Create a ${tones.rv}, ATS-optimized, recruiter-focused resume for ${name} targeting a ${job} role.
+    prompt = `Write a resume for ${name} targeting a ${job} role. The resume must read like a sharp human wrote it about a specific person — not like an AI resume generator.
 
-CRITICAL RULES — MUST FOLLOW:
-- NEVER output the words "ATS KEYWORDS" anywhere in the resume
-- NEVER repeat sections — each section appears ONCE only
-- NEVER write long paragraphs in the experience section — use bullet points ONLY
-- NEVER combine multiple roles or projects into one long paragraph
-- Output in clean plain text with NO markdown symbols (no **, ##, --, etc.)
-- Do NOT include placeholders or fake companies, dates, or degrees
-- COPY the candidate's Name, Email, Phone, and Location EXACTLY as provided in CANDIDATE DETAILS. Never invent, substitute, or "improve" these values, even if they look like placeholders or test data.
-- Keep the entire resume under 500 words. Count words; do not exceed.
+HONESTY — HARD RULES:
+- Use ONLY facts present in CANDIDATE DETAILS below: employers, titles, dates, project names, technologies, education. Never invent any of these.
+- Never invent metrics, percentages, dollar amounts, counts, or team sizes. If a quantifiable result would strengthen a bullet but no number was provided, insert a bracketed placeholder in the candidate's voice — e.g. "reduced load time by [X]%", "supported [N] daily users", "led a team of [N]". The bracket is the honest substitute for a fabricated number. Only state a concrete number if it appears in the input.
+- NEVER bracket facts the candidate DID supply (name, employer, dates, project names, technologies) — use those verbatim.
+- Match the strength of every claim to the actual seniority in the input. A 3-month intern did not "architect scalable backend services." Do not inflate scope or impact beyond what the input supports.
+- COPY the candidate's Name, Email, Phone, and Location EXACTLY as provided. Never invent, substitute, or "improve" these values.
+
+VOICE — ANTI-AI-TELLS:
+- BANNED vocabulary — never use: leveraged, spearheaded, robust, scalable (unless the input genuinely warrants it), seamless, passionate, results-driven, detail-oriented, team player, dynamic, proven track record, clean maintainable code, best practices, cutting-edge, state-of-the-art, delve, navigate, utilize, synergy, holistic, streamline, orchestrate.
+- NO significance inflation: no "testament to", "pivotal", "vital role", "crucial role", "instrumental in".
+- NO superficial -ing tails: never end a bullet with "...demonstrating X", "...showcasing Y", "...highlighting Z", "...ensuring W", "...contributing to V". End on the substance.
+- NO rule-of-three padding ("designed, built, and shipped" only if all three are real and distinct — don't cycle synonyms for rhythm).
+- NO negative parallelism ("not just X, but Y").
+- Use plain verbs: built, wrote, shipped, fixed, set up, ran, maintained, tested, moved, cut, added. Prefer is/are/has over "serves as / functions as".
+- VARY bullet structure. Not every bullet verb-first. Not every bullet the same weight. Some lead with the outcome, some with the action, some with context. Relentless parallelism is itself an AI tell.
+- Be SPECIFIC. Use the actual technologies, project names, and context from the input. Prefer concrete nouns over vague ones ("the Stripe billing dashboard" over "internal tools"). If the input is vague, bracket for detail rather than padding with generic filler.
+- NO em dashes anywhere in the resume.
 
 TAILORING TO JOB DESCRIPTION:
-${desc ? `A job description was provided below. It is the PRIMARY tailoring source for this resume — the output must visibly reflect it, not a generic template for the role.
-
-REQUIREMENTS — the JD's specific terminology MUST appear in these structural anchors:
-- The FIRST sentence of PROFESSIONAL SUMMARY must mirror the JD's own language for the role's core responsibilities (use the JD's nouns and verbs, not synonyms).
-- The FIRST bullet of EACH role under TECHNICAL EXPERIENCE must map directly to a named JD duty, system, protocol, certification, or tool that the candidate has matching background for.
-- In the 8 TECHNICAL SKILLS, prefer skills the JD explicitly names or implies over generic skills for the role.
-- Across the resume, mirror specific JD terminology (certifications, systems, protocols, frameworks, named responsibilities) wherever the candidate has the matching background. Use the JD's exact phrasing — e.g. if the JD says "vasoactive drip titration", do NOT soften it to "medication management".
-
-GUARDRAILS:
-- Do NOT fabricate certifications, tools, systems, employers, or experience the candidate did not provide — only emphasise and re-frame what they already have.
-- Do NOT list keywords separately or output an "ATS KEYWORDS" section — tailoring must show through the prose.
-- Do NOT fall back to generic boilerplate phrasing for the role when JD-specific terminology is available.
-
-SELF-CHECK before finalising output: scan the resume and confirm at least 5 distinctive terms or phrases from the JD are mirrored in PROFESSIONAL SUMMARY, TECHNICAL EXPERIENCE bullets, or TECHNICAL SKILLS. If fewer than 5, rewrite to add them (without fabrication).
+${desc ? `A job description was provided. It is the PRIMARY tailoring source — the output must visibly reflect it.
+- Where the candidate has matching background, mirror the JD's specific terminology (certifications, systems, protocols, frameworks, named responsibilities). Use the JD's exact phrasing where the candidate's experience supports it.
+- Prefer skills the JD explicitly names over generic skills for the role.
+- Do NOT fabricate certifications, tools, systems, or experience the candidate did not provide — only re-frame what they actually have.
+- Do NOT list keywords separately or create an "ATS KEYWORDS" section.
 
 JOB DESCRIPTION:
 ${desc}` : 'No job description was provided — write a strong general-purpose resume for the target role.'}
 
-STRUCTURE (use exactly these section headers, each appearing ONCE — only include LANGUAGES and REFERENCES sections if content is provided):
+STRUCTURE (use exactly these section headers, each appearing ONCE — only include LANGUAGES and REFERENCES if content is provided):
 1. [Candidate name on first line]
 2. [Job title on second line]
 3. [Phone | Email | Location on third line]
@@ -2700,50 +2699,30 @@ STRUCTURE (use exactly these section headers, each appearing ONCE — only inclu
 8. LANGUAGES (only if content provided below)
 9. REFERENCES (only if content provided below)
 
-EXPERIENCE FORMATTING RULES — VERY IMPORTANT:
-- Each role or project must have its own title on its own line
-- Leave ONE blank line between the title and the bullets
-- Use bullet points (starting with -) for ALL experience descriptions — NO paragraphs
-- Each bullet must be 18 words or fewer, starting with a strong action verb. Count words; do not exceed.
-- If there are multiple roles or projects, separate them with ONE blank line between each
-- Maximum 3 bullets per role, no exceptions. Count bullets.
-- Render every role the candidate provides; do not drop or collapse older roles. Respect the per-role bullet cap above for each one — for senior candidates with many roles, this naturally means each older role gets 2-3 tighter bullets rather than skipping any role entirely.
+FORMATTING RULES:
+- Output in clean plain text with NO markdown symbols (no **, ##, --, etc.)
+- NEVER output the words "ATS KEYWORDS" anywhere
+- NEVER repeat sections — each section appears ONCE only
+- Each role or project gets its own title on its own line
+- Use bullet points (starting with -) for experience descriptions — NO paragraphs in experience
+- Each bullet: 18 words max. Condense by cutting filler, not by truncating mid-thought.
+- Maximum 3 bullets per role.
+- Render every role the candidate provides; do not drop or collapse older roles.
+- If there are multiple roles, separate them with ONE blank line between each
+- Keep the entire resume under 500 words.
 
 PROFESSIONAL SUMMARY:
-- 2-3 sentences AND no more than 60 words total, no bullets, paragraph only. Count words; do not exceed.
-- If a job description was provided, the summary MUST reflect that specific JD's requirements and use its terminology — not a generic summary for the role.
+- 2-3 sentences, max 60 words, paragraph form (no bullets).
+- Should sound like a real person describing their work plainly — short, specific, no buzzword stacking.
+- If a JD was provided, the summary should reflect that JD's requirements using its terminology.
 
 TECHNICAL SKILLS:
-- List skills separated by commas or on separate lines — no bullets needed here
-- Maximum 8 skills. If the candidate provides more, select the 8 most relevant to the target role.
-- Preserve all punctuation (slashes, parentheses, hyphens) AND spaces in skill names and technical terms exactly as provided. Example: "Epic/Cerner" must remain "Epic/Cerner" (not "Epic Cerner"), and "Team leadership" must remain "Team leadership" (not "Teamleadership").
+- List separated by commas — max 8 skills.
+- Preserve all punctuation, slashes, parentheses, hyphens, and spaces in skill names exactly as provided.
+- If the candidate provides more than 8, select the 8 most relevant to the target role.
 
-CAPACITY HANDLING — WHEN USER INPUT EXCEEDS CAPS:
-- The customer experience must feel like distillation, not data loss. Every key claim in the user's input should be represented in the output, even if compressed.
-- If the candidate provides more bullet content than fits 3 bullets per role, select the 3 most impactful claims and fold the remaining detail INTO those 3 — do NOT silently drop information.
-- If the candidate provides more than 8 skills, select the 8 most directly relevant to the target role; do not list the rest separately.
-- If a bullet would run over 18 words, condense it by removing filler clauses and redundant qualifiers, NOT by truncating mid-thought. Preserve the impact claim and the verb.
-- If the summary would run over 60 words, tighten phrasing; do not drop key positioning statements.
-
-INDUSTRY-SPECIFIC CONTENT:
-- Use action verbs and terminology natural to the ${job} field
-- For tech roles: built, deployed, debugged, architected, integrated, automated
-- For healthcare: assessed, coordinated, administered, monitored, documented, supported
-- For finance: analysed, reconciled, forecasted, audited, modelled, reported
-- For marketing: launched, grew, optimised, managed, tracked, created
-- For other roles: use verbs natural to that specific industry
-
-WRITING STYLE — CRITICAL FOR SOUNDING HUMAN:
-- Vary bullet rhythm by varying the action verb and sentence structure, not by varying length. All bullets must respect the 18-word cap regardless of feel.
-- NEVER use these words: delve, leverage, robust, navigate, tapestry, underscore, furthermore, moreover, utilize, synergy, holistic, streamline, spearhead, orchestrate
-- Replace with plain words ("use" not "utilize", "lead" not "spearhead", "show" not "underscore")
-- NO em dashes (—) anywhere in the resume
-- Avoid "X, Y, and Z" three-item list patterns — vary how you express multiple things
-- Each bullet should sound distinct — no two bullets should start the same way
-- Write the way a real professional describes their work, not how an AI generates text
-
-CONTENT RULES:
-- Show impact and outcomes in every bullet point
+CAPACITY HANDLING:
+- If the candidate provides more content than fits the caps above, distill — don't drop. Fold detail into fewer words rather than silently losing information.
 
 CANDIDATE DETAILS:
 - Name: ${name}
@@ -2751,13 +2730,13 @@ CANDIDATE DETAILS:
 - Email: ${email || 'not provided'}
 - Phone: ${phone || 'not provided'}
 - Location: ${location || 'not provided'}
-- - Education: ${edu || 'not provided'}
+- Education: ${edu || 'not provided'}
 - Skills: ${skills}
 - Experience/Projects: ${exp || 'not provided'}
 - Languages: ${languages || 'not provided'}
 - References: ${references || 'not provided'}
 
-Output ONLY the final resume text. No labels, no explanations, no keyword sections.`;
+Output ONLY the final resume text. No labels, no explanations, no meta-commentary.`;
   }
 
   // Get email for verification (use whichever prefix has the email field)
