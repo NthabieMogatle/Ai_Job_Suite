@@ -2228,10 +2228,10 @@ let selectedTemplate = "modern";
 
 const RESUME_PALETTES = {
   charcoal: { ink:'#111111', accent:'#2D2D2D', rule:'#D4D4D4', mute:'#6B6B6B', tint:'#F5F5F5' },
-  navy:     { ink:'#0F1B2D', accent:'#1E3A5F', rule:'#C8D3E0', mute:'#5B6A7E', tint:'#EDF1F7' },
-  burgundy: { ink:'#1C0F14', accent:'#6B1D2A', rule:'#D9CDD1', mute:'#7A5D64', tint:'#F5EDEF' },
-  forest:   { ink:'#0F1D14', accent:'#1B4332', rule:'#C8D5CD', mute:'#5A7064', tint:'#ECF2EE' },
-  brown:    { ink:'#21160D', accent:'#6B4A2E', rule:'#DDD2C6', mute:'#8A7058', tint:'#F3EEE9' }
+  navy:     { ink:'#13243B', accent:'#2C66B0', rule:'#C8D6EA', mute:'#5B7194', tint:'#EAF1FA' },
+  burgundy: { ink:'#2A0F18', accent:'#9A2740', rule:'#ECD6DC', mute:'#8A5A66', tint:'#F8EEF1' },
+  forest:   { ink:'#10301E', accent:'#1E8A52', rule:'#CDE5D8', mute:'#5E8470', tint:'#EAF5EF' },
+  brown:    { ink:'#21160D', accent:'#9C6B38', rule:'#E6DACB', mute:'#9A8062', tint:'#F6F0E8' }
 };
 
 let selectedPalette = 'charcoal';
@@ -3273,7 +3273,7 @@ function buildModernHTML(parsed, p) {
                    text-transform:uppercase;margin:0 0 4px 0;line-height:1.1;">${escapeHTML(name)}</h1>
         ${subtitle ? `<p style="font-size:13px;font-weight:600;color:${A};margin:0 0 10px 0;">${escapeHTML(subtitle)}</p>` : ''}
         ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.5;">
-          ${contactItems.map(escapeHTML).join('  |  ')}
+          ${contactItems.map(c => `<span style="white-space:nowrap;">${escapeHTML(c)}</span>`).join(' &nbsp;|&nbsp; ')}
         </div>` : ''}
       </header>
 
@@ -3308,7 +3308,7 @@ function buildModernHTML(parsed, p) {
           <div style="font-size:10.5px;color:${INK};line-height:1.55;">
             ${refsRaw.map((r, i) => {
               const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
-              return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
+              return `<div style="margin-bottom:3px;white-space:nowrap;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
             }).join('')}
           </div>
         </section>` : ''}
@@ -3360,7 +3360,7 @@ function buildMinimalHTML(parsed, p) {
                    margin:0 0 4px 0;line-height:1.15;">${escapeHTML(name)}</h1>
         ${subtitle ? `<p style="font-size:13px;font-weight:500;color:${A};margin:0 0 10px 0;">${escapeHTML(subtitle)}</p>` : ''}
         ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.5;">
-          ${contactItems.map(escapeHTML).join('  |  ')}
+          ${contactItems.map(c => `<span style="white-space:nowrap;">${escapeHTML(c)}</span>`).join(' &nbsp;|&nbsp; ')}
         </div>` : ''}
         <div style="height:1px;background:${p.rule};margin-top:16px;"></div>
       </header>
@@ -3447,7 +3447,7 @@ function buildExecutiveHTML(parsed, p) {
                    text-transform:uppercase;margin:0 0 4px 0;line-height:1.1;">${escapeHTML(name)}</h1>
         ${subtitle ? `<p style="font-size:12px;font-weight:600;color:${A};text-transform:uppercase;margin:0 0 8px 0;">${escapeHTML(subtitle)}</p>` : ''}
         ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.4;">
-          ${contactItems.map(escapeHTML).join('  |  ')}
+          ${contactItems.map(c => `<span style="white-space:nowrap;">${escapeHTML(c)}</span>`).join(' &nbsp;|&nbsp; ')}
         </div>` : ''}
         <div style="height:2px;background:${A};margin-top:12px;"></div>
       </header>
@@ -3483,7 +3483,7 @@ function buildExecutiveHTML(parsed, p) {
           <div style="font-size:10.5px;color:${INK};line-height:1.45;">
             ${refsRaw.map((r, i) => {
               const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
-              return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
+              return `<div style="margin-bottom:3px;white-space:nowrap;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
             }).join('')}
           </div>
         </section>` : ''}
@@ -3531,13 +3531,13 @@ function buildElegantHTML(parsed, p) {
                 color:${INK};font-size:11px;line-height:1.45;box-sizing:border-box;
                 border-top:4px solid ${A};">
       <header style="padding:32px 60px 14px 60px;">
-        <div style="font-family:'Cormorant',Georgia,serif;font-size:11px;font-weight:400;
-                    color:${p.mute};font-style:italic;margin-bottom:4px;">Curriculum Vitae</div>
+        <div style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:400;
+                    color:${p.mute};font-style:italic;text-transform:uppercase;margin-bottom:4px;">Curriculum Vitae</div>
         <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:700;color:${A};
                    margin:0 0 4px 0;line-height:1.1;">${escapeHTML(name)}</h1>
         ${subtitle ? `<p style="font-size:13px;font-weight:500;color:${A};margin:0 0 8px 0;">${escapeHTML(subtitle)}</p>` : ''}
         ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.4;">
-          ${contactItems.map(escapeHTML).join('  |  ')}
+          ${contactItems.map(c => `<span style="white-space:nowrap;">${escapeHTML(c)}</span>`).join(' &nbsp;|&nbsp; ')}
         </div>` : ''}
         <div style="height:1px;background:${p.rule};margin-top:12px;"></div>
       </header>
@@ -3573,7 +3573,7 @@ function buildElegantHTML(parsed, p) {
           <div style="font-size:10.5px;color:${INK};line-height:1.45;">
             ${refsRaw.map((r, i) => {
               const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
-              return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
+              return `<div style="margin-bottom:3px;white-space:nowrap;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
             }).join('')}
           </div>
         </section>` : ''}
