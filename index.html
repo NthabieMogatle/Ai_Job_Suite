@@ -3272,8 +3272,8 @@ function buildModernHTML(parsed, p) {
         <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:32px;font-weight:800;color:${A};
                    text-transform:uppercase;margin:0 0 4px 0;line-height:1.1;">${escapeHTML(name)}</h1>
         ${subtitle ? `<p style="font-size:13px;font-weight:600;color:${A};margin:0 0 10px 0;">${escapeHTML(subtitle)}</p>` : ''}
-        ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.5;">
-          ${contactItems.map(c => `<span style="white-space:nowrap;">${escapeHTML(c)}</span>`).join(' &nbsp;|&nbsp; ')}
+        ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.5;white-space:nowrap;">
+          ${contactItems.map(escapeHTML).join(' | ')}
         </div>` : ''}
       </header>
 
@@ -3359,8 +3359,8 @@ function buildMinimalHTML(parsed, p) {
         <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:700;color:${A};
                    margin:0 0 4px 0;line-height:1.15;">${escapeHTML(name)}</h1>
         ${subtitle ? `<p style="font-size:13px;font-weight:500;color:${A};margin:0 0 10px 0;">${escapeHTML(subtitle)}</p>` : ''}
-        ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.5;">
-          ${contactItems.map(c => `<span style="white-space:nowrap;">${escapeHTML(c)}</span>`).join(' &nbsp;|&nbsp; ')}
+        ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.5;white-space:nowrap;">
+          ${contactItems.map(escapeHTML).join(' | ')}
         </div>` : ''}
         <div style="height:1px;background:${p.rule};margin-top:16px;"></div>
       </header>
@@ -3395,7 +3395,7 @@ function buildMinimalHTML(parsed, p) {
         <div style="font-size:10.5px;color:${INK};line-height:1.55;">
           ${refsRaw.map((r, i) => {
             const isNewName = i > 0 && !r.includes('@') && !/^\+?\d/.test(r) && !/\d{4}/.test(r) && r.length < 50;
-            return `<div style="margin-bottom:3px;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
+            return `<div style="margin-bottom:3px;white-space:nowrap;${isNewName ? 'margin-top:10px;' : ''}">${escapeHTML(r)}</div>`;
           }).join('')}
         </div>
       </section>` : ''}
@@ -3446,8 +3446,8 @@ function buildExecutiveHTML(parsed, p) {
         <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:800;color:${A};
                    text-transform:uppercase;margin:0 0 4px 0;line-height:1.1;">${escapeHTML(name)}</h1>
         ${subtitle ? `<p style="font-size:12px;font-weight:600;color:${A};text-transform:uppercase;margin:0 0 8px 0;">${escapeHTML(subtitle)}</p>` : ''}
-        ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.4;">
-          ${contactItems.map(c => `<span style="white-space:nowrap;">${escapeHTML(c)}</span>`).join(' &nbsp;|&nbsp; ')}
+        ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.4;white-space:nowrap;">
+          ${contactItems.map(escapeHTML).join(' | ')}
         </div>` : ''}
         <div style="height:2px;background:${A};margin-top:12px;"></div>
       </header>
@@ -3532,12 +3532,12 @@ function buildElegantHTML(parsed, p) {
                 border-top:4px solid ${A};">
       <header style="padding:32px 60px 14px 60px;">
         <div style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:400;
-                    color:${p.mute};font-style:italic;text-transform:uppercase;margin-bottom:4px;">Curriculum Vitae</div>
+                    color:${p.mute};font-style:italic;margin-bottom:4px;">CURRICULUM VITAE</div>
         <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:700;color:${A};
                    margin:0 0 4px 0;line-height:1.1;">${escapeHTML(name)}</h1>
         ${subtitle ? `<p style="font-size:13px;font-weight:500;color:${A};margin:0 0 8px 0;">${escapeHTML(subtitle)}</p>` : ''}
-        ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.4;">
-          ${contactItems.map(c => `<span style="white-space:nowrap;">${escapeHTML(c)}</span>`).join(' &nbsp;|&nbsp; ')}
+        ${contactItems.length ? `<div style="font-size:10.5px;color:${p.mute};line-height:1.4;white-space:nowrap;">
+          ${contactItems.map(escapeHTML).join(' | ')}
         </div>` : ''}
         <div style="height:1px;background:${p.rule};margin-top:12px;"></div>
       </header>
