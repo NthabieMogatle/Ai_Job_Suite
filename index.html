@@ -2303,7 +2303,7 @@ function setTemplate(template) {
 
 function setPalette(name, el) {
   selectedPalette = name;
-  el.closest('div').querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+  el.parentElement.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
   el.classList.add('active');
   const label = document.getElementById('palette-variant-name');
   if (label) label.textContent = name.charAt(0).toUpperCase() + name.slice(1);
