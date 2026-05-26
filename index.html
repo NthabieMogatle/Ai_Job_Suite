@@ -3278,7 +3278,7 @@ function buildModernHTML(parsed, p) {
         </div>` : ''}
       </header>
 
-      <div style="padding:18px 48px 16px 48px;">
+      <div style="padding:18px 48px 0 48px;">
         ${summary ? `<section style="margin-bottom:14px;page-break-inside:avoid;">
           ${head('Profile')}
           <p style="margin:0;font-size:10px;line-height:1.55;color:${INK};">${cleanInline(summary)}</p>
@@ -3355,7 +3355,7 @@ function buildMinimalHTML(parsed, p) {
   return `
     <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:${INK};font-size:10px;line-height:1.45;box-sizing:border-box;
-                padding:40px 48px 20px 48px;">
+                padding:40px 48px 0 48px;">
       <header style="margin-bottom:20px;">
         <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:22px;font-weight:400;color:${INK};
                    margin:0 0 3px 0;line-height:1.15;">${escapeHTML(name)}</h1>
@@ -3451,28 +3451,28 @@ function buildExecutiveHTML(parsed, p) {
         </div>` : ''}
       </header>
 
-      <div style="padding:16px 48px 14px 48px;">
-        ${summary ? `<section style="margin-bottom:12px;page-break-inside:avoid;">
+      <div style="padding:36px 48px 0 48px;">
+        ${summary ? `<section style="margin-bottom:14px;page-break-inside:avoid;">
           ${head('Profile')}
           <p style="margin:0;font-size:10px;line-height:1.5;color:${INK};">${cleanInline(summary)}</p>
         </section>` : ''}
 
-        ${skills.length ? `<section style="margin-bottom:12px;page-break-inside:avoid;">
+        ${skills.length ? `<section style="margin-bottom:14px;page-break-inside:avoid;">
           ${head('Skills')}
           <div style="font-size:10px;color:${INK};line-height:1.5;">${skills.map(escapeHTML).join(', ')}</div>
         </section>` : ''}
 
-        ${exp.length ? `<section style="margin-bottom:12px;">
+        ${exp.length ? `<section style="margin-bottom:14px;">
           ${head('Experience')}
           ${exp.map(entry).join('')}
         </section>` : ''}
 
-        ${edu.length ? `<section style="margin-bottom:12px;page-break-inside:avoid;">
+        ${edu.length ? `<section style="margin-bottom:14px;page-break-inside:avoid;">
           ${head('Education')}
           ${edu.map(entry).join('')}
         </section>` : ''}
 
-        ${langs.length ? `<section style="margin-bottom:12px;page-break-inside:avoid;">
+        ${langs.length ? `<section style="margin-bottom:14px;page-break-inside:avoid;">
           ${head('Languages')}
           <div style="font-size:10px;color:${INK};line-height:1.5;">${langs.map(escapeHTML).join(', ')}</div>
         </section>` : ''}
@@ -3529,42 +3529,42 @@ function buildElegantHTML(parsed, p) {
     <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:${INK};font-size:10px;line-height:1.4;box-sizing:border-box;
                 border-top:8px solid ${A};">
-      <header style="padding:28px 48px 14px 48px;">
+      <header style="padding:22px 48px 10px 48px;">
         <div style="font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:400;
-                    color:${p.mute};font-style:italic;margin-bottom:4px;">CURRICULUM VITAE</div>
+                    color:${p.mute};font-style:italic;margin-bottom:3px;">CURRICULUM VITAE</div>
         <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:32px;font-weight:300;color:${A};
-                   margin:0 0 4px 0;line-height:1.1;">${escapeHTML(name)}</h1>
-        ${subtitle ? `<p style="font-size:12px;font-weight:500;color:${A};margin:0 0 8px 0;">${escapeHTML(subtitle)}</p>` : ''}
+                   margin:0 0 3px 0;line-height:1.1;">${escapeHTML(name)}</h1>
+        ${subtitle ? `<p style="font-size:12px;font-weight:500;color:${A};margin:0 0 6px 0;">${escapeHTML(subtitle)}</p>` : ''}
         ${contactItems.length ? `<div style="font-size:10px;color:${p.mute};line-height:1.4;white-space:nowrap;">
           ${contactItems.map(escapeHTML).join(' | ')}
         </div>` : ''}
-        <div style="height:1px;background:${p.rule};margin-top:14px;"></div>
+        <div style="height:1px;background:${p.rule};margin-top:10px;"></div>
       </header>
 
-      <div style="padding:8px 48px 14px 48px;">
-        ${summary ? `<section style="margin-bottom:14px;page-break-inside:avoid;">
+      <div style="padding:8px 48px 0 48px;">
+        ${summary ? `<section style="margin-bottom:10px;page-break-inside:avoid;">
           ${head('Profile')}
-          <p style="margin:0;font-size:10px;line-height:1.55;color:${INK};">${cleanInline(summary)}</p>
+          <p style="margin:0;font-size:10px;line-height:1.45;color:${INK};">${cleanInline(summary)}</p>
         </section>` : ''}
 
-        ${skills.length ? `<section style="margin-bottom:14px;page-break-inside:avoid;">
+        ${skills.length ? `<section style="margin-bottom:10px;page-break-inside:avoid;">
           ${head('Skills')}
-          <div style="font-size:10px;color:${INK};line-height:1.55;">${skills.map(escapeHTML).join(', ')}</div>
+          <div style="font-size:10px;color:${INK};line-height:1.45;">${skills.map(escapeHTML).join(', ')}</div>
         </section>` : ''}
 
-        ${exp.length ? `<section style="margin-bottom:14px;">
+        ${exp.length ? `<section style="margin-bottom:10px;">
           ${head('Experience')}
           ${exp.map(entry).join('')}
         </section>` : ''}
 
-        ${edu.length ? `<section style="margin-bottom:14px;page-break-inside:avoid;">
+        ${edu.length ? `<section style="margin-bottom:10px;page-break-inside:avoid;">
           ${head('Education')}
           ${edu.map(entry).join('')}
         </section>` : ''}
 
-        ${langs.length ? `<section style="margin-bottom:14px;page-break-inside:avoid;">
+        ${langs.length ? `<section style="margin-bottom:10px;page-break-inside:avoid;">
           ${head('Languages')}
-          <div style="font-size:10px;color:${INK};line-height:1.55;">${langs.map(escapeHTML).join(', ')}</div>
+          <div style="font-size:10px;color:${INK};line-height:1.45;">${langs.map(escapeHTML).join(', ')}</div>
         </section>` : ''}
 
         ${refsRaw.length ? `<section style="page-break-inside:avoid;">
