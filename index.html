@@ -3203,7 +3203,7 @@ async function renderResumePDF(template, parsed, filename) {
         html2canvas: {
           useCORS: true,
           backgroundColor: '#ffffff',
-          letterRendering: true,
+          letterRendering: false,
           logging: false,
           allowTaint: true
         }
@@ -3232,7 +3232,7 @@ async function downloadPDF(elementId, filename) {
 /* ---------- MODERN: tinted header band + accent left-bar ---------- */
 function buildModernHTML(parsed, p) {
   const { name, subtitle, contact, sections } = parsed;
-  const A = '#2563EB', INK = '#1A1A1A';
+  const A = p.accent, INK = p.ink;
   const contactItems = splitContact(contact);
   const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
   const langs  = splitSkills(sections[findSection(sections, /LANGUAGE/)] || []);
@@ -3266,7 +3266,7 @@ function buildModernHTML(parsed, p) {
     </div>`;
 
   return `
-    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;max-height:1056px;overflow:hidden;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:${INK};font-size:11px;line-height:1.5;box-sizing:border-box;">
       <header style="background:${p.tint};padding:36px 56px 20px 56px;border-bottom:3px solid ${A};">
         <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:32px;font-weight:800;color:${A};
@@ -3277,7 +3277,7 @@ function buildModernHTML(parsed, p) {
         </div>` : ''}
       </header>
 
-      <div style="padding:24px 56px 30px 56px;">
+      <div style="padding:24px 56px 20px 56px;">
         ${summary ? `<section style="margin-bottom:20px;page-break-inside:avoid;">
           ${head('Profile')}
           <p style="margin:0;font-size:11px;line-height:1.6;color:${INK};">${cleanInline(summary)}</p>
@@ -3319,7 +3319,7 @@ function buildModernHTML(parsed, p) {
 /* ---------- MINIMAL: hairline rules, small-caps headers, max whitespace ---------- */
 function buildMinimalHTML(parsed, p) {
   const { name, subtitle, contact, sections } = parsed;
-  const A = '#475569', INK = '#1A1A1A';
+  const A = p.accent, INK = p.ink;
   const contactItems = splitContact(contact);
   const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
   const langs  = splitSkills(sections[findSection(sections, /LANGUAGE/)] || []);
@@ -3352,7 +3352,7 @@ function buildMinimalHTML(parsed, p) {
     </div>`;
 
   return `
-    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;max-height:1056px;overflow:hidden;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:${INK};font-size:11px;line-height:1.55;box-sizing:border-box;
                 padding:48px 60px;">
       <header style="margin-bottom:28px;">
@@ -3405,7 +3405,7 @@ function buildMinimalHTML(parsed, p) {
 /* ---------- EXECUTIVE: centered, formal, Fraunces headers, double rules ---------- */
 function buildExecutiveHTML(parsed, p) {
   const { name, subtitle, contact, sections } = parsed;
-  const A = '#1E3A5F', INK = '#1A1A1A';
+  const A = p.accent, INK = p.ink;
   const contactItems = splitContact(contact);
   const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
   const langs  = splitSkills(sections[findSection(sections, /LANGUAGE/)] || []);
@@ -3439,7 +3439,7 @@ function buildExecutiveHTML(parsed, p) {
     </div>`;
 
   return `
-    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;max-height:1056px;overflow:hidden;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:${INK};font-size:11px;line-height:1.45;box-sizing:border-box;">
       <header style="text-align:center;padding:32px 56px 14px 56px;">
         <div style="height:2px;background:${A};margin-bottom:12px;"></div>
@@ -3494,7 +3494,7 @@ function buildExecutiveHTML(parsed, p) {
 /* ---------- ELEGANT: Cormorant headers, CV kicker, airy spacing ---------- */
 function buildElegantHTML(parsed, p) {
   const { name, subtitle, contact, sections } = parsed;
-  const A = '#7B2D3B', INK = '#1A1A1A';
+  const A = p.accent, INK = p.ink;
   const contactItems = splitContact(contact);
   const skills = splitSkills(sections[findSection(sections, /SKILL/)] || []);
   const langs  = splitSkills(sections[findSection(sections, /LANGUAGE/)] || []);
@@ -3527,7 +3527,7 @@ function buildElegantHTML(parsed, p) {
     </div>`;
 
   return `
-    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;max-height:1056px;overflow:hidden;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:${INK};font-size:11px;line-height:1.45;box-sizing:border-box;
                 border-top:4px solid ${A};">
       <header style="padding:32px 60px 14px 60px;">
