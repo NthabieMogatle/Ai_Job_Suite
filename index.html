@@ -3210,6 +3210,10 @@ async function renderResumePDF(template, parsed, filename) {
       const fit = pageH / drawH;
       drawW *= fit;
       drawH = pageH;
+    } else if (drawH < pageH) {
+      const fill = Math.min(pageH / drawH, 1.25);
+      drawW *= fill;
+      drawH *= fill;
     }
 
     // Layer 1: invisible text for ATS extraction (drawn first, behind image)
