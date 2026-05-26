@@ -3823,10 +3823,11 @@ async function requireEmailVerification(email, prefix, callback) {
 }
 
 function handleLockedTemplate(template) {
-  setTemplate(template === 'detailed' ? 'detailed' : template);
   if (!premiumUnlocked) {
     window.open("https://elevehired.gumroad.com/l/pllrsk", "_blank");
+    return;
   }
+  setTemplate(template === 'detailed' ? 'detailed' : template);
 }
 
 function toggleAnswer(answerId, btn) {
