@@ -3232,7 +3232,15 @@ async function renderResumePDF(template, parsed, filename) {
 
     // Layer 2: visual image on top (pixel-identical to current output)
     pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, drawW, drawH, '', 'FAST');
-    pdf.save(filename);
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) {
+      const blob = pdf.output('blob');
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } else {
+      pdf.save(filename);
+    }
   } catch (err) {
     console.error('PDF render failed:', err);
     alert('PDF render failed. Please try again.');
@@ -3693,7 +3701,14 @@ function downloadCoverPDF() {
   doc.setFillColor(201,168,76);
   doc.rect(0, doc.internal.pageSize.getHeight() - 20, pageWidth, 3, "F");
 
-  doc.save('cover-letter.pdf');
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIOS) {
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  } else {
+    doc.save('cover-letter.pdf');
+  }
 }
 
 /* ===== EMAIL VERIFICATION ===== */
