@@ -3179,7 +3179,7 @@ async function renderResumePDF(template, parsed, filename) {
 
   const container = document.createElement('div');
   container.style.cssText =
-    'position:absolute;left:0;top:0;width:816px;background:#fff;z-index:-1;';
+    'position:fixed;left:-9999px;top:0;width:816px;min-width:816px;background:#fff;z-index:-1;';
   container.innerHTML = html;
   document.body.appendChild(container);
 
@@ -3201,6 +3201,7 @@ async function renderResumePDF(template, parsed, filename) {
         autoPaging: 'text',
         margin: 0,
         html2canvas: {
+          scale: 1,
           useCORS: true,
           backgroundColor: '#ffffff',
           letterRendering: false,
@@ -3266,7 +3267,7 @@ function buildModernHTML(parsed, p) {
     </div>`;
 
   return `
-    <div style="width:816px;max-height:1056px;overflow:hidden;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:${INK};font-size:10px;line-height:1.45;box-sizing:border-box;">
       <header style="background:${p.tint};padding:30px 48px 16px 48px;border-bottom:3px solid ${A};">
         <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:26px;font-weight:800;color:${A};
@@ -3352,7 +3353,7 @@ function buildMinimalHTML(parsed, p) {
     </div>`;
 
   return `
-    <div style="width:816px;max-height:1056px;overflow:hidden;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:${INK};font-size:10px;line-height:1.45;box-sizing:border-box;
                 padding:40px 48px 20px 48px;">
       <header style="margin-bottom:20px;">
@@ -3439,7 +3440,7 @@ function buildExecutiveHTML(parsed, p) {
     </div>`;
 
   return `
-    <div style="width:816px;max-height:1056px;overflow:hidden;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:${INK};font-size:10px;line-height:1.4;box-sizing:border-box;">
       <header style="background:${A};padding:28px 48px 18px 48px;">
         <h1 style="font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:800;color:#ffffff;
@@ -3525,7 +3526,7 @@ function buildElegantHTML(parsed, p) {
     </div>`;
 
   return `
-    <div style="width:816px;max-height:1056px;overflow:hidden;background:#fff;font-family:Helvetica,Arial,sans-serif;
+    <div style="width:816px;background:#fff;font-family:Helvetica,Arial,sans-serif;
                 color:${INK};font-size:10px;line-height:1.4;box-sizing:border-box;
                 border-top:8px solid ${A};">
       <header style="padding:28px 48px 14px 48px;">
