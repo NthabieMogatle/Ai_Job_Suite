@@ -3189,28 +3189,29 @@ async function renderResumePDF(template, parsed, filename) {
   await new Promise(r => setTimeout(r, 600));
 
   try {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
-
-    await new Promise(resolve => {
-      pdf.html(container, {
-        callback: () => resolve(),
-        x: 0, y: 0,
-        width: 612,
-        windowWidth: 816,
-        autoPaging: 'text',
-        margin: 0,
-        html2canvas: {
-          scale: 1,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-          letterRendering: false,
-          logging: false,
-          allowTaint: true
-        }
-      });
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      letterRendering: false,
+      logging: false,
+      allowTaint: true
     });
 
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
+    const pageW = 612, pageH = 792;
+    const contentW = 816;
+    const contentH = container.scrollHeight;
+    const baseScale = pageW / contentW;
+    let drawW = pageW;
+    let drawH = contentH * baseScale;
+    if (drawH > pageH) {
+      const fit = pageH / drawH;
+      drawW *= fit;
+      drawH = pageH;
+    }
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, drawW, drawH, '', 'FAST');
     pdf.save(filename);
   } catch (err) {
     console.error('PDF render failed:', err);
