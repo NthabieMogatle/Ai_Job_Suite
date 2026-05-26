@@ -3367,7 +3367,7 @@ function buildMinimalHTML(parsed, p) {
       ${item.metaLines.map(m => `<div style="font-size:10px;color:${p.mute};line-height:1.4;margin-top:1px;">${escapeHTML(m)}</div>`).join('')}
       ${item.bullets.length ? `<ul style="margin:3px 0 0 0;padding:0;list-style:none;">
         ${item.bullets.map(b => `
-          <li style="padding-left:10px;margin-bottom:2px;font-size:10px;line-height:1.5;color:${INK};">
+          <li style="margin-bottom:2px;font-size:10px;line-height:1.5;color:${INK};">
             ${cleanInline(b)}
           </li>`).join('')}
       </ul>` : ''}
